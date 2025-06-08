@@ -67,17 +67,17 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
 
   return (
     <SafeAreaView style={styles.container}>
+      
       <View style={styles.header}>
-        <Text style={styles.welcomeText}>Welcome back,</Text>
+        <Text style={styles.welcomeText}>Bienvenido de vuelta,</Text>
         <Text style={styles.nameText}>{user?.displayName}</Text>
       </View>
-
       {cards.length === 0 ? (
         <EmptyState
           icon="card"
-          title="No Loyalty Cards Yet"
-          message="Start collecting loyalty cards from your favorite businesses to track your rewards and earn benefits."
-          actionText="Find Businesses"
+          title="Aún No Tienes Tarjetas de Lealtad"
+          message="Comienza a coleccionar tarjetas de lealtad de tus negocios favoritos para seguir tus recompensas y obtener beneficios."
+          actionText="Buscar Negocios"
           onAction={() => {
             // TODO: Navigate to business discovery screen
             console.log("Navigate to business discovery");

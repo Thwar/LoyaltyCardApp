@@ -39,31 +39,27 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 
           {currentStamps}/{card.totalSlots}
         </Text>
       </View>
-
       {/* Stamp Description */}
       <Text style={styles.stampDescription} numberOfLines={2}>
         {card.stampDescription}
       </Text>
-
       {/* Stamps Grid */}
       <View style={styles.stampsContainer}>
         <View style={styles.stampsGrid}>{renderStamps()}</View>
       </View>
-
       {/* Reward Description */}
       <View style={styles.rewardContainer}>
-        <Text style={styles.rewardLabel}>Reward:</Text>
+        <Text style={styles.rewardLabel}>Recompensa:</Text>
         <Text style={styles.rewardDescription} numberOfLines={2}>
           {card.rewardDescription}
         </Text>
       </View>
-
       {/* Progress Bar */}
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBarBackground}>
           <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
         </View>
-        {isCompleted && <Text style={styles.completedText}>Ready to Claim!</Text>}
+        {isCompleted && <Text style={styles.completedText}>¡Listo para Reclamar!</Text>}
       </View>
     </View>
   );

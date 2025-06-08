@@ -67,17 +67,16 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.name.trim()) {
-      newErrors.name = "Business name is required";
+      newErrors.name = "El nombre del negocio es requerido";
     }
 
     if (!formData.description.trim()) {
-      newErrors.description = "Description is required";
+      newErrors.description = "La descripción es requerida";
     }
 
     if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+      newErrors.email = "Por favor ingrese un email válido";
     }
 
     setErrors(newErrors);
@@ -105,23 +104,23 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
         // Update existing business
         await BusinessService.updateBusiness(business.id, businessData);
         showAlert({
-          title: "Success",
-          message: "Business profile updated successfully",
+          title: "Éxito",
+          message: "Perfil del negocio actualizado exitosamente",
         });
       } else {
         // Create new business
         const newBusiness = await BusinessService.createBusiness(businessData);
         setBusiness(newBusiness);
         showAlert({
-          title: "Success",
-          message: "Business profile created successfully",
+          title: "Éxito",
+          message: "Perfil del negocio creado exitosamente",
         });
       }
     } catch (error) {
       console.error("Error saving business:", error);
       showAlert({
         title: "Error",
-        message: error instanceof Error ? error.message : "Failed to save business profile",
+        message: error instanceof Error ? error.message : "Error al guardar el perfil del negocio",
       });
     } finally {
       setSaving(false);
@@ -129,12 +128,12 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   };
   const handleLogout = () => {
     showAlert({
-      title: "Logout",
-      message: "Are you sure you want to logout?",
+      title: "Cerrar Sesión",
+      message: "¿Estás seguro que quieres cerrar sesión?",
       buttons: [
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancelar", style: "cancel" },
         {
-          text: "Logout",
+          text: "Cerrar Sesión",
           style: "destructive",
           onPress: logout,
         },
@@ -159,74 +158,67 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Business Settings</Text>
-            <Text style={styles.subtitle}>{business ? "Update your business information" : "Set up your business profile"}</Text>
+            <Text style={styles.title}>Configuraciones del Negocio</Text>
+            <Text style={styles.subtitle}>{business ? "Actualiza la información de tu negocio" : "Configura el perfil de tu negocio"}</Text>
           </View>
 
           <View style={styles.form}>
             <InputField
-              label="Business Name"
+              label="Nombre del Negocio"
               value={formData.name}
               onChangeText={(value) => updateFormData("name", value)}
-              placeholder="Enter your business name"
+              placeholder="Ingresa el nombre de tu negocio"
               leftIcon="business"
               error={errors.name}
             />
-
             <InputField
-              label="Description"
+              label="Descripción"
               value={formData.description}
               onChangeText={(value) => updateFormData("description", value)}
-              placeholder="Describe your business"
+              placeholder="Describe tu negocio"
               leftIcon="document-text"
               error={errors.description}
               multiline
             />
-
             <InputField
-              label="Address (Optional)"
+              label="Dirección (Opcional)"
               value={formData.address}
               onChangeText={(value) => updateFormData("address", value)}
-              placeholder="Enter your business address"
+              placeholder="Ingresa la dirección de tu negocio"
               leftIcon="location"
               error={errors.address}
               multiline
             />
-
             <InputField
-              label="Phone (Optional)"
+              label="Teléfono (Opcional)"
               value={formData.phone}
               onChangeText={(value) => updateFormData("phone", value)}
-              placeholder="Enter your phone number"
+              placeholder="Ingresa tu número de teléfono"
               keyboardType="phone-pad"
               leftIcon="call"
               error={errors.phone}
             />
-
             <InputField
-              label="Email (Optional)"
+              label="Email (Opcional)"
               value={formData.email}
               onChangeText={(value) => updateFormData("email", value)}
-              placeholder="Enter your business email"
+              placeholder="Ingresa el email de tu negocio"
               keyboardType="email-address"
               autoCapitalize="none"
               leftIcon="mail"
               error={errors.email}
             />
-
-            <Button title={business ? "Update Profile" : "Create Profile"} onPress={handleSave} loading={saving || reloading} size="large" style={styles.saveButton} />
+            <Button title={business ? "Actualizar Perfil" : "Crear Perfil"} onPress={handleSave} loading={saving || reloading} size="large" style={styles.saveButton} />
           </View>
 
           {/* Account Section */}
           <View style={styles.accountSection}>
-            <Text style={styles.accountTitle}>Account</Text>
-
+            <Text style={styles.accountTitle}>Cuenta</Text>
             <View style={styles.accountInfo}>
-              <Text style={styles.accountLabel}>Signed in as:</Text>
+              <Text style={styles.accountLabel}>Sesión iniciada como:</Text>
               <Text style={styles.accountValue}>{user?.email}</Text>
             </View>
-
-            <Button title="Logout" onPress={handleLogout} variant="outline" size="large" style={styles.logoutButton} />
+            <Button title="Cerrar Sesión" onPress={handleLogout} variant="outline" size="large" style={styles.logoutButton} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

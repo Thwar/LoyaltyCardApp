@@ -29,25 +29,24 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.displayName.trim()) {
-      newErrors.displayName = "Name is required";
+      newErrors.displayName = "El nombre es requerido";
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = "El email es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email";
+      newErrors.email = "Por favor ingrese un email válido";
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = "La contraseña es requerida";
     } else if (formData.password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = "Las contraseñas no coinciden";
     }
 
     setErrors(newErrors);
@@ -58,7 +57,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     const isFirebaseConnected = testFirebaseConnection();
     if (!isFirebaseConnected) {
       showAlert({
-        title: "Configuration Error",
+        title: "Error de Configuración",
         message: "Firebase is not properly configured. Please check the console for details.",
       });
       return;
@@ -96,64 +95,59 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join LoyaltyCard today</Text>
+            <Text style={styles.title}>Crear Cuenta</Text>
+            <Text style={styles.subtitle}>Únete a TarjetaLealtad hoy</Text>
           </View>
-
           <View style={styles.form}>
             <InputField
-              label="Full Name"
+              label="Nombre Completo"
               value={formData.displayName}
               onChangeText={(value) => updateFormData("displayName", value)}
-              placeholder="Enter your full name"
+              placeholder="Ingresa tu nombre completo"
               leftIcon="person"
               error={errors.displayName}
             />
-
             <InputField
-              label="Email"
+              label="Correo Electrónico"
               value={formData.email}
               onChangeText={(value) => updateFormData("email", value)}
-              placeholder="Enter your email"
+              placeholder="Ingresa tu correo electrónico"
               keyboardType="email-address"
               autoCapitalize="none"
               leftIcon="mail"
               error={errors.email}
             />
-
             <InputField
-              label="Password"
+              label="Contraseña"
               value={formData.password}
               onChangeText={(value) => updateFormData("password", value)}
-              placeholder="Create a password"
+              placeholder="Crea una contraseña"
               isPassword
               leftIcon="lock-closed"
               error={errors.password}
             />
-
             <InputField
-              label="Confirm Password"
+              label="Confirmar Contraseña"
               value={formData.confirmPassword}
               onChangeText={(value) => updateFormData("confirmPassword", value)}
-              placeholder="Confirm your password"
+              placeholder="Confirma tu contraseña"
               isPassword
               leftIcon="lock-closed"
               error={errors.confirmPassword}
             />
-
             {/* User Type Selection */}
             <View style={styles.userTypeSection}>
-              <Text style={styles.userTypeLabel}>I am a:</Text>
+              <Text style={styles.userTypeLabel}>Soy un:</Text>
               <View style={styles.userTypeButtons}>
                 <Button
-                  title="Customer"
+                  title="Cliente"
                   onPress={() => updateFormData("userType", "customer")}
                   variant={formData.userType === "customer" ? "primary" : "outline"}
                   size="medium"
                   style={styles.userTypeButton}
                 />
                 <Button
-                  title="Business Owner"
+                  title="Dueño de Negocio"
                   onPress={() => updateFormData("userType", "business")}
                   variant={formData.userType === "business" ? "primary" : "outline"}
                   size="medium"
@@ -161,15 +155,13 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
                 />
               </View>
             </View>
-
-            <Button title="Create Account" onPress={handleRegister} loading={loading} size="large" style={styles.registerButton} />
+            <Button title="Crear Cuenta" onPress={handleRegister} loading={loading} size="large" style={styles.registerButton} />
           </View>
-
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Already have an account?{" "}
+              ¿Ya tienes una cuenta?
               <Text style={styles.linkText} onPress={navigateToLogin}>
-                Sign in
+                Iniciar sesión
               </Text>
             </Text>
           </View>

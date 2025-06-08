@@ -50,7 +50,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
         </Text>
         <Text style={styles.customerDetail}>{customer.isRewardClaimed ? "Reward Claimed" : "Active"}</Text>
       </View>
-      <Button title="Add Stamp" onPress={() => navigation.navigate("AddStamp", { customerCard: customer })} size="small" style={styles.addStampButton} />
+      <Button title="Agregar Sello" onPress={() => navigation.navigate("AddStamp", { customerCard: customer })} size="small" style={styles.addStampButton} />
     </View>
   );
 
@@ -69,24 +69,22 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Customer Management</Text>
-        <Text style={styles.subtitle}>Manage your loyalty program customers</Text>
+        <Text style={styles.title}>Gestión de Clientes</Text>
+        <Text style={styles.subtitle}>Gestiona los clientes de tu programa de lealtad</Text>
       </View>
-
       {customers.length === 0 ? (
         <EmptyState
           icon="people"
-          title="No Customers Yet"
-          message="Customers will appear here once they start using your loyalty cards. Share your business with customers to get started!"
-          actionText="Create Loyalty Card"
+          title="Aún No Hay Clientes"
+          message="Los clientes aparecerán aquí una vez que comiencen a usar tus tarjetas de lealtad. ¡Comparte tu negocio con los clientes para comenzar!"
+          actionText="Crear Tarjeta de Lealtad"
           onAction={() => navigation.navigate("CreateLoyaltyCard")}
         />
       ) : (
         <FlatList data={customers} renderItem={({ item }) => <CustomerCard customer={item} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.customersList} />
       )}
-
       <View style={styles.actionContainer}>
-        <Button title="Add Stamp to Customer" onPress={() => navigation.navigate("AddStamp")} size="large" style={styles.actionButton} />
+        <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp")} size="large" style={styles.actionButton} />
       </View>
     </SafeAreaView>
   );

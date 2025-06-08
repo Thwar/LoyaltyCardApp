@@ -23,17 +23,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
-
     if (!email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = "El email es requerido";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email";
+      newErrors.email = "Por favor ingrese un email válido";
     }
 
     if (!password) {
-      newErrors.password = "Password is required";
+      newErrors.password = "La contraseña es requerida";
     } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
     }
 
     setErrors(newErrors);
@@ -48,8 +47,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       // Navigation will be handled by the auth context
     } catch (error) {
       showAlert({
-        title: "Login Failed",
-        message: error instanceof Error ? error.message : "An unexpected error occurred",
+        title: "Error de Inicio de Sesión",
+        message: error instanceof Error ? error.message : "Ocurrió un error inesperado",
       });
     } finally {
       setLoading(false);
@@ -69,23 +68,30 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to your account</Text>
+            <Text style={styles.title}>Bienvenido de Vuelta</Text>
+            <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
           </View>
-
           <View style={styles.form}>
-            <InputField label="Email" value={email} onChangeText={setEmail} placeholder="Enter your email" keyboardType="email-address" autoCapitalize="none" leftIcon="mail" error={errors.email} />
+            <InputField
+              label="Correo Electrónico"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Ingresa tu correo electrónico"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              leftIcon="mail"
+              error={errors.email}
+            />
 
-            <InputField label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" isPassword leftIcon="lock-closed" error={errors.password} />
+            <InputField label="Contraseña" value={password} onChangeText={setPassword} placeholder="Ingresa tu contraseña" isPassword leftIcon="lock-closed" error={errors.password} />
 
-            <Button title="Sign In" onPress={handleLogin} loading={loading} size="large" style={styles.loginButton} />
+            <Button title="Iniciar Sesión" onPress={handleLogin} loading={loading} size="large" style={styles.loginButton} />
           </View>
-
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Don't have an account?{" "}
+              ¿No tienes una cuenta?
               <Text style={styles.linkText} onPress={navigateToRegister}>
-                Sign up
+                Regístrate
               </Text>
             </Text>
           </View>

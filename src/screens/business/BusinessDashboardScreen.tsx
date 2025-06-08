@@ -120,32 +120,32 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
-          <Text style={styles.sectionTitle}>Overview</Text>
+          <Text style={styles.sectionTitle}>Resumen</Text>
           <View style={styles.statsGrid}>
-            <StatCard title="Loyalty Cards" value={stats.totalCards} icon="📄" />
-            <StatCard title="Active Customers" value={stats.activeCustomers} icon="👥" />
-            <StatCard title="Total Stamps" value={stats.totalStamps} icon="⭐" />
-            <StatCard title="Rewards Claimed" value={stats.claimedRewards} icon="🎁" />
+            <StatCard title="Tarjetas de Lealtad" value={stats.totalCards} icon="📄" />
+            <StatCard title="Clientes Activos" value={stats.activeCustomers} icon="👥" />
+            <StatCard title="Total de Sellos" value={stats.totalStamps} icon="⭐" />
+            <StatCard title="Recompensas Reclamadas" value={stats.claimedRewards} icon="🎁" />
           </View>
         </View>
 
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
 
-          <Button title="Create New Loyalty Card" onPress={() => navigation.navigate("CreateLoyaltyCard")} size="large" style={styles.actionButton} />
+          <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => navigation.navigate("CreateLoyaltyCard")} size="large" style={styles.actionButton} />
 
-          <Button title="Add Stamp to Customer" onPress={() => navigation.navigate("AddStamp")} variant="outline" size="large" style={styles.actionButton} />
+          <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp")} variant="outline" size="large" style={styles.actionButton} />
 
-          <Button title="View All Customers" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.actionButton} />
+          <Button title="Ver Todos los Clientes" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.actionButton} />
         </View>
 
         {/* Business Setup */}
         {!business && (
           <View style={styles.setupContainer}>
-            <Text style={styles.setupTitle}>Complete Your Business Setup</Text>
-            <Text style={styles.setupText}>Set up your business profile to start creating loyalty cards and managing customers.</Text>
-            <Button title="Set Up Business Profile" onPress={() => navigation.navigate("BusinessTabs", { screen: "Settings" })} size="large" style={styles.setupButton} />
+            <Text style={styles.setupTitle}>Completa la Configuración de Tu Negocio</Text>
+            <Text style={styles.setupText}>Configura el perfil de tu negocio para comenzar a crear tarjetas de lealtad y gestionar clientes.</Text>
+            <Button title="Configurar Perfil del Negocio" onPress={() => navigation.navigate("BusinessTabs", { screen: "Settings" })} size="large" style={styles.setupButton} />
           </View>
         )}
       </ScrollView>

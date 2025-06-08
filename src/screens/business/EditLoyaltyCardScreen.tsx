@@ -7,17 +7,17 @@ import { useAuth } from "../../context/AuthContext";
 import { Button, InputField, LoadingState, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
-import { LoyaltyCard } from "../../types";
+import { LoyaltyCard, BusinessStackParamList } from "../../types";
 
 interface EditLoyaltyCardScreenProps {
-  navigation: StackNavigationProp<any>;
-  route: RouteProp<{ EditLoyaltyCard: { loyaltyCardId: string } }, "EditLoyaltyCard">;
+  navigation: StackNavigationProp<BusinessStackParamList, "EditCard">;
+  route: RouteProp<BusinessStackParamList, "EditCard">;
 }
 
 export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ navigation, route }) => {
   const { user } = useAuth();
   const { showAlert } = useAlert();
-  const { loyaltyCardId } = route.params;
+  const { cardId } = route.params;
 
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [formData, setFormData] = useState({
@@ -29,15 +29,14 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   useEffect(() => {
     loadLoyaltyCard();
-  }, [loyaltyCardId]);
+  }, [cardId]);
 
   const loadLoyaltyCard = async () => {
     try {
       setLoading(true);
-      const card = await LoyaltyCardService.getLoyaltyCard(loyaltyCardId);
+      const card = await LoyaltyCardService.getLoyaltyCard(cardId);
       if (card) {
         setLoyaltyCard(card);
         setFormData({
@@ -50,7 +49,7 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
     } catch (error) {
       showAlert({
         title: "Error",
-        message: "Failed to load loyalty card details",
+        message: "Error al cargar los detalles de la tarjeta de lealtad",
       });
       navigation.goBack();
     } finally {
@@ -67,22 +66,21 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.businessName.trim()) {
-      newErrors.businessName = "Business name is required";
+      newErrors.businessName = "El nombre del negocio es requerido";
     }
 
     const slotsNum = parseInt(formData.totalSlots);
     if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 1 || slotsNum > 20) {
-      newErrors.totalSlots = "Slots must be between 1 and 20";
+      newErrors.totalSlots = "Los sellos deben estar entre 1 y 20";
     }
 
     if (!formData.rewardDescription.trim()) {
-      newErrors.rewardDescription = "Reward description is required";
+      newErrors.rewardDescription = "La descripción de la recompensa es requerida";
     }
 
     if (!formData.stampDescription.trim()) {
-      newErrors.stampDescription = "Stamp description is required";
+      newErrors.stampDescription = "La descripción del sello es requerida";
     }
 
     setErrors(newErrors);
@@ -101,10 +99,9 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
         stampDescription: formData.stampDescription.trim(),
       };
       await LoyaltyCardService.updateLoyaltyCard(loyaltyCard.id, updates);
-
       showAlert({
-        title: "Success",
-        message: "Loyalty card updated successfully!",
+        title: "Éxito",
+        message: "¡Tarjeta de lealtad actualizada exitosamente!",
         buttons: [
           {
             text: "OK",
@@ -115,7 +112,7 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
     } catch (error) {
       showAlert({
         title: "Error",
-        message: error instanceof Error ? error.message : "Failed to update loyalty card",
+        message: error instanceof Error ? error.message : "Error al actualizar la tarjeta de lealtad",
       });
     } finally {
       setSaving(false);
@@ -123,12 +120,12 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
   };
   const handleDeleteCard = () => {
     showAlert({
-      title: "Delete Loyalty Card",
-      message: "Are you sure you want to delete this loyalty card? This action cannot be undone and will affect all customers who have this card.",
+      title: "Eliminar Tarjeta de Lealtad",
+      message: "¿Estás seguro que quieres eliminar esta tarjeta de lealtad? Esta acción no se puede deshacer y afectará a todos los clientes que tienen esta tarjeta.",
       buttons: [
-        { text: "Cancel", style: "cancel" },
+        { text: "Cancelar", style: "cancel" },
         {
-          text: "Delete",
+          text: "Eliminar",
           style: "destructive",
           onPress: confirmDeleteCard,
         },
@@ -142,21 +139,20 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
     setSaving(true);
     try {
       await LoyaltyCardService.deleteLoyaltyCard(loyaltyCard.id);
-
       showAlert({
-        title: "Success",
-        message: "Loyalty card deleted successfully!",
+        title: "Éxito",
+        message: "¡Tarjeta de lealtad eliminada exitosamente!",
         buttons: [
           {
             text: "OK",
-            onPress: () => navigation.navigate("BusinessTabs", { screen: "Dashboard" }),
+            onPress: () => navigation.navigate("BusinessTabs"),
           },
         ],
       });
     } catch (error) {
       showAlert({
         title: "Error",
-        message: error instanceof Error ? error.message : "Failed to delete loyalty card",
+        message: error instanceof Error ? error.message : "Error al eliminar la tarjeta de lealtad",
       });
     } finally {
       setSaving(false);
@@ -167,7 +163,7 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
   }
 
   if (!loyaltyCard) {
-    return <LoadingState error="Loyalty card not found" onRetry={() => navigation.goBack()} />;
+    return <LoadingState error="Tarjeta de lealtad no encontrada" onRetry={() => navigation.goBack()} />;
   }
 
   return (
@@ -175,48 +171,46 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({ na
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === "ios" ? "padding" : "height"}>
         <ScrollView style={styles.scrollView}>
           <View style={styles.content}>
-            <Text style={styles.title}>Edit Loyalty Card</Text>
-            <Text style={styles.subtitle}>Update your loyalty card details</Text>
-
+            <Text style={styles.title}>Editar Tarjeta de Lealtad</Text>
+            <Text style={styles.subtitle}>Actualiza los detalles de tu tarjeta de lealtad</Text>
             <View style={styles.form}>
               <InputField
-                label="Business Name"
+                label="Nombre del Negocio"
                 value={formData.businessName}
                 onChangeText={(value) => updateFormData("businessName", value)}
-                placeholder="Enter your business name"
+                placeholder="Ingresa el nombre de tu negocio"
                 error={errors.businessName}
-              />{" "}
+              />
               <InputField
-                label="Number of Stamps Required"
+                label="Número de Sellos Requeridos"
                 value={formData.totalSlots}
                 onChangeText={(value) => updateFormData("totalSlots", value)}
-                placeholder="e.g., 10"
+                placeholder="ej., 10"
                 keyboardType="numeric"
                 error={errors.totalSlots}
-              />{" "}
+              />
               <InputField
-                label="Reward Description"
+                label="Descripción de la Recompensa"
                 value={formData.rewardDescription}
                 onChangeText={(value) => updateFormData("rewardDescription", value)}
-                placeholder="e.g., Free coffee"
+                placeholder="ej., Café gratis"
                 multiline
                 numberOfLines={3}
                 error={errors.rewardDescription}
-              />{" "}
+              />
               <InputField
-                label="Stamp Description"
+                label="Descripción del Sello"
                 value={formData.stampDescription}
                 onChangeText={(value) => updateFormData("stampDescription", value)}
-                placeholder="e.g., Purchase any drink"
+                placeholder="ej., Compra cualquier bebida"
                 multiline
                 numberOfLines={3}
                 error={errors.stampDescription}
               />
             </View>
-
             <View style={styles.buttonContainer}>
-              <Button title="Update Card" onPress={handleUpdateCard} loading={saving} style={styles.updateButton} />{" "}
-              <Button title="Delete Card" onPress={handleDeleteCard} variant="outline" loading={saving} style={styles.deleteButton} textStyle={{ color: COLORS.error }} />
+              <Button title="Actualizar Tarjeta" onPress={handleUpdateCard} loading={saving} style={styles.updateButton} />
+              <Button title="Eliminar Tarjeta" onPress={handleDeleteCard} variant="outline" loading={saving} style={styles.deleteButton} textStyle={{ color: COLORS.error }} />
             </View>
           </View>
         </ScrollView>

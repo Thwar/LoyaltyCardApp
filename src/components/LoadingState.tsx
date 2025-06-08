@@ -12,12 +12,12 @@ interface LoadingStateProps {
   showEmpty?: boolean;
 }
 
-export const LoadingState: React.FC<LoadingStateProps> = ({ loading = false, error, onRetry, children, emptyMessage = "No data available", showEmpty = false }) => {
+export const LoadingState: React.FC<LoadingStateProps> = ({ loading = false, error, onRetry, children, emptyMessage = "No hay datos disponibles", showEmpty = false }) => {
   if (loading) {
     return (
       <View style={styles.container}>
         <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={styles.text}>Loading...</Text>
+        <Text style={styles.text}>Cargando...</Text>
       </View>
     );
   }
@@ -29,7 +29,7 @@ export const LoadingState: React.FC<LoadingStateProps> = ({ loading = false, err
         <Text style={[styles.text, styles.errorText]}>{error}</Text>
         {onRetry && (
           <TouchableOpacity style={styles.retryButton} onPress={onRetry}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+            <Text style={styles.retryButtonText}>Intentar de Nuevo</Text>
           </TouchableOpacity>
         )}
       </View>

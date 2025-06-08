@@ -44,7 +44,7 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
     } catch (error) {
       showAlert({
         title: "Error",
-        message: "Failed to refresh card details",
+        message: "Error al actualizar los detalles de la tarjeta",
       });
     } finally {
       setLoading(false);
@@ -56,7 +56,7 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
   }, []);
 
   if (!card.loyaltyCard) {
-    return <LoadingState error="Card details not available" onRetry={() => navigation.goBack()} />;
+    return <LoadingState error="Detalles de la tarjeta no disponibles" onRetry={() => navigation.goBack()} />;
   }
 
   return (
@@ -66,50 +66,49 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
         <View style={styles.cardContainer}>
           <LoyaltyCard card={card.loyaltyCard} currentStamps={card.currentStamps} />
         </View>
-
         {/* Card Status */}
         <View style={styles.statusContainer}>
-          <Text style={styles.statusTitle}>Card Status</Text>
+          <Text style={styles.statusTitle}>Estado de la Tarjeta</Text>
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Progress:</Text>
+            <Text style={styles.statusLabel}>Progreso:</Text>
             <Text style={styles.statusValue}>
-              {card.currentStamps} / {card.loyaltyCard.totalSlots} stamps
+              {card.currentStamps} / {card.loyaltyCard.totalSlots} sellos
             </Text>
           </View>
           <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Status:</Text>
-            <Text style={[styles.statusValue, canClaimReward && styles.statusValueSuccess]}>{card.isRewardClaimed ? "Reward Claimed" : canClaimReward ? "Ready to Claim!" : "In Progress"}</Text>
+            <Text style={styles.statusLabel}>Estado:</Text>
+            <Text style={[styles.statusValue, canClaimReward && styles.statusValueSuccess]}>
+              {card.isRewardClaimed ? "Recompensa Reclamada" : canClaimReward ? "¡Listo para Reclamar!" : "En Progreso"}
+            </Text>
           </View>
           {card.lastStampDate && (
             <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Last Stamp:</Text>
+              <Text style={styles.statusLabel}>Último Sello:</Text>
               <Text style={styles.statusValue}>{new Date(card.lastStampDate).toLocaleDateString()}</Text>
             </View>
           )}
         </View>
-
         {/* Card Details */}
         <View style={styles.detailsContainer}>
-          <Text style={styles.detailsTitle}>How It Works</Text>
+          <Text style={styles.detailsTitle}>Cómo Funciona</Text>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>🎯 Goal:</Text>
-            <Text style={styles.detailText}>Collect {card.loyaltyCard.totalSlots} stamps</Text>
+            <Text style={styles.detailLabel}>🎯 Meta:</Text>
+            <Text style={styles.detailText}>Coleccionar {card.loyaltyCard.totalSlots} sellos</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>📝 How to earn:</Text>
+            <Text style={styles.detailLabel}>📝 Cómo ganar:</Text>
             <Text style={styles.detailText}>{card.loyaltyCard.stampDescription}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>🎁 Reward:</Text>
+            <Text style={styles.detailLabel}>🎁 Recompensa:</Text>
             <Text style={styles.detailText}>{card.loyaltyCard.rewardDescription}</Text>
           </View>
         </View>
-
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
-          {canClaimReward && <Button title="Claim Your Reward!" onPress={handleClaimReward} size="large" style={styles.claimButton} />}
+          {canClaimReward && <Button title="¡Reclama Tu Recompensa!" onPress={handleClaimReward} size="large" style={styles.claimButton} />}
 
-          <Button title="View Business Profile" onPress={handleViewBusiness} variant="outline" size="large" style={styles.businessButton} />
+          <Button title="Ver Perfil del Negocio" onPress={handleViewBusiness} variant="outline" size="large" style={styles.businessButton} />
         </View>
       </ScrollView>
     </SafeAreaView>

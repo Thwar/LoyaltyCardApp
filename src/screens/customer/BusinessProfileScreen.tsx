@@ -31,7 +31,7 @@ export const BusinessProfileScreen: React.FC<BusinessProfileScreenProps> = ({ na
       const businessData = await BusinessService.getBusiness(businessId);
       setBusiness(businessData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load business");
+      setError(err instanceof Error ? err.message : "Error al cargar el negocio");
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export const BusinessProfileScreen: React.FC<BusinessProfileScreenProps> = ({ na
   }
 
   if (error || !business) {
-    return <LoadingState error={error || "Business not found"} onRetry={handleRetry} />;
+    return <LoadingState error={error || "Negocio no encontrado"} onRetry={handleRetry} />;
   }
 
   return (
@@ -64,10 +64,9 @@ export const BusinessProfileScreen: React.FC<BusinessProfileScreenProps> = ({ na
           <Text style={styles.businessName}>{business.name}</Text>
           <Text style={styles.businessDescription}>{business.description}</Text>
         </View>
-
         {/* Contact Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Contact Information</Text>
+          <Text style={styles.sectionTitle}>Información de Contacto</Text>
 
           {business.address && (
             <View style={styles.contactRow}>
@@ -90,26 +89,24 @@ export const BusinessProfileScreen: React.FC<BusinessProfileScreenProps> = ({ na
             </View>
           )}
         </View>
-
         {/* Business Stats */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About This Business</Text>
+          <Text style={styles.sectionTitle}>Acerca de Este Negocio</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{new Date(business.createdAt).getFullYear()}</Text>
-              <Text style={styles.statLabel}>Joined</Text>
+              <Text style={styles.statLabel}>Se Unió</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statValue}>{business.isActive ? "Active" : "Inactive"}</Text>
-              <Text style={styles.statLabel}>Status</Text>
+              <Text style={styles.statValue}>{business.isActive ? "Activo" : "Inactivo"}</Text>
+              <Text style={styles.statLabel}>Estado</Text>
             </View>
           </View>
         </View>
-
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           <Button
-            title="View All Loyalty Cards"
+            title="Ver Todas las Tarjetas de Lealtad"
             onPress={() => {
               // TODO: Navigate to business loyalty cards
               console.log("Navigate to business loyalty cards");

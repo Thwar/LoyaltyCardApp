@@ -33,20 +33,17 @@ export const FirebaseTestComponent: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Firebase Connection Test</Text>
-
+      <Text style={styles.title}>Prueba de Conexión Firebase</Text>
       <View style={styles.section}>
-        <Text style={styles.label}>Current User:</Text>
-        <Text style={styles.value}>{user ? user.email : "Not logged in"}</Text>
+        <Text style={styles.label}>Usuario Actual:</Text>
+        <Text style={styles.value}>{user ? user.email : "No ha iniciado sesión"}</Text>
       </View>
-
       <TouchableOpacity style={[styles.button, loading && styles.buttonDisabled]} onPress={runTest} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? "Testing..." : "Test Firebase Connection"}</Text>
+        <Text style={styles.buttonText}>{loading ? "Probando..." : "Probar Conexión Firebase"}</Text>
       </TouchableOpacity>
-
       {testResult && (
         <View style={[styles.result, testResult.success ? styles.success : styles.error]}>
-          <Text style={styles.resultTitle}>{testResult.success ? "✅ Success" : "❌ Error"}</Text>
+          <Text style={styles.resultTitle}>{testResult.success ? "✅ Éxito" : "❌ Error"}</Text>
           <Text style={styles.resultMessage}>{testResult.message}</Text>
           {testResult.error && (
             <ScrollView style={styles.errorDetails}>

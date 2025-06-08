@@ -25,34 +25,33 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.gradient}>
+        {" "}
         <View style={styles.content}>
           {/* Hero Section */}
           <View style={styles.heroSection}>
-            <Text style={styles.title}>LoyaltyCard</Text>
-            <Text style={styles.subtitle}>Your digital wallet for loyalty cards</Text>
-            <Text style={styles.description}>Collect stamps, earn rewards, and never lose your loyalty cards again. Perfect for customers and businesses alike.</Text>
+            <Text style={styles.title}>TarjetaLealtad</Text>
+            <Text style={styles.subtitle}>Tu billetera digital para tarjetas de lealtad</Text>
+            <Text style={styles.description}>Colecta sellos, gana recompensas y nunca pierdas tus tarjetas de lealtad nuevamente. Perfecto tanto para clientes como para negocios.</Text>
           </View>
-
           {/* Features */}
           <View style={styles.featuresSection}>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>📱</Text>
-              <Text style={styles.featureText}>Digital Cards</Text>
+              <Text style={styles.featureText}>Tarjetas Digitales</Text>
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>🎁</Text>
-              <Text style={styles.featureText}>Instant Rewards</Text>
+              <Text style={styles.featureText}>Recompensas Inmediatas</Text>
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>📊</Text>
-              <Text style={styles.featureText}>Track Progress</Text>
+              <Text style={styles.featureText}>Seguir Progreso</Text>{" "}
             </View>
           </View>
-
           {/* Action Buttons */}
           <View style={styles.buttonSection}>
-            <Button title="Get Started" onPress={navigateToRegister} size="large" style={styles.primaryButton} />
-            <Button title="I Already Have an Account" onPress={navigateToLogin} variant="outline" size="large" style={styles.secondaryButton} />
+            <Button title="Comenzar" onPress={navigateToRegister} size="large" style={styles.primaryButton} textStyle={styles.primaryButtonText} />
+            <Button title="Ya Tengo una Cuenta" onPress={navigateToLogin} variant="outline" size="large" style={styles.secondaryButton} textStyle={styles.secondaryButtonText} />
           </View>
         </View>
       </LinearGradient>
@@ -126,7 +125,14 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: COLORS.white,
   },
+  primaryButtonText: {
+    color: COLORS.primary,
+  },
   secondaryButton: {
     borderColor: COLORS.white,
+    backgroundColor: "transparent",
+  },
+  secondaryButtonText: {
+    color: COLORS.white,
   },
 });

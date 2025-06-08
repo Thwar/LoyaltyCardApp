@@ -74,8 +74,8 @@ const CustomerNavigator = () => {
         },
       })}
     >
-      <CustomerTab.Screen name="Home" component={CustomerHomeScreen} options={{ title: "My Cards" }} />
-      <CustomerTab.Screen name="Profile" component={BusinessProfileScreen} options={{ title: "Profile" }} />
+      <CustomerTab.Screen name="Home" component={CustomerHomeScreen} options={{ title: "Mis Tarjetas" }} />
+      <CustomerTab.Screen name="Profile" component={BusinessProfileScreen} options={{ title: "Perfil" }} />
     </CustomerTab.Navigator>
   );
 };
@@ -86,14 +86,13 @@ const BusinessNavigator = () => {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
-
           if (route.name === "Dashboard") {
             iconName = focused ? "analytics" : "analytics-outline";
-          } else if (route.name === "Cards") {
+          } else if (route.name === "MyProgram") {
             iconName = focused ? "card" : "card-outline";
           } else if (route.name === "Customers") {
             iconName = focused ? "people" : "people-outline";
-          } else if (route.name === "Settings") {
+          } else if (route.name === "Profile") {
             iconName = focused ? "settings" : "settings-outline";
           } else {
             iconName = "analytics-outline";
@@ -116,10 +115,10 @@ const BusinessNavigator = () => {
         },
       })}
     >
-      <BusinessTab.Screen name="Dashboard" component={BusinessDashboardScreen} options={{ title: "Dashboard" }} />
-      <BusinessTab.Screen name="Cards" component={CreateLoyaltyCardScreen} options={{ title: "Loyalty Cards" }} />
-      <BusinessTab.Screen name="Customers" component={CustomerManagementScreen} options={{ title: "Customers" }} />
-      <BusinessTab.Screen name="Settings" component={BusinessSettingsScreen} options={{ title: "Settings" }} />
+      <BusinessTab.Screen name="Dashboard" component={BusinessDashboardScreen} options={{ title: "Resumen" }} />
+      <BusinessTab.Screen name="MyProgram" component={CreateLoyaltyCardScreen} options={{ title: "Mi Programa" }} />
+      <BusinessTab.Screen name="Customers" component={CustomerManagementScreen} options={{ title: "Clientes" }} />
+      <BusinessTab.Screen name="Profile" component={BusinessSettingsScreen} options={{ title: "Perfil" }} />
     </BusinessTab.Navigator>
   );
 };
@@ -142,9 +141,9 @@ const CustomerStackNavigator = () => {
       }}
     >
       <CustomerStack.Screen name="CustomerTabs" component={CustomerNavigator} options={{ headerShown: false }} />
-      <CustomerStack.Screen name="CardDetails" component={CustomerCardDetailsScreen} options={{ title: "Card Details" }} />
-      <CustomerStack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ title: "Business Profile" }} />
-      <CustomerStack.Screen name="ClaimReward" component={ClaimRewardScreen} options={{ title: "Claim Reward" }} />
+      <CustomerStack.Screen name="CardDetails" component={CustomerCardDetailsScreen} options={{ title: "Detalles de Tarjeta" }} />
+      <CustomerStack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ title: "Perfil del Negocio" }} />
+      <CustomerStack.Screen name="ClaimReward" component={ClaimRewardScreen} options={{ title: "Reclamar Recompensa" }} />
     </CustomerStack.Navigator>
   );
 };
@@ -163,9 +162,9 @@ const BusinessStackNavigator = () => {
       }}
     >
       <BusinessStack.Screen name="BusinessTabs" component={BusinessNavigator} options={{ headerShown: false }} />
-      <BusinessStack.Screen name="CreateLoyaltyCard" component={CreateLoyaltyCardScreen} options={{ title: "Create Loyalty Card" }} />
-      <BusinessStack.Screen name="EditLoyaltyCard" component={EditLoyaltyCardScreen} options={{ title: "Edit Loyalty Card" }} />
-      <BusinessStack.Screen name="AddStamp" component={AddStampScreen} options={{ title: "Add Stamp" }} />
+      <BusinessStack.Screen name="CreateLoyaltyCard" component={CreateLoyaltyCardScreen} options={{ title: "Crear Tarjeta de Lealtad" }} />
+      <BusinessStack.Screen name="EditCard" component={EditLoyaltyCardScreen} options={{ title: "Editar Tarjeta de Lealtad" }} />
+      <BusinessStack.Screen name="AddStamp" component={AddStampScreen} options={{ title: "Agregar Sello" }} />
     </BusinessStack.Navigator>
   );
 };

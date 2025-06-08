@@ -25,22 +25,21 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-
     if (!formData.businessName.trim()) {
-      newErrors.businessName = "Business name is required";
+      newErrors.businessName = "El nombre del negocio es requerido";
     }
 
     const slotsNum = parseInt(formData.totalSlots);
     if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 1 || slotsNum > 20) {
-      newErrors.totalSlots = "Slots must be between 1 and 20";
+      newErrors.totalSlots = "Los sellos deben estar entre 1 y 20";
     }
 
     if (!formData.rewardDescription.trim()) {
-      newErrors.rewardDescription = "Reward description is required";
+      newErrors.rewardDescription = "La descripción de la recompensa es requerida";
     }
 
     if (!formData.stampDescription.trim()) {
-      newErrors.stampDescription = "Stamp description is required";
+      newErrors.stampDescription = "La descripción del sello es requerida";
     }
 
     setErrors(newErrors);
@@ -61,10 +60,9 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
         isActive: true,
       };
       await LoyaltyCardService.createLoyaltyCard(cardData);
-
       showAlert({
-        title: "Success!",
-        message: "Your loyalty card has been created successfully.",
+        title: "¡Éxito!",
+        message: "Tu tarjeta de lealtad ha sido creada exitosamente.",
         buttons: [
           {
             text: "OK",
@@ -75,7 +73,7 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
     } catch (error) {
       showAlert({
         title: "Error",
-        message: error instanceof Error ? error.message : "Failed to create loyalty card",
+        message: error instanceof Error ? error.message : "Error al crear la tarjeta de lealtad",
       });
     } finally {
       setLoading(false);
@@ -95,45 +93,44 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Create Loyalty Card</Text>
-            <Text style={styles.subtitle}>Set up a new loyalty program for your customers</Text>
+            <Text style={styles.title}>Crear Tarjeta de Lealtad</Text>
+            <Text style={styles.subtitle}>Configura un nuevo programa de lealtad para tus clientes</Text>
           </View>
-
           <View style={styles.form}>
             <InputField
-              label="Business Name"
+              label="Nombre del Negocio"
               value={formData.businessName}
               onChangeText={(value) => updateFormData("businessName", value)}
-              placeholder="Enter your business name"
+              placeholder="Ingresa el nombre de tu negocio"
               leftIcon="business"
               error={errors.businessName}
             />
 
             <InputField
-              label="Number of Stamps Required"
+              label="Número de Sellos Requeridos"
               value={formData.totalSlots}
               onChangeText={(value) => updateFormData("totalSlots", value)}
-              placeholder="e.g., 10"
+              placeholder="ej., 10"
               keyboardType="numeric"
               leftIcon="star"
               error={errors.totalSlots}
             />
 
             <InputField
-              label="How to Earn a Stamp"
+              label="Cómo Ganar un Sello"
               value={formData.stampDescription}
               onChangeText={(value) => updateFormData("stampDescription", value)}
-              placeholder="e.g., Buy any coffee or Purchase $10 or more"
+              placeholder="ej., Comprar cualquier café o Comprar $10 o más"
               leftIcon="checkmark-circle"
               error={errors.stampDescription}
               multiline
             />
 
             <InputField
-              label="Reward Description"
+              label="Descripción de la Recompensa"
               value={formData.rewardDescription}
               onChangeText={(value) => updateFormData("rewardDescription", value)}
-              placeholder="e.g., Free coffee or 20% off next purchase"
+              placeholder="ej., Café gratis o 20% de descuento en la próxima compra"
               leftIcon="gift"
               error={errors.rewardDescription}
               multiline
@@ -141,16 +138,16 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
 
             {/* Preview Section */}
             <View style={styles.previewContainer}>
-              <Text style={styles.previewTitle}>Preview</Text>
+              <Text style={styles.previewTitle}>Vista Previa</Text>
               <View style={styles.previewCard}>
-                <Text style={styles.previewBusinessName}>{formData.businessName || "Your Business Name"}</Text>
-                <Text style={styles.previewStamps}>0 / {formData.totalSlots || "10"} stamps</Text>
-                <Text style={styles.previewStampDesc}>{formData.stampDescription || "How to earn stamps"}</Text>
-                <Text style={styles.previewReward}>Reward: {formData.rewardDescription || "Your reward description"}</Text>
+                <Text style={styles.previewBusinessName}>{formData.businessName || "Nombre de Tu Negocio"}</Text>
+                <Text style={styles.previewStamps}>0 / {formData.totalSlots || "10"} sellos</Text>
+                <Text style={styles.previewStampDesc}>{formData.stampDescription || "Cómo ganar sellos"}</Text>
+                <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
               </View>
             </View>
 
-            <Button title="Create Loyalty Card" onPress={handleCreateCard} loading={loading} size="large" style={styles.createButton} />
+            <Button title="Crear Tarjeta de Lealtad" onPress={handleCreateCard} loading={loading} size="large" style={styles.createButton} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

@@ -18,10 +18,9 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
   const [customerEmail, setCustomerEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const handleAddStamp = async () => {
     if (!customerEmail.trim()) {
-      setError("Please enter customer email");
+      setError("Por favor ingrese el email del cliente");
       return;
     }
     setLoading(true);
@@ -29,15 +28,15 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
       // For now, we'll simulate adding a stamp
       // In a real app, you'd look up the customer by email first
       showAlert({
-        title: "Stamp Added!",
-        message: "Customer stamp has been added successfully.",
+        title: "¡Sello Agregado!",
+        message: "El sello del cliente ha sido agregado exitosamente.",
         buttons: [
           {
-            text: "Add Another",
+            text: "Agregar Otro",
             onPress: () => setCustomerEmail(""),
           },
           {
-            text: "Done",
+            text: "Listo",
             onPress: () => navigation.goBack(),
           },
         ],
@@ -45,7 +44,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
     } catch (err) {
       showAlert({
         title: "Error",
-        message: err instanceof Error ? err.message : "Failed to add stamp",
+        message: err instanceof Error ? err.message : "Error al agregar sello",
       });
     } finally {
       setLoading(false);
@@ -56,51 +55,49 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Add Stamp</Text>
-          <Text style={styles.subtitle}>Add a stamp to a customer's loyalty card</Text>
+          <Text style={styles.title}>Agregar Sello</Text>
+          <Text style={styles.subtitle}>Agrega un sello a la tarjeta de lealtad de un cliente</Text>
         </View>
 
         <View style={styles.form}>
           <InputField
-            label="Customer Email"
+            label="Email del Cliente"
             value={customerEmail}
             onChangeText={setCustomerEmail}
-            placeholder="Enter customer's email address"
+            placeholder="Ingrese el email del cliente"
             keyboardType="email-address"
             autoCapitalize="none"
             leftIcon="mail"
             error={error}
           />
-
           <View style={styles.instructionsContainer}>
-            <Text style={styles.instructionsTitle}>Instructions:</Text>
+            <Text style={styles.instructionsTitle}>Instrucciones:</Text>
             <Text style={styles.instructionsText}>
-              1. Ask the customer for their email address{"\n"}
-              2. Enter it above and tap "Add Stamp"{"\n"}
-              3. The customer will see the new stamp on their card
+              1. Solicita al cliente su dirección de email{"\n"}
+              2. Ingrésala arriba y presiona "Agregar Sello"{"\n"}
+              3. El cliente verá el nuevo sello en su tarjeta
             </Text>
           </View>
-
-          <Button title="Add Stamp" onPress={handleAddStamp} loading={loading} size="large" style={styles.addButton} />
+          <Button title="Agregar Sello" onPress={handleAddStamp} loading={loading} size="large" style={styles.addButton} />
         </View>
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <Text style={styles.quickActionsTitle}>Quick Actions</Text>{" "}
+          <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>
           <Button
-            title="Scan QR Code"
+            title="Escanear Código QR"
             onPress={() => {
               // TODO: Implement QR code scanning
               showAlert({
-                title: "Coming Soon",
-                message: "QR code scanning will be available in a future update",
+                title: "Próximamente",
+                message: "El escaneo de códigos QR estará disponible en una futura actualización",
               });
             }}
             variant="outline"
             size="large"
             style={styles.quickActionButton}
           />
-          <Button title="View Recent Customers" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.quickActionButton} />
+          <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.quickActionButton} />
         </View>
       </View>
     </SafeAreaView>
