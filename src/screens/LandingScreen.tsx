@@ -25,7 +25,6 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.gradient}>
-        {" "}
         <View style={styles.content}>
           {/* Hero Section */}
           <View style={styles.heroSection}>
@@ -45,7 +44,7 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ navigation }) => {
             </View>
             <View style={styles.feature}>
               <Text style={styles.featureIcon}>📊</Text>
-              <Text style={styles.featureText}>Seguir Progreso</Text>{" "}
+              <Text style={styles.featureText}>Seguir Progreso</Text>
             </View>
           </View>
           {/* Action Buttons */}

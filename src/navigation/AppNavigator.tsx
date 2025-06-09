@@ -14,7 +14,7 @@ import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { CustomerHomeScreen } from "../screens/customer/CustomerHomeScreen";
 import { CustomerCardDetailsScreen } from "../screens/customer/CustomerCardDetailsScreen";
-import { BusinessProfileScreen } from "../screens/customer/BusinessProfileScreen";
+import { CustomerProfileScreen } from "../screens/customer/BusinessProfileScreen";
 import { ClaimRewardScreen } from "../screens/customer/ClaimRewardScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
 import { BusinessSettingsScreen } from "../screens/business/BusinessSettingsScreen";
@@ -75,7 +75,7 @@ const CustomerNavigator = () => {
       })}
     >
       <CustomerTab.Screen name="Home" component={CustomerHomeScreen} options={{ title: "Mis Tarjetas" }} />
-      <CustomerTab.Screen name="Profile" component={BusinessProfileScreen} options={{ title: "Perfil" }} />
+      <CustomerTab.Screen name="Profile" component={CustomerProfileScreen} options={{ title: "Perfil" }} />
     </CustomerTab.Navigator>
   );
 };
@@ -142,7 +142,7 @@ const CustomerStackNavigator = () => {
     >
       <CustomerStack.Screen name="CustomerTabs" component={CustomerNavigator} options={{ headerShown: false }} />
       <CustomerStack.Screen name="CardDetails" component={CustomerCardDetailsScreen} options={{ title: "Detalles de Tarjeta" }} />
-      <CustomerStack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ title: "Perfil del Negocio" }} />
+      <CustomerStack.Screen name="BusinessProfile" component={CustomerProfileScreen} options={{ title: "Perfil del Negocio" }} />
       <CustomerStack.Screen name="ClaimReward" component={ClaimRewardScreen} options={{ title: "Reclamar Recompensa" }} />
     </CustomerStack.Navigator>
   );
