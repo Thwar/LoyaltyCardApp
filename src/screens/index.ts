@@ -1,18 +1,19 @@
 // Authentication Screens
-export { default as LandingScreen } from "./LandingScreen";
-export { default as LoginScreen } from "./LoginScreen";
-export { default as RegisterScreen } from "./RegisterScreen";
+export { LandingScreen } from "./LandingScreen";
+export { LoginScreen } from "./LoginScreen";
+export { RegisterScreen } from "./RegisterScreen";
 
 // Customer Screens
-export { default as CustomerHomeScreen } from "./customer/CustomerHomeScreen";
-export { default as CustomerCardDetailsScreen } from "./customer/CustomerCardDetailsScreen";
-export { default as BusinessProfileScreen } from "./customer/BusinessProfileScreen";
-export { default as ClaimRewardScreen } from "./customer/ClaimRewardScreen";
+export { CustomerHomeScreen } from "./customer/CustomerHomeScreen";
+export { CustomerCardDetailsScreen } from "./customer/CustomerCardDetailsScreen";
+export { CustomerProfileScreen as BusinessProfileScreen } from "./customer/BusinessProfileScreen";
+export { ClaimRewardScreen } from "./customer/ClaimRewardScreen";
 
 // Business Screens
-export { default as BusinessDashboardScreen } from "./business/BusinessDashboardScreen";
-export { default as CreateLoyaltyCardScreen } from "./business/CreateLoyaltyCardScreen";
-export { default as CustomerManagementScreen } from "./business/CustomerManagementScreen";
-export { default as AddStampScreen } from "./business/AddStampScreen";
-export { default as BusinessSettingsScreen } from "./business/BusinessSettingsScreen";
-export { default as EditLoyaltyCardScreen } from "./business/EditLoyaltyCardScreen";
+export { BusinessDashboardScreen } from "./business/BusinessDashboardScreen";
+export { CreateLoyaltyCardScreen } from "./business/CreateLoyaltyCardScreen";
+export { LoyaltyProgramScreen } from "./business/LoyaltyProgramScreen";
+export { CustomerManagementScreen } from "./business/CustomerManagementScreen";
+export { AddStampScreen } from "./business/AddStampScreen";
+export { BusinessSettingsScreen } from "./business/BusinessSettingsScreen";
+export { EditLoyaltyCardScreen } from "./business/EditLoyaltyCardScreen";

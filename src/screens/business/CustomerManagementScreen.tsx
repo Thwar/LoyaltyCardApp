@@ -50,7 +50,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
         </Text>
         <Text style={styles.customerDetail}>{customer.isRewardClaimed ? "Reward Claimed" : "Active"}</Text>
       </View>
-      <Button title="Agregar Sello" onPress={() => navigation.navigate("AddStamp", { customerCard: customer })} size="small" style={styles.addStampButton} />
+      <Button title="Agregar Sello" onPress={() => navigation.navigate("AddStamp", { customerCardId: customer.id })} size="small" style={styles.addStampButton} />
     </View>
   );
 
@@ -78,13 +78,13 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
           title="Aún No Hay Clientes"
           message="Los clientes aparecerán aquí una vez que comiencen a usar tus tarjetas de lealtad. ¡Comparte tu negocio con los clientes para comenzar!"
           actionText="Crear Tarjeta de Lealtad"
-          onAction={() => navigation.navigate("CreateLoyaltyCard")}
+          onAction={() => navigation.navigate("CreateCard")}
         />
       ) : (
         <FlatList data={customers} renderItem={({ item }) => <CustomerCard customer={item} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.customersList} />
       )}
       <View style={styles.actionContainer}>
-        <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp")} size="large" style={styles.actionButton} />
+        <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp", { customerCardId: "" })} size="large" style={styles.actionButton} />
       </View>
     </SafeAreaView>
   );

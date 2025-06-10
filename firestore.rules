@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Business owners can read/write their own businesses
+    match /businesses/{businessId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.ownerId);
+    }
+    
+    // Loyalty cards - business owners can manage their cards, customers can read
+    match /loyaltyCards/{cardId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.ownerId ||
+         (request.resource.data.keys().hasAll(['businessId']) &&
+          exists(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)) &&
+          get(/databases/$(database)/documents/businesses/$(request.resource.data.businessId)).data.ownerId == request.auth.uid));
+    }
+    
+    // Customer cards - customers can manage their own cards
+    match /customerCards/{cardId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        (resource == null || request.auth.uid == resource.data.customerId);
+    }
+    
+    // Stamps - business owners and customers can read/write
+    match /stamps/{stampId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Rewards - business owners and customers can read/write
+    match /rewards/{rewardId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

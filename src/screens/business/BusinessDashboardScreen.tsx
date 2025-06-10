@@ -51,7 +51,10 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
 
       if (userBusiness) {
         // Load loyalty cards for this business
-        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(userBusiness.id);
+        console.log("Loading loyalty cards for business:", userBusiness.id);
+
+        // user.id is the business ID for now
+        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(user.id);
 
         // Calculate stats
         let totalStamps = 0;
@@ -133,9 +136,9 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
 
-          <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => navigation.navigate("CreateLoyaltyCard")} size="large" style={styles.actionButton} />
+          <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => navigation.navigate("CreateCard")} size="large" style={styles.actionButton} />
 
-          <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp")} variant="outline" size="large" style={styles.actionButton} />
+          <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp", { customerCardId: "" })} variant="outline" size="large" style={styles.actionButton} />
 
           <Button title="Ver Todos los Clientes" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.actionButton} />
         </View>

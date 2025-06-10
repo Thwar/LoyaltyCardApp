@@ -6,11 +6,11 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Button, LoyaltyCard, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
-import { CustomerCard } from "../../types";
+import { CustomerCard, CustomerStackParamList } from "../../types";
 
 interface ClaimRewardScreenProps {
-  navigation: StackNavigationProp<any>;
-  route: RouteProp<any, any>;
+  navigation: StackNavigationProp<CustomerStackParamList, "ClaimReward">;
+  route: RouteProp<CustomerStackParamList, "ClaimReward">;
 }
 
 export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation, route }) => {
@@ -29,11 +29,8 @@ export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation
           {
             text: "Listo",
             onPress: () => {
-              // Navigate back to home and refresh
-              navigation.navigate("CustomerTabs", {
-                screen: "Home",
-                params: { refresh: true },
-              });
+              // Navigate back to home
+              navigation.navigate("CustomerTabs");
             },
           },
         ],
@@ -91,7 +88,7 @@ export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation
             </View>
           )}
 
-          <Button title="Volver a Mis Tarjetas" onPress={() => navigation.navigate("CustomerTabs", { screen: "Home" })} variant="outline" size="large" style={styles.backButton} />
+          <Button title="Volver a Mis Tarjetas" onPress={() => navigation.navigate("CustomerTabs")} variant="outline" size="large" style={styles.backButton} />
         </View>
       </View>
     </SafeAreaView>

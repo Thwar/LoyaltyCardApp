@@ -6,9 +6,10 @@ import { useAuth } from "../../context/AuthContext";
 import { Button, InputField, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
+import { BusinessStackParamList } from "../../types";
 
 interface CreateLoyaltyCardScreenProps {
-  navigation: StackNavigationProp<any>;
+  navigation: StackNavigationProp<BusinessStackParamList, "CreateCard">;
 }
 
 export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = ({ navigation }) => {

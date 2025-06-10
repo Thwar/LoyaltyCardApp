@@ -6,9 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../constants";
-import { AuthStackParamList, CustomerTabParamList, BusinessTabParamList } from "../types";
+import { AuthStackParamList, CustomerTabParamList, BusinessTabParamList, CustomerStackParamList, BusinessStackParamList } from "../types";
 
-// Import screens (we'll create these next)
 import { LandingScreen } from "../screens/LandingScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
@@ -19,6 +18,7 @@ import { ClaimRewardScreen } from "../screens/customer/ClaimRewardScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
 import { BusinessSettingsScreen } from "../screens/business/BusinessSettingsScreen";
 import { CreateLoyaltyCardScreen } from "../screens/business/CreateLoyaltyCardScreen";
+import { LoyaltyProgramScreen } from "../screens/business/LoyaltyProgramScreen";
 import { EditLoyaltyCardScreen } from "../screens/business/EditLoyaltyCardScreen";
 import { CustomerManagementScreen } from "../screens/business/CustomerManagementScreen";
 import { AddStampScreen } from "../screens/business/AddStampScreen";
@@ -116,7 +116,7 @@ const BusinessNavigator = () => {
       })}
     >
       <BusinessTab.Screen name="Dashboard" component={BusinessDashboardScreen} options={{ title: "Resumen" }} />
-      <BusinessTab.Screen name="MyProgram" component={CreateLoyaltyCardScreen} options={{ title: "Mi Programa" }} />
+      <BusinessTab.Screen name="MyProgram" component={LoyaltyProgramScreen} options={{ title: "Mi Programa" }} />
       <BusinessTab.Screen name="Customers" component={CustomerManagementScreen} options={{ title: "Clientes" }} />
       <BusinessTab.Screen name="Profile" component={BusinessSettingsScreen} options={{ title: "Perfil" }} />
     </BusinessTab.Navigator>
@@ -124,8 +124,8 @@ const BusinessNavigator = () => {
 };
 
 // Create stack navigators for detailed screens
-const CustomerStack = createStackNavigator();
-const BusinessStack = createStackNavigator();
+const CustomerStack = createStackNavigator<CustomerStackParamList>();
+const BusinessStack = createStackNavigator<BusinessStackParamList>();
 
 const CustomerStackNavigator = () => {
   return (
@@ -162,7 +162,7 @@ const BusinessStackNavigator = () => {
       }}
     >
       <BusinessStack.Screen name="BusinessTabs" component={BusinessNavigator} options={{ headerShown: false }} />
-      <BusinessStack.Screen name="CreateLoyaltyCard" component={CreateLoyaltyCardScreen} options={{ title: "Crear Tarjeta de Lealtad" }} />
+      <BusinessStack.Screen name="CreateCard" component={CreateLoyaltyCardScreen} options={{ title: "Crear Tarjeta de Lealtad" }} />
       <BusinessStack.Screen name="EditCard" component={EditLoyaltyCardScreen} options={{ title: "Editar Tarjeta de Lealtad" }} />
       <BusinessStack.Screen name="AddStamp" component={AddStampScreen} options={{ title: "Agregar Sello" }} />
     </BusinessStack.Navigator>

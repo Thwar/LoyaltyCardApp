@@ -360,10 +360,26 @@ export class BusinessService {
 export class LoyaltyCardService {
   static async createLoyaltyCard(cardData: Omit<LoyaltyCard, "id" | "createdAt">): Promise<LoyaltyCard> {
     try {
+      // Check if user is authenticated
+      if (!auth.currentUser) {
+        throw new Error("User must be authenticated to create a loyalty card");
+      }
+
+      console.log("Creating loyalty card with data:", cardData);
+      console.log("Current user:", auth.currentUser.uid, auth.currentUser.email);
+
+      // Filter out undefined values as Firestore doesn't accept them
+      const cleanData = Object.fromEntries(Object.entries(cardData).filter(([_, value]) => value !== undefined && value !== ""));
+
+      console.log("Cleaned loyalty card data:", cleanData);
+
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), {
-        ...cardData,
+        ...cleanData,
+        ownerId: auth.currentUser.uid, // Add the current user's ID as owner
         createdAt: Timestamp.now(),
       });
+
+      console.log("Loyalty card created successfully with ID:", docRef.id);
 
       return {
         id: docRef.id,
@@ -371,6 +387,22 @@ export class LoyaltyCardService {
         createdAt: new Date(),
       };
     } catch (error: any) {
+      console.error("Failed to create loyalty card:", error);
+
+      // Provide more specific error messages
+      if (error.code) {
+        switch (error.code) {
+          case "permission-denied":
+            throw new Error("Permission denied. Please check your authentication status or contact support.");
+          case "unauthenticated":
+            throw new Error("You must be logged in to create a loyalty card.");
+          case "invalid-argument":
+            throw new Error("Invalid data provided. Please check all required fields.");
+          default:
+            throw new Error(`Firestore error (${error.code}): ${error.message}`);
+        }
+      }
+
       throw new Error(error.message || "Failed to create loyalty card");
     }
   }

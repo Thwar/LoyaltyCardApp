@@ -6,14 +6,15 @@ import { RouteProp } from "@react-navigation/native";
 import { Button, InputField, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
+import { BusinessStackParamList } from "../../types";
 
 interface AddStampScreenProps {
-  navigation: StackNavigationProp<any>;
-  route: RouteProp<any, any>;
+  navigation: StackNavigationProp<BusinessStackParamList, "AddStamp">;
+  route: RouteProp<BusinessStackParamList, "AddStamp">;
 }
 
 export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, route }) => {
-  const customerCard = route.params?.customerCard;
+  const { customerCardId } = route.params;
   const { showAlert } = useAlert();
   const [customerEmail, setCustomerEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -97,7 +98,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
             size="large"
             style={styles.quickActionButton}
           />
-          <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.quickActionButton} />
+          <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
         </View>
       </View>
     </SafeAreaView>

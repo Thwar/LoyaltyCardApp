@@ -6,11 +6,11 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Button, LoyaltyCard, LoadingState, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
-import { CustomerCard } from "../../types";
+import { CustomerCard, CustomerStackParamList } from "../../types";
 
 interface CustomerCardDetailsScreenProps {
-  navigation: StackNavigationProp<any>;
-  route: RouteProp<any, any>;
+  navigation: StackNavigationProp<CustomerStackParamList, "CardDetails">;
+  route: RouteProp<CustomerStackParamList, "CardDetails">;
 }
 
 export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps> = ({ navigation, route }) => {
