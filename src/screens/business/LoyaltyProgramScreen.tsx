@@ -7,7 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState } from "../../components";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
-import { LoyaltyCardService } from "../../services/api";
+import { LoyaltyCardService, BusinessService } from "../../services/api";
 import { LoyaltyCard, BusinessTabParamList } from "../../types";
 
 interface LoyaltyProgramScreenProps {
@@ -20,7 +20,6 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const loadLoyaltyCards = async (isRefresh = false) => {
     if (!user) return;
 
@@ -32,7 +31,20 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
       }
       setError(null);
 
-      const cards = await LoyaltyCardService.getLoyaltyCardsByBusiness(user.id);
+      // Get or use business ID for the current user
+      let businessId = user.id; // Default fallback
+      
+      try {
+        const businesses = await BusinessService.getBusinessesByOwner(user.id);
+        if (businesses.length > 0) {
+          businessId = businesses[0].id; // Use the first business found
+        }
+      } catch (businessError) {
+        console.warn("Could not fetch business, using user ID as fallback:", businessError);
+        // Continue with user.id as businessId for backward compatibility
+      }
+
+      const cards = await LoyaltyCardService.getLoyaltyCardsByBusiness(businessId);
       setLoyaltyCards(cards);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load loyalty cards");
@@ -74,8 +86,7 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
       </View>
-
-      <View style={styles.cardDetails}>
+        <View style={styles.cardDetails}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>🎯 Recompensa:</Text>
           <Text style={styles.detailText} numberOfLines={2}>

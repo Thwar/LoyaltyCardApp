@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState } from "../../components";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
-import { CustomerCardService } from "../../services/api";
+import { CustomerCardService, BusinessService, LoyaltyCardService } from "../../services/api";
 import { CustomerCard } from "../../types";
 
 interface CustomerManagementScreenProps {
@@ -21,7 +21,6 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
   useEffect(() => {
     loadCustomers();
   }, []);
-
   const loadCustomers = async () => {
     if (!user) return;
 
@@ -29,28 +28,67 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
       setLoading(true);
       setError(null);
 
-      // Get all customer cards for this business
-      // Note: This would need to be implemented in the API service
-      // For now, we'll show a placeholder
-      const customerCards: CustomerCard[] = [];
-      setCustomers(customerCards);
+      console.log("Loading customers for business owner:", user.id);
+
+      // Get the business for the current user
+      const businesses = await BusinessService.getBusinessesByOwner(user.id);
+      console.log("Found businesses:", businesses.length);
+
+      if (businesses.length === 0) {
+        console.log("No businesses found for user");
+        setCustomers([]);
+        return;
+      }
+
+      const business = businesses[0]; // Use the first business
+      console.log("Using business:", business.name, business.id);
+
+      // Get all loyalty cards for this business
+      const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(business.id);
+      console.log("Found loyalty cards:", loyaltyCards.length);
+
+      // Get all customer cards for all loyalty cards of this business
+      const allCustomerCards: CustomerCard[] = [];
+      
+      for (const loyaltyCard of loyaltyCards) {
+        console.log("Getting customer cards for loyalty card:", loyaltyCard.id);
+        const customerCards = await CustomerCardService.getCustomerCardsByLoyaltyCard(loyaltyCard.id);
+        console.log("Found customer cards:", customerCards.length);
+        allCustomerCards.push(...customerCards);
+      }
+
+      console.log("Total customer cards found:", allCustomerCards.length);
+      setCustomers(allCustomerCards);
     } catch (err) {
+      console.error("Error loading customers:", err);
       setError(err instanceof Error ? err.message : "Failed to load customers");
     } finally {
       setLoading(false);
     }
-  };
-
-  const CustomerCard: React.FC<{ customer: CustomerCard }> = ({ customer }) => (
+  };  const CustomerCard: React.FC<{ customer: CustomerCard }> = ({ customer }) => (
     <View style={styles.customerCard}>
       <View style={styles.customerInfo}>
-        <Text style={styles.customerName}>Customer #{customer.id.slice(-6)}</Text>
-        <Text style={styles.customerDetail}>
-          {customer.currentStamps} / {customer.loyaltyCard?.totalSlots} stamps
+        <Text style={styles.customerName}>
+          {customer.customerName || `Cliente #${customer.cardCode || customer.id.slice(-6)}`}
         </Text>
-        <Text style={styles.customerDetail}>{customer.isRewardClaimed ? "Reward Claimed" : "Active"}</Text>
+        {customer.cardCode && (
+          <Text style={styles.customerDetail}>
+            Código: {customer.cardCode}
+          </Text>
+        )}
+        <Text style={styles.customerDetail}>
+          {customer.currentStamps} / {customer.loyaltyCard?.totalSlots || 0} sellos
+        </Text>
+        <Text style={[styles.customerDetail, customer.isRewardClaimed ? styles.rewardClaimed : styles.active]}>
+          {customer.isRewardClaimed ? "🎁 Recompensa reclamada" : "✅ Activo"}
+        </Text>
       </View>
-      <Button title="Agregar Sello" onPress={() => navigation.navigate("AddStamp", { customerCardId: customer.id })} size="small" style={styles.addStampButton} />
+      <Button 
+        title="Agregar Sello" 
+        onPress={() => navigation.navigate("AddStamp", { customerCardId: customer.id })} 
+        size="small" 
+        style={styles.addStampButton} 
+      />
     </View>
   );
 
@@ -133,11 +171,18 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.textPrimary,
     marginBottom: 4,
-  },
-  customerDetail: {
+  },  customerDetail: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginBottom: 2,
+  },
+  active: {
+    color: COLORS.success,
+    fontWeight: "500",
+  },
+  rewardClaimed: {
+    color: COLORS.primary,
+    fontWeight: "500",
   },
   addStampButton: {
     minWidth: 100,

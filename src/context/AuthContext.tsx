@@ -9,7 +9,7 @@ interface AuthContextType {
   authUser: AuthUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, displayName: string, userType: "customer" | "business") => Promise<void>;
+  register: (email: string, password: string, displayName: string, userType: "customer" | "business") => Promise<User>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
 }
@@ -74,12 +74,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     }
   };
-
-  const register = async (email: string, password: string, displayName: string, userType: "customer" | "business"): Promise<void> => {
+  const register = async (email: string, password: string, displayName: string, userType: "customer" | "business"): Promise<User> => {
     try {
       setLoading(true);
       const userData = await AuthService.register(email, password, displayName, userType);
       setUser(userData);
+      return userData;
     } catch (error) {
       throw error;
     } finally {

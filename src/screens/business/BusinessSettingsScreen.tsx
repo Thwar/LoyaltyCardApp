@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, useAlert } from "../../components";
+import { Button, InputField, LoadingState, useAlert, Dropdown, ImagePicker } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { BusinessService } from "../../services/api";
+import { ImageUploadService } from "../../services/imageUpload";
 import { Business } from "../../types";
 
 interface BusinessSettingsScreenProps {
@@ -16,12 +17,30 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   const { user, logout } = useAuth();
   const { showAlert } = useAlert();
   const [business, setBusiness] = useState<Business | null>(null);
+  
+  // Bolivian cities dropdown options
+  const bolivianCities = [
+    { label: "La Paz", value: "la_paz" },
+    { label: "Santa Cruz de la Sierra", value: "santa_cruz" },
+    { label: "Cochabamba", value: "cochabamba" },
+    { label: "Sucre", value: "sucre" },
+    { label: "Oruro", value: "oruro" },
+    { label: "Potosí", value: "potosi" },
+    { label: "Tarija", value: "tarija" },
+    { label: "Trinidad", value: "trinidad" },
+    { label: "Cobija", value: "cobija" },
+  ];
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
     address: "",
     phone: "",
-    email: "",
+    city: "",
+    logoUrl: "",
+    instagram: "",
+    facebook: "",
+    tiktok: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -37,16 +56,18 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
     try {
       setLoading(true);
       const businesses = await BusinessService.getBusinessesByOwner(user.id);
-      const userBusiness = businesses[0];
-
-      if (userBusiness) {
+      const userBusiness = businesses[0];      if (userBusiness) {
         setBusiness(userBusiness);
         setFormData({
           name: userBusiness.name,
           description: userBusiness.description,
           address: userBusiness.address || "",
           phone: userBusiness.phone || "",
-          email: userBusiness.email || "",
+          city: userBusiness.city || "",
+          logoUrl: userBusiness.logoUrl || "",
+          instagram: userBusiness.instagram || "",
+          facebook: userBusiness.facebook || "",
+          tiktok: userBusiness.tiktok || "",
         });
       } else {
         // No business exists, prepare for creation
@@ -55,7 +76,11 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
           description: "",
           address: "",
           phone: "",
-          email: user.email,
+          city: "",
+          logoUrl: "",
+          instagram: "",
+          facebook: "",
+          tiktok: "",
         });
       }
     } catch (error) {
@@ -64,7 +89,6 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       setLoading(false);
     }
   };
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.name.trim()) {
@@ -75,34 +99,70 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       newErrors.description = "La descripción es requerida";
     }
 
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Por favor ingrese un email válido";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-  const handleSave = async () => {
+  };  const handleSave = async () => {
     if (!validateForm() || !user) return;
 
     setSaving(true);
     try {
+      let logoUrl = formData.logoUrl;      // If a new image was selected (local URI), upload it
+      if (formData.logoUrl && !formData.logoUrl.startsWith('http')) {
+        try {
+          // Create a temporary business ID for new businesses
+          const businessId = business?.id || `temp_${user.id}_${Date.now()}`;
+          logoUrl = await ImageUploadService.uploadBusinessLogo(formData.logoUrl, businessId);        } catch (uploadError) {
+          console.error("Error uploading logo:", uploadError);
+          
+          // Check if it's a CORS error
+          const errorMessage = uploadError instanceof Error ? uploadError.message : String(uploadError);
+          if (errorMessage.includes('CORS') || errorMessage.includes('Access-Control')) {
+            showAlert({
+              title: "Error de Configuración",
+              message: "Error de CORS en Firebase Storage. Por favor consulta FIREBASE_CORS_SETUP.md para configurar CORS. Usando imagen temporal.",
+            });
+            
+            // For development, allow using the data URL directly (not recommended for production)
+            if (formData.logoUrl.startsWith('data:')) {
+              logoUrl = formData.logoUrl;
+            } else {
+              logoUrl = "";
+            }
+          } else {
+            showAlert({
+              title: "Error de Subida",
+              message: "No se pudo subir el logo. El negocio se guardará sin logo.",
+            });
+            logoUrl = ""; // Save without logo if upload fails
+          }
+        }
+      }
+
       const businessData = {
         name: formData.name,
         description: formData.description,
         ownerId: user.id,
         address: formData.address || undefined,
         phone: formData.phone || undefined,
-        email: formData.email || undefined,
+        city: formData.city || undefined,
+        logoUrl: logoUrl || undefined,
+        instagram: formData.instagram || undefined,
+        facebook: formData.facebook || undefined,
+        tiktok: formData.tiktok || undefined,
         isActive: true,
       };
 
       console.log("Saving business data:", businessData);
       console.log("Business exists:", !!business);
       console.log("Business ID:", business?.id);
+      
       if (business) {
         // Update existing business
         await BusinessService.updateBusiness(business.id, businessData);
+        
+        // Update the form data with the uploaded logo URL
+        setFormData(prev => ({ ...prev, logoUrl: logoUrl }));
+        
         showAlert({
           title: "Éxito",
           message: "Perfil del negocio actualizado exitosamente",
@@ -111,6 +171,10 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
         // Create new business
         const newBusiness = await BusinessService.createBusiness(businessData);
         setBusiness(newBusiness);
+        
+        // Update the form data with the uploaded logo URL
+        setFormData(prev => ({ ...prev, logoUrl: logoUrl }));
+        
         showAlert({
           title: "Éxito",
           message: "Perfil del negocio creado exitosamente",
@@ -156,13 +220,19 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
-        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
-          <View style={styles.header}>
+        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">          <View style={styles.header}>
             <Text style={styles.title}>Configuraciones del Negocio</Text>
             <Text style={styles.subtitle}>{business ? "Actualiza la información de tu negocio" : "Configura el perfil de tu negocio"}</Text>
           </View>
-
-          <View style={styles.form}>
+        <View style={styles.form}>
+            <ImagePicker
+              label="Logo del Negocio"
+              value={formData.logoUrl}
+              onImageSelect={(uri) => updateFormData("logoUrl", uri)}
+              placeholder="Selecciona el logo de tu negocio"
+              error={errors.logoUrl}
+              uploading={saving}
+            />
             <InputField
               label="Nombre del Negocio"
               value={formData.name}
@@ -179,6 +249,14 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
               leftIcon="document-text"
               error={errors.description}
               multiline
+            />
+            <Dropdown
+              label="Ciudad"
+              value={formData.city}
+              options={bolivianCities}
+              onSelect={(value) => updateFormData("city", value)}
+              placeholder="Selecciona tu ciudad"
+              error={errors.city}
             />
             <InputField
               label="Dirección (Opcional)"
@@ -198,17 +276,35 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
               leftIcon="call"
               error={errors.phone}
             />
-            <InputField
-              label="Email (Opcional)"
-              value={formData.email}
-              onChangeText={(value) => updateFormData("email", value)}
-              placeholder="Ingresa el email de tu negocio"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              leftIcon="mail"
-              error={errors.email}
-            />
-            <Button title={business ? "Actualizar Perfil" : "Crear Perfil"} onPress={handleSave} loading={saving || reloading} size="large" style={styles.saveButton} />
+            
+            {/* Social Media Section */}
+            <View style={styles.socialSection}>
+              <Text style={styles.socialTitle}>Redes Sociales (Opcional)</Text>
+              <InputField
+                label="Instagram"
+                value={formData.instagram}
+                onChangeText={(value) => updateFormData("instagram", value)}
+                placeholder="@tu_usuario_instagram"
+                leftIcon="logo-instagram"
+                error={errors.instagram}
+              />
+              <InputField
+                label="Facebook"
+                value={formData.facebook}
+                onChangeText={(value) => updateFormData("facebook", value)}
+                placeholder="tu.pagina.facebook"
+                leftIcon="logo-facebook"
+                error={errors.facebook}
+              />
+              <InputField
+                label="TikTok"
+                value={formData.tiktok}
+                onChangeText={(value) => updateFormData("tiktok", value)}
+                placeholder="@tu_usuario_tiktok"
+                leftIcon="logo-tiktok"
+                error={errors.tiktok}
+              />            </View>
+            <Button title={business ? "Actualizar Perfil" : "Crear Perfil"} onPress={handleSave} loading={saving} size="large" style={styles.saveButton} />
           </View>
 
           {/* Account Section */}
@@ -253,9 +349,20 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-  },
-  form: {
+  },  form: {
     padding: SPACING.lg,
+  },
+  socialSection: {
+    marginTop: SPACING.lg,
+    paddingTop: SPACING.lg,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.inputBorder,
+  },
+  socialTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.md,
   },
   saveButton: {
     marginTop: SPACING.lg,

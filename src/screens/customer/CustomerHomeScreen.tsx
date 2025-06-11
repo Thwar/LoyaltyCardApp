@@ -4,7 +4,7 @@ import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
-import { LoyaltyCard, LoadingState, EmptyState } from "../../components";
+import { AnimatedLoyaltyCard, LoadingState, EmptyState } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
 import { CustomerCard, LoyaltyCard as LoyaltyCardType } from "../../types";
@@ -54,8 +54,22 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   const handleRetry = () => {
     loadCards();
   };
-
-  const renderCard = ({ item }: { item: CustomerCard }) => <LoyaltyCard card={item.loyaltyCard!} currentStamps={item.currentStamps} onPress={() => handleCardPress(item)} />;
+  const renderCard = ({ item, index }: { item: CustomerCard; index: number }) => {
+    // Cycle through different stamp shapes for visual variety
+    const stampShapes: ('circle' | 'square' | 'egg')[] = ['circle', 'square', 'egg'];
+    const stampShape = stampShapes[index % stampShapes.length];
+    
+    return (
+      <AnimatedLoyaltyCard 
+        card={item.loyaltyCard!} 
+        currentStamps={item.currentStamps} 
+        onPress={() => handleCardPress(item)}
+        cardCode={item.cardCode}
+        showAnimation={true}
+        stampShape={stampShape}
+      />
+    );
+  };
 
   if (loading && !refreshing) {
     return <LoadingState loading={true} />;
@@ -65,9 +79,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
     return <LoadingState error={error} onRetry={handleRetry} />;
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      
+  return (    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.welcomeText}>Bienvenido de vuelta,</Text>
         <Text style={styles.nameText}>{user?.displayName}</Text>
@@ -77,10 +89,8 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
           icon="card"
           title="Aún No Tienes Tarjetas de Lealtad"
           message="Comienza a coleccionar tarjetas de lealtad de tus negocios favoritos para seguir tus recompensas y obtener beneficios."
-          actionText="Buscar Negocios"
-          onAction={() => {
-            // TODO: Navigate to business discovery screen
-            console.log("Navigate to business discovery");
+          actionText="Buscar Negocios"          onAction={() => {
+            navigation.navigate("BusinessDiscovery");
           }}
         />
       ) : (

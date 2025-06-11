@@ -7,6 +7,7 @@ import { Button, InputField, useAlert } from "../components";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { AuthStackParamList } from "../types";
 import { testFirebaseConnection } from "../utils/firebaseTest";
+import { BusinessService } from "../services/api";
 
 type RegisterScreenNavigationProp = StackNavigationProp<AuthStackParamList, "Register">;
 
@@ -26,11 +27,10 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     if (!formData.displayName.trim()) {
-      newErrors.displayName = "El nombre es requerido";
+      newErrors.displayName = formData.userType === "business" ? "El nombre del negocio es requerido" : "El nombre es requerido";
     }
 
     if (!formData.email.trim()) {
@@ -51,8 +51,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-  const handleRegister = async () => {
+  };  const handleRegister = async () => {
     if (!validateForm()) return; // Test Firebase connection first
     const isFirebaseConnected = testFirebaseConnection();
     if (!isFirebaseConnected) {
@@ -65,13 +64,32 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
     setLoading(true);
     try {
-      await register(formData.email, formData.password, formData.displayName, formData.userType);
+      const userData = await register(formData.email, formData.password, formData.displayName, formData.userType);
+      
+      // If registering as business, create the business profile automatically
+      if (formData.userType === "business") {
+        try {
+          await BusinessService.createBusiness({
+            name: formData.displayName,
+            description: "",
+            ownerId: userData.id,
+            isActive: true,
+          });
+        } catch (businessError) {
+          console.error("Error creating business profile:", businessError);
+          showAlert({
+            title: "Advertencia",
+            message: "Tu cuenta fue creada exitosamente, pero hubo un problema al crear el perfil del negocio. Puedes completarlo más tarde en la configuración.",
+          });
+        }
+      }
+      
       // Navigation will be handled by the auth context
     } catch (error) {
       console.error("Registration error details:", error);
       showAlert({
-        title: "Registration Failed",
-        message: error instanceof Error ? error.message : "An unexpected error occurred",
+        title: "Error de Registro",
+        message: error instanceof Error ? error.message : "Ocurrió un error inesperado",
       });
     } finally {
       setLoading(false);
@@ -81,12 +99,21 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const navigateToLogin = () => {
     navigation.navigate("Login");
   };
-
   const updateFormData = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
+    setFormData((prev) => {
+      // If changing user type, clear the display name since the field meaning changes
+      if (field === "userType" && prev.userType !== value) {
+        return { ...prev, [field]: value, displayName: "" };
+      }
+      return { ...prev, [field]: value };
+    });
+    // Clear error when user starts typing or changes user type
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+    // Clear display name error when switching user type
+    if (field === "userType" && errors.displayName) {
+      setErrors((prev) => ({ ...prev, displayName: "" }));
     }
   };
 
@@ -97,13 +124,12 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           <View style={styles.header}>
             <Text style={styles.title}>Crear Cuenta</Text>
             <Text style={styles.subtitle}>Únete a TarjetaLealtad hoy</Text>
-          </View>
-          <View style={styles.form}>
+          </View>          <View style={styles.form}>
             <InputField
-              label="Nombre Completo"
+              label={formData.userType === "business" ? "Nombre del Negocio" : "Nombre Completo"}
               value={formData.displayName}
               onChangeText={(value) => updateFormData("displayName", value)}
-              placeholder="Ingresa tu nombre completo"
+              placeholder={formData.userType === "business" ? "Ingresa el nombre de tu negocio" : "Ingresa tu nombre completo"}
               leftIcon="person"
               error={errors.displayName}
             />

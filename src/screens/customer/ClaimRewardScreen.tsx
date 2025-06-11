@@ -67,8 +67,7 @@ export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation
         <View style={styles.rewardContainer}>
           <Text style={styles.rewardTitle}>Tu Recompensa</Text>
           <Text style={styles.rewardDescription}>{customerCard.loyaltyCard.rewardDescription}</Text>
-
-          <View style={styles.instructionsContainer}>
+        <View style={styles.instructionsContainer}>
             <Text style={styles.instructionsTitle}>Cómo Canjear:</Text>
             <Text style={styles.instructionsText}>
               1. Toca "Reclamar Recompensa" abajo{"\n"}

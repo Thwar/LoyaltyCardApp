@@ -57,9 +57,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Agregar Sello</Text>
-          <Text style={styles.subtitle}>Agrega un sello a la tarjeta de lealtad de un cliente</Text>
-        </View>
-
+          <Text style={styles.subtitle}>Agrega un sello a la tarjeta de lealtad de un cliente</Text>        </View>
         <View style={styles.form}>
           <InputField
             label="Email del Cliente"
@@ -79,9 +77,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
               3. El cliente verá el nuevo sello en su tarjeta
             </Text>
           </View>
-          <Button title="Agregar Sello" onPress={handleAddStamp} loading={loading} size="large" style={styles.addButton} />
-        </View>
-
+          <Button title="Agregar Sello" onPress={handleAddStamp} loading={loading} size="large" style={styles.addButton} />        </View>
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>

@@ -19,36 +19,27 @@ export const InputField: React.FC<InputFieldProps> = ({ label, error, leftIcon, 
   const toggleSecureTextEntry = () => {
     setIsSecureTextEntry(!isSecureTextEntry);
   };
-
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-
       <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused, error && styles.inputContainerError]}>
         {leftIcon && <Ionicons name={leftIcon} size={20} color={isFocused ? COLORS.primary : COLORS.gray} style={styles.leftIcon} />}
-
         <TextInput
           {...props}
           style={[styles.input, leftIcon && styles.inputWithLeftIcon]}
           secureTextEntry={isSecureTextEntry}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          placeholderTextColor={COLORS.textLight}
+          onBlur={() => setIsFocused(false)}          placeholderTextColor={COLORS.textLight}
         />
-
         {isPassword && (
           <TouchableOpacity onPress={toggleSecureTextEntry} style={styles.rightIcon}>
-            <Ionicons name={isSecureTextEntry ? "eye-off" : "eye"} size={20} color={COLORS.gray} />
-          </TouchableOpacity>
+            <Ionicons name={isSecureTextEntry ? "eye-off" : "eye"} size={20} color={COLORS.gray} />          </TouchableOpacity>
         )}
-
         {rightIcon && !isPassword && (
           <TouchableOpacity onPress={onRightIconPress} style={styles.rightIcon}>
             <Ionicons name={rightIcon} size={20} color={isFocused ? COLORS.primary : COLORS.gray} />
-          </TouchableOpacity>
-        )}
+          </TouchableOpacity>        )}
       </View>
-
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );

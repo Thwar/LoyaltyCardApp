@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Business logos - only authenticated users can upload/modify their own business logos
+    match /business-logos/{userId}_{allPaths=**} {
+      allow read: if true; // Anyone can read business logos
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // General business logos with business ID
+    match /business-logos/{businessId}_logo.jpg {
+      allow read: if true; // Anyone can read business logos
+      allow write: if request.auth != null; // Only authenticated users can upload
+    }
+    
+    // Default rule - deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

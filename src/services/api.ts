@@ -223,9 +223,7 @@ export class BusinessService {
       const q = query(collection(db, FIREBASE_COLLECTIONS.BUSINESSES), where("ownerId", "==", ownerId), limit(1));
       const querySnapshot = await getDocs(q);
 
-      if (querySnapshot.empty) return null;
-
-      const doc = querySnapshot.docs[0];
+      if (querySnapshot.empty) return null;      const doc = querySnapshot.docs[0];
       const data = doc.data();
       return {
         id: doc.id,
@@ -235,7 +233,10 @@ export class BusinessService {
         logoUrl: data.logoUrl,
         address: data.address,
         phone: data.phone,
-        email: data.email,
+        city: data.city,
+        instagram: data.instagram,
+        facebook: data.facebook,
+        tiktok: data.tiktok,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -277,7 +278,6 @@ export class BusinessService {
       throw new Error(error.message || "Failed to update business");
     }
   }
-
   static async getAllBusinesses(): Promise<Business[]> {
     try {
       const q = query(collection(db, FIREBASE_COLLECTIONS.BUSINESSES), where("isActive", "==", true), orderBy("name"));
@@ -293,7 +293,10 @@ export class BusinessService {
           logoUrl: data.logoUrl,
           address: data.address,
           phone: data.phone,
-          email: data.email,
+          city: data.city,
+          instagram: data.instagram,
+          facebook: data.facebook,
+          tiktok: data.tiktok,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -302,7 +305,6 @@ export class BusinessService {
       throw new Error(error.message || "Failed to get businesses");
     }
   }
-
   static async getBusiness(businessId: string): Promise<Business | null> {
     try {
       const docRef = doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId);
@@ -321,7 +323,10 @@ export class BusinessService {
         logoUrl: data.logoUrl,
         address: data.address,
         phone: data.phone,
-        email: data.email,
+        city: data.city,
+        instagram: data.instagram,
+        facebook: data.facebook,
+        tiktok: data.tiktok,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -329,7 +334,6 @@ export class BusinessService {
       throw new Error(error.message || "Failed to get business");
     }
   }
-
   static async getBusinessesByOwner(ownerId: string): Promise<Business[]> {
     try {
       const q = query(collection(db, FIREBASE_COLLECTIONS.BUSINESSES), where("ownerId", "==", ownerId), orderBy("createdAt", "desc"));
@@ -345,7 +349,10 @@ export class BusinessService {
           logoUrl: data.logoUrl,
           address: data.address,
           phone: data.phone,
-          email: data.email,
+          city: data.city,
+          instagram: data.instagram,
+          facebook: data.facebook,
+          tiktok: data.tiktok,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -404,6 +411,38 @@ export class LoyaltyCardService {
       }
 
       throw new Error(error.message || "Failed to create loyalty card");
+    }
+  }
+
+  static async getLoyaltyCardByBusinessId(businessId: string): Promise<LoyaltyCard | null> {
+    try {
+      const q = query(
+        collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), 
+        where("businessId", "==", businessId), 
+        where("isActive", "==", true),
+        orderBy("createdAt", "desc"),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) return null;
+
+      const doc = querySnapshot.docs[0];
+      const data = doc.data();
+      return {
+        id: doc.id,
+        businessId: data.businessId,
+        businessName: data.businessName,
+        businessLogo: data.businessLogo,
+        totalSlots: data.totalSlots,
+        rewardDescription: data.rewardDescription,
+        stampDescription: data.stampDescription,
+        cardColor: data.cardColor,
+        createdAt: data.createdAt.toDate(),
+        isActive: data.isActive,
+      };
+    } catch (error: any) {
+      throw new Error(error.message || "Failed to get loyalty card");
     }
   }
 
@@ -508,8 +547,7 @@ export class LoyaltyCardService {
 }
 
 // Customer Card Service
-export class CustomerCardService {
-  static async joinLoyaltyProgram(customerId: string, loyaltyCardId: string): Promise<CustomerCard> {
+export class CustomerCardService {  static async joinLoyaltyProgram(customerId: string, loyaltyCardId: string, cardCode?: string): Promise<CustomerCard> {
     try {
       // Check if customer already has this card
       const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("customerId", "==", customerId), where("loyaltyCardId", "==", loyaltyCardId), limit(1));
@@ -519,12 +557,27 @@ export class CustomerCardService {
         throw new Error("You are already enrolled in this loyalty program");
       }
 
+      // Get customer name from the Users collection (customer can read their own data)
+      let customerName = "";
+      try {
+        const userDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.USERS, customerId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          customerName = userData.displayName || "";
+        }
+      } catch (error) {
+        console.warn("Could not fetch customer name during card creation:", error);
+        // Continue without customer name if fetch fails
+      }
+
       const customerCardData = {
         customerId,
         loyaltyCardId,
         currentStamps: 0,
         isRewardClaimed: false,
         createdAt: Timestamp.now(),
+        customerName, // Store customer name at creation time
+        ...(cardCode && { cardCode }),
       };
 
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), customerCardData);
@@ -536,6 +589,8 @@ export class CustomerCardService {
         currentStamps: 0,
         isRewardClaimed: false,
         createdAt: new Date(),
+        customerName,
+        cardCode,
       };
     } catch (error: any) {
       throw new Error(error.message || "Failed to join loyalty program");
@@ -549,8 +604,7 @@ export class CustomerCardService {
 
       const customerCards = await Promise.all(
         querySnapshot.docs.map(async (docSnapshot) => {
-          const data = docSnapshot.data();
-          const customerCard: CustomerCard = {
+          const data = docSnapshot.data();          const customerCard: CustomerCard = {
             id: docSnapshot.id,
             customerId: data.customerId,
             loyaltyCardId: data.loyaltyCardId,
@@ -558,6 +612,8 @@ export class CustomerCardService {
             isRewardClaimed: data.isRewardClaimed,
             createdAt: data.createdAt.toDate(),
             lastStampDate: data.lastStampDate?.toDate(),
+            cardCode: data.cardCode,
+            customerName: data.customerName, // Get stored customer name
           };
 
           // Get loyalty card details
@@ -650,10 +706,7 @@ export class CustomerCardService {
 
       if (!docSnap.exists()) {
         return null;
-      }
-
-      const data = docSnap.data();
-      const customerCard: CustomerCard = {
+      }      const data = docSnap.data();      const customerCard: CustomerCard = {
         id: docSnap.id,
         customerId: data.customerId,
         loyaltyCardId: data.loyaltyCardId,
@@ -661,6 +714,8 @@ export class CustomerCardService {
         isRewardClaimed: data.isRewardClaimed,
         createdAt: data.createdAt.toDate(),
         lastStampDate: data.lastStampDate?.toDate(),
+        cardCode: data.cardCode,
+        customerName: data.customerName, // Get stored customer name
       };
 
       // Get loyalty card details
@@ -685,25 +740,32 @@ export class CustomerCardService {
     } catch (error: any) {
       throw new Error(error.message || "Failed to get customer card");
     }
-  }
-
-  static async getCustomerCardsByLoyaltyCard(loyaltyCardId: string): Promise<CustomerCard[]> {
+  }  static async getCustomerCardsByLoyaltyCard(loyaltyCardId: string): Promise<CustomerCard[]> {
     try {
       const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("loyaltyCardId", "==", loyaltyCardId), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
 
-      return querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          customerId: data.customerId,
-          loyaltyCardId: data.loyaltyCardId,
-          currentStamps: data.currentStamps,
-          isRewardClaimed: data.isRewardClaimed,
-          createdAt: data.createdAt.toDate(),
-          lastStampDate: data.lastStampDate?.toDate(),
-        };
-      });
+      const customerCards = await Promise.all(
+        querySnapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
+            // Create base customer card object
+          const customerCard: CustomerCard = {
+            id: docSnapshot.id,
+            customerId: data.customerId,
+            loyaltyCardId: data.loyaltyCardId,
+            currentStamps: data.currentStamps,
+            isRewardClaimed: data.isRewardClaimed,
+            createdAt: data.createdAt.toDate(),
+            lastStampDate: data.lastStampDate?.toDate(),
+            cardCode: data.cardCode, // Include card code
+            customerName: data.customerName, // Get stored customer name
+          };
+        
+          return customerCard;
+        })
+      );
+
+      return customerCards;
     } catch (error: any) {
       throw new Error(error.message || "Failed to get customer cards by loyalty card");
     }

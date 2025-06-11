@@ -15,7 +15,10 @@ export interface Business {
   logoUrl?: string;
   address?: string;
   phone?: string;
-  email?: string;
+  city?: string;
+  instagram?: string;
+  facebook?: string;
+  tiktok?: string;
   createdAt: Date;
   isActive: boolean;
 }
@@ -29,6 +32,7 @@ export interface LoyaltyCard {
   rewardDescription: string;
   stampDescription: string;
   cardColor?: string;
+  stampShape?: 'circle' | 'square' | 'egg';
   createdAt: Date;
   isActive: boolean;
 }
@@ -41,6 +45,8 @@ export interface CustomerCard {
   isRewardClaimed: boolean;
   createdAt: Date;
   lastStampDate?: Date;
+  cardCode?: string; // 3-digit unique identifier for business-customer combination
+  customerName?: string; // Customer's display name (populated from Users collection)
   // Virtual relationship fields (populated from other collections)
   loyaltyCard?: LoyaltyCard;
 }
@@ -89,7 +95,7 @@ export type AuthStackParamList = {
 
 export type CustomerTabParamList = {
   Home: undefined;
-  MyCards: undefined;
+  Discovery: undefined;
   Profile: undefined;
 };
 
@@ -105,6 +111,7 @@ export type CustomerStackParamList = {
   CardDetails: { customerCard: CustomerCard };
   BusinessProfile: { businessId: string };
   ClaimReward: { customerCard: CustomerCard };
+  BusinessDiscovery: undefined;
 };
 
 export type BusinessStackParamList = {

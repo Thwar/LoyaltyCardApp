@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
-import { Button, LoyaltyCard, LoadingState, useAlert } from "../../components";
+import { Button, AnimatedLoyaltyCard, LoadingState, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
 import { CustomerCard, CustomerStackParamList } from "../../types";
@@ -63,8 +63,13 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Card Display */}
-        <View style={styles.cardContainer}>
-          <LoyaltyCard card={card.loyaltyCard} currentStamps={card.currentStamps} />
+        <View style={styles.cardContainer}>          <AnimatedLoyaltyCard 
+            card={card.loyaltyCard} 
+            currentStamps={card.currentStamps} 
+            cardCode={card.cardCode}
+            showAnimation={true}
+            stampShape="circle"
+          />
         </View>
         {/* Card Status */}
         <View style={styles.statusContainer}>

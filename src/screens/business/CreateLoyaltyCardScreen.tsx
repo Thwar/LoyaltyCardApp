@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, useAlert } from "../../components";
+import { Button, InputField, Dropdown, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
-import { LoyaltyCardService } from "../../services/api";
+import { LoyaltyCardService, BusinessService } from "../../services/api";
 import { BusinessStackParamList } from "../../types";
 
 interface CreateLoyaltyCardScreenProps {
@@ -16,7 +16,6 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
   const { user } = useAuth();
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
-    businessName: "",
     totalSlots: "10",
     rewardDescription: "",
     stampDescription: "",
@@ -24,15 +23,17 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Create dropdown options for stamps from 3 to 20
+  const stampOptions = Array.from({ length: 18 }, (_, i) => ({
+    label: `${i + 3} sellos`,
+    value: (i + 3).toString(),
+  }));
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.businessName.trim()) {
-      newErrors.businessName = "El nombre del negocio es requerido";
-    }
 
     const slotsNum = parseInt(formData.totalSlots);
-    if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 1 || slotsNum > 20) {
-      newErrors.totalSlots = "Los sellos deben estar entre 1 y 20";
+    if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 3 || slotsNum > 20) {
+      newErrors.totalSlots = "Los sellos deben estar entre 3 y 20";
     }
 
     if (!formData.rewardDescription.trim()) {
@@ -45,22 +46,32 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const handleCreateCard = async () => {
+  };const handleCreateCard = async () => {
     if (!validateForm() || !user) return;
 
     setLoading(true);
     try {
+      // Get the existing business for the current user
+      const businesses = await BusinessService.getBusinessesByOwner(user.id);
+      
+      if (businesses.length === 0) {
+        throw new Error("No se encontró el perfil del negocio. Por favor, contacta al soporte.");
+      }
+
+      const businessId = businesses[0].id; // Use the first business found
+
       const cardData = {
-        businessId: user.id, // For simplicity, using user ID as business ID
-        businessName: formData.businessName,
+        businessId: businessId,
+        businessName: businesses[0].name,
+        businessLogo: businesses[0].logoUrl,
         totalSlots: parseInt(formData.totalSlots),
         rewardDescription: formData.rewardDescription,
         stampDescription: formData.stampDescription,
         isActive: true,
       };
+      
       await LoyaltyCardService.createLoyaltyCard(cardData);
+      
       showAlert({
         title: "¡Éxito!",
         message: "Tu tarjeta de lealtad ha sido creada exitosamente.",
@@ -96,24 +107,14 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
           <View style={styles.header}>
             <Text style={styles.title}>Crear Tarjeta de Lealtad</Text>
             <Text style={styles.subtitle}>Configura un nuevo programa de lealtad para tus clientes</Text>
-          </View>
-          <View style={styles.form}>
-            <InputField
-              label="Nombre del Negocio"
-              value={formData.businessName}
-              onChangeText={(value) => updateFormData("businessName", value)}
-              placeholder="Ingresa el nombre de tu negocio"
-              leftIcon="business"
-              error={errors.businessName}
-            />
+          </View>          <View style={styles.form}>
 
-            <InputField
+            <Dropdown
               label="Número de Sellos Requeridos"
               value={formData.totalSlots}
-              onChangeText={(value) => updateFormData("totalSlots", value)}
-              placeholder="ej., 10"
-              keyboardType="numeric"
-              leftIcon="star"
+              options={stampOptions}
+              onSelect={(value) => updateFormData("totalSlots", value)}
+              placeholder="Seleccionar número de sellos"
               error={errors.totalSlots}
             />
 
@@ -141,14 +142,13 @@ export const CreateLoyaltyCardScreen: React.FC<CreateLoyaltyCardScreenProps> = (
             <View style={styles.previewContainer}>
               <Text style={styles.previewTitle}>Vista Previa</Text>
               <View style={styles.previewCard}>
-                <Text style={styles.previewBusinessName}>{formData.businessName || "Nombre de Tu Negocio"}</Text>
+                <Text style={styles.previewBusinessName}>{"Nombre de Tu Negocio"}</Text>
                 <Text style={styles.previewStamps}>0 / {formData.totalSlots || "10"} sellos</Text>
                 <Text style={styles.previewStampDesc}>{formData.stampDescription || "Cómo ganar sellos"}</Text>
                 <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
               </View>
             </View>
-
-            <Button title="Crear Tarjeta de Lealtad" onPress={handleCreateCard} loading={loading} size="large" style={styles.createButton} />
+        <Button title="Crear Tarjeta de Lealtad" onPress={handleCreateCard} loading={loading} size="large" style={styles.createButton} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

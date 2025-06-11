@@ -30,7 +30,6 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ business, onPress, s
             {business.description}
           </Text>
         </View>
-
         <Ionicons name="chevron-forward" size={20} color={COLORS.gray} style={styles.arrow} />
       </View>
 

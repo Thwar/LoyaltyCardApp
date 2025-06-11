@@ -1,7 +1,10 @@
 // Export all components from this file
 export { Button } from "./Button";
 export { LoyaltyCard } from "./LoyaltyCard";
+export { AnimatedLoyaltyCard } from "./AnimatedLoyaltyCard";
 export { InputField } from "./InputField";
+export { Dropdown } from "./Dropdown";
+export { ImagePicker } from "./ImagePicker";
 export { BusinessCard } from "./BusinessCard";
 export { LoadingState, EmptyState } from "./LoadingState";
 export { Alert, AlertProvider, useAlert, showAlert } from "./Alert";

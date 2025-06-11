@@ -80,11 +80,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               keyboardType="email-address"
               autoCapitalize="none"
               leftIcon="mail"
-              error={errors.email}
-            />
-
+              error={errors.email}            />
             <InputField label="Contraseña" value={password} onChangeText={setPassword} placeholder="Ingresa tu contraseña" isPassword leftIcon="lock-closed" error={errors.password} />
-
             <Button title="Iniciar Sesión" onPress={handleLogin} loading={loading} size="large" style={styles.loginButton} />
           </View>
           <View style={styles.footer}>

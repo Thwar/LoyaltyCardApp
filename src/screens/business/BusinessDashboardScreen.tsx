@@ -42,34 +42,42 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
       } else {
         setLoading(true);
       }
-      setError(null);
-
-      // Load business info
+      setError(null);      // Load business info
       const businesses = await BusinessService.getBusinessesByOwner(user.id);
+      console.log("Found businesses:", businesses.length);
       const userBusiness = businesses[0]; // Assuming one business per owner for now
       setBusiness(userBusiness);
-
-      if (userBusiness) {
+      console.log("User business:", userBusiness);if (userBusiness) {
         // Load loyalty cards for this business
-        console.log("Loading loyalty cards for business:", userBusiness.id);
-
-        // user.id is the business ID for now
-        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(user.id);
-
-        // Calculate stats
+        console.log("Loading loyalty cards for business:", userBusiness.id);        // Use the actual business ID instead of user ID
+        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(userBusiness.id);
+        console.log("Found loyalty cards:", loyaltyCards.length, loyaltyCards);        // Calculate stats
         let totalStamps = 0;
         let activeCustomers = 0;
         let claimedRewards = 0;
+        const uniqueCustomers = new Set<string>(); // Track unique customer IDs
 
         for (const card of loyaltyCards) {
           const customerCards = await CustomerCardService.getCustomerCardsByLoyaltyCard(card.id);
+          console.log(`Customer cards for loyalty card ${card.id}:`, customerCards.length, customerCards);
 
           customerCards.forEach((customerCard) => {
             totalStamps += customerCard.currentStamps;
-            if (customerCard.currentStamps > 0) activeCustomers++;
+            // Count each unique customer who has joined the loyalty program
+            uniqueCustomers.add(customerCard.customerId);
             if (customerCard.isRewardClaimed) claimedRewards++;
           });
         }
+
+        // Active customers = total unique customers who have joined any loyalty program
+        activeCustomers = uniqueCustomers.size;
+
+        console.log("Final stats:", {
+          totalCards: loyaltyCards.length,
+          activeCustomers,
+          totalStamps,
+          claimedRewards,
+        });
 
         setStats({
           totalCards: loyaltyCards.length,
@@ -135,8 +143,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-
-          <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => navigation.navigate("CreateCard")} size="large" style={styles.actionButton} />
+        <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => navigation.navigate("CreateCard")} size="large" style={styles.actionButton} />
 
           <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp", { customerCardId: "" })} variant="outline" size="large" style={styles.actionButton} />
 

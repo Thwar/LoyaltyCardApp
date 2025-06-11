@@ -15,6 +15,7 @@ import { CustomerHomeScreen } from "../screens/customer/CustomerHomeScreen";
 import { CustomerCardDetailsScreen } from "../screens/customer/CustomerCardDetailsScreen";
 import { CustomerProfileScreen } from "../screens/customer/BusinessProfileScreen";
 import { ClaimRewardScreen } from "../screens/customer/ClaimRewardScreen";
+import { BusinessDiscoveryScreen } from "../screens/customer/BusinessDiscoveryScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
 import { BusinessSettingsScreen } from "../screens/business/BusinessSettingsScreen";
 import { CreateLoyaltyCardScreen } from "../screens/business/CreateLoyaltyCardScreen";
@@ -51,6 +52,8 @@ const CustomerNavigator = () => {
 
           if (route.name === "Home") {
             iconName = focused ? "home" : "home-outline";
+          } else if (route.name === "Discovery") {
+            iconName = focused ? "search" : "search-outline";
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
           } else {
@@ -75,6 +78,7 @@ const CustomerNavigator = () => {
       })}
     >
       <CustomerTab.Screen name="Home" component={CustomerHomeScreen} options={{ title: "Mis Tarjetas" }} />
+      <CustomerTab.Screen name="Discovery" component={BusinessDiscoveryScreen} options={{ title: "Descubrir Negocios" }} />
       <CustomerTab.Screen name="Profile" component={CustomerProfileScreen} options={{ title: "Perfil" }} />
     </CustomerTab.Navigator>
   );
@@ -135,8 +139,7 @@ const CustomerStackNavigator = () => {
           backgroundColor: COLORS.primary,
         },
         headerTintColor: COLORS.white,
-        headerTitleStyle: {
-          fontWeight: "bold",
+        headerTitleStyle: {          fontWeight: "bold",
         },
       }}
     >
@@ -144,6 +147,7 @@ const CustomerStackNavigator = () => {
       <CustomerStack.Screen name="CardDetails" component={CustomerCardDetailsScreen} options={{ title: "Detalles de Tarjeta" }} />
       <CustomerStack.Screen name="BusinessProfile" component={CustomerProfileScreen} options={{ title: "Perfil del Negocio" }} />
       <CustomerStack.Screen name="ClaimReward" component={ClaimRewardScreen} options={{ title: "Reclamar Recompensa" }} />
+      <CustomerStack.Screen name="BusinessDiscovery" component={BusinessDiscoveryScreen} options={{ title: "Descubrir Negocios" }} />
     </CustomerStack.Navigator>
   );
 };
