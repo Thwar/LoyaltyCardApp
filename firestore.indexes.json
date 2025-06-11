@@ -1,0 +1,47 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "customerCards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "cardCode",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "loyaltyCardId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "stampActivity",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "businessId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "stampActivity",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "customerCardId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

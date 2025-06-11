@@ -5,7 +5,7 @@ import { RouteProp } from "@react-navigation/native";
 
 import { Button, InputField, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
-import { CustomerCardService } from "../../services/api";
+import { CustomerCardService, StampActivityService } from "../../services/api";
 import { BusinessStackParamList } from "../../types";
 
 interface AddStampScreenProps {
@@ -13,28 +13,43 @@ interface AddStampScreenProps {
   route: RouteProp<BusinessStackParamList, "AddStamp">;
 }
 
-export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, route }) => {
-  const { customerCardId } = route.params;
+export const AddStampScreen: React.FC<AddStampScreenProps> = ({
+  navigation,
+  route,
+}) => {
+  const { loyaltyCardId } = route.params;
   const { showAlert } = useAlert();
-  const [customerEmail, setCustomerEmail] = useState("");
+  const [cardCode, setCardCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const handleAddStamp = async () => {
-    if (!customerEmail.trim()) {
-      setError("Por favor ingrese el email del cliente");
+    if (!cardCode.trim()) {
+      setError("Por favor ingrese el código de la tarjeta");
       return;
     }
+
+    // Validate card code is numeric and 3 digits
+    if (!/^\d{3}$/.test(cardCode.trim())) {
+      setError("El código debe ser de 3 dígitos numéricos");
+      return;
+    }
+
     setLoading(true);
+    setError("");
+
     try {
-      // For now, we'll simulate adding a stamp
-      // In a real app, you'd look up the customer by email first
+      await CustomerCardService.addStampByCardCode(
+        cardCode.trim(),
+        loyaltyCardId
+      );
+
       showAlert({
         title: "¡Sello Agregado!",
         message: "El sello del cliente ha sido agregado exitosamente.",
         buttons: [
           {
             text: "Agregar Otro",
-            onPress: () => setCustomerEmail(""),
+            onPress: () => setCardCode(""),
           },
           {
             text: "Listo",
@@ -43,9 +58,12 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
         ],
       });
     } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al agregar sello";
+      setError(errorMessage);
       showAlert({
         title: "Error",
-        message: err instanceof Error ? err.message : "Error al agregar sello",
+        message: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -57,27 +75,37 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Agregar Sello</Text>
-          <Text style={styles.subtitle}>Agrega un sello a la tarjeta de lealtad de un cliente</Text>        </View>
+          <Text style={styles.subtitle}>
+            Agrega un sello a la tarjeta de lealtad de un cliente
+          </Text>
+        </View>
         <View style={styles.form}>
           <InputField
-            label="Email del Cliente"
-            value={customerEmail}
-            onChangeText={setCustomerEmail}
-            placeholder="Ingrese el email del cliente"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            leftIcon="mail"
+            label="Código de Tarjeta"
+            value={cardCode}
+            onChangeText={setCardCode}
+            placeholder="Ingrese el código de 3 dígitos"
+            keyboardType="numeric"
+            maxLength={3}
+            leftIcon="card"
             error={error}
           />
           <View style={styles.instructionsContainer}>
             <Text style={styles.instructionsTitle}>Instrucciones:</Text>
             <Text style={styles.instructionsText}>
-              1. Solicita al cliente su dirección de email{"\n"}
-              2. Ingrésala arriba y presiona "Agregar Sello"{"\n"}
+              1. Solicita al cliente su código de tarjeta de 3 dígitos{"\n"}
+              2. Ingrésalo arriba y presiona "Agregar Sello"{"\n"}
               3. El cliente verá el nuevo sello en su tarjeta
             </Text>
           </View>
-          <Button title="Agregar Sello" onPress={handleAddStamp} loading={loading} size="large" style={styles.addButton} />        </View>
+          <Button
+            title="Agregar Sello"
+            onPress={handleAddStamp}
+            loading={loading}
+            size="large"
+            style={styles.addButton}
+          />
+        </View>
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>
@@ -87,14 +115,21 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
               // TODO: Implement QR code scanning
               showAlert({
                 title: "Próximamente",
-                message: "El escaneo de códigos QR estará disponible en una futura actualización",
+                message:
+                  "El escaneo de códigos QR estará disponible en una futura actualización",
               });
             }}
             variant="outline"
             size="large"
             style={styles.quickActionButton}
           />
-          <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
+          <Button
+            title="Ver Clientes Recientes"
+            onPress={() => navigation.navigate("BusinessTabs")}
+            variant="outline"
+            size="large"
+            style={styles.quickActionButton}
+          />
         </View>
       </View>
     </SafeAreaView>

@@ -1,5 +1,5 @@
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { storage } from "./firebase";
+import { storage, auth } from "./firebase";
 import { Platform } from "react-native";
 
 export class ImageUploadService {
@@ -16,6 +16,14 @@ export class ImageUploadService {
     fileName?: string
   ): Promise<string> {
     try {
+      // Check if user is authenticated
+      if (!auth.currentUser) {
+        throw new Error('User must be authenticated to upload images');
+      }
+
+      console.log('Current user:', auth.currentUser.uid);
+      console.log('Uploading to folder:', folder, 'filename:', fileName);
+
       // Generate filename if not provided
       if (!fileName) {
         const timestamp = Date.now();

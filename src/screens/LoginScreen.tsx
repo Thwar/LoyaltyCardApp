@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../context/AuthContext";
@@ -7,7 +15,10 @@ import { Button, InputField, useAlert } from "../components";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { AuthStackParamList } from "../types";
 
-type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, "Login">;
+type LoginScreenNavigationProp = StackNavigationProp<
+  AuthStackParamList,
+  "Login"
+>;
 
 interface LoginScreenProps {
   navigation: LoginScreenNavigationProp;
@@ -19,7 +30,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>(
+    {}
+  );
 
   const validateForm = () => {
     const newErrors: { email?: string; password?: string } = {};
@@ -48,7 +61,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     } catch (error) {
       showAlert({
         title: "Error de Inicio de Sesión",
-        message: error instanceof Error ? error.message : "Ocurrió un error inesperado",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Ocurrió un error inesperado",
       });
     } finally {
       setLoading(false);
@@ -65,8 +81,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoid}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           <View style={styles.header}>
             <Text style={styles.title}>Bienvenido de Vuelta</Text>
             <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
@@ -80,9 +102,24 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               keyboardType="email-address"
               autoCapitalize="none"
               leftIcon="mail"
-              error={errors.email}            />
-            <InputField label="Contraseña" value={password} onChangeText={setPassword} placeholder="Ingresa tu contraseña" isPassword leftIcon="lock-closed" error={errors.password} />
-            <Button title="Iniciar Sesión" onPress={handleLogin} loading={loading} size="large" style={styles.loginButton} />
+              error={errors.email}
+            />
+            <InputField
+              label="Contraseña"
+              value={password}
+              onChangeText={setPassword}
+              placeholder="Ingresa tu contraseña"
+              isPassword
+              leftIcon="lock-closed"
+              error={errors.password}
+            />
+            <Button
+              title="Iniciar Sesión"
+              onPress={handleLogin}
+              loading={loading}
+              size="large"
+              style={styles.loginButton}
+            />
           </View>
           <View style={styles.footer}>
             <Text style={styles.footerText}>

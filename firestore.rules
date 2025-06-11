@@ -34,9 +34,13 @@ service cloud.firestore {
     match /stamps/{stampId} {
       allow read, write: if request.auth != null;
     }
-    
-    // Rewards - business owners and customers can read/write
+      // Rewards - business owners and customers can read/write
     match /rewards/{rewardId} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Stamp Activity - business owners and customers can read/write
+    match /stampActivity/{activityId} {
       allow read, write: if request.auth != null;
     }
   }

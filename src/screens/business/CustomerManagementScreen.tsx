@@ -1,20 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, FlatList } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  FlatList,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState } from "../../components";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
-import { CustomerCardService, BusinessService, LoyaltyCardService } from "../../services/api";
-import { CustomerCard } from "../../types";
+import {
+  CustomerCardService,
+  BusinessService,
+  LoyaltyCardService,
+} from "../../services/api";
+import { CustomerCard, LoyaltyCard } from "../../types";
 
 interface CustomerManagementScreenProps {
   navigation: StackNavigationProp<any>;
 }
 
-export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> = ({ navigation }) => {
+export const CustomerManagementScreen: React.FC<
+  CustomerManagementScreenProps
+> = ({ navigation }) => {
   const { user } = useAuth();
   const [customers, setCustomers] = useState<CustomerCard[]>([]);
+  const [loyaltyCards, setLoyaltyCards] = useState<LoyaltyCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,18 +55,22 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
       }
 
       const business = businesses[0]; // Use the first business
-      console.log("Using business:", business.name, business.id);
-
-      // Get all loyalty cards for this business
-      const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(business.id);
+      console.log("Using business:", business.name, business.id); // Get all loyalty cards for this business
+      const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(
+        business.id
+      );
       console.log("Found loyalty cards:", loyaltyCards.length);
+      setLoyaltyCards(loyaltyCards); // Store loyalty cards in state
 
       // Get all customer cards for all loyalty cards of this business
       const allCustomerCards: CustomerCard[] = [];
-      
+
       for (const loyaltyCard of loyaltyCards) {
         console.log("Getting customer cards for loyalty card:", loyaltyCard.id);
-        const customerCards = await CustomerCardService.getCustomerCardsByLoyaltyCard(loyaltyCard.id);
+        const customerCards =
+          await CustomerCardService.getCustomerCardsByLoyaltyCard(
+            loyaltyCard.id
+          );
         console.log("Found customer cards:", customerCards.length);
         allCustomerCards.push(...customerCards);
       }
@@ -65,29 +83,39 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
     } finally {
       setLoading(false);
     }
-  };  const CustomerCard: React.FC<{ customer: CustomerCard }> = ({ customer }) => (
+  };
+  const CustomerCard: React.FC<{ customer: CustomerCard }> = ({ customer }) => (
     <View style={styles.customerCard}>
       <View style={styles.customerInfo}>
         <Text style={styles.customerName}>
-          {customer.customerName || `Cliente #${customer.cardCode || customer.id.slice(-6)}`}
+          {customer.customerName ||
+            `Cliente #${customer.cardCode || customer.id.slice(-6)}`}
         </Text>
         {customer.cardCode && (
-          <Text style={styles.customerDetail}>
-            Código: {customer.cardCode}
-          </Text>
+          <Text style={styles.customerDetail}>Código: {customer.cardCode}</Text>
         )}
         <Text style={styles.customerDetail}>
-          {customer.currentStamps} / {customer.loyaltyCard?.totalSlots || 0} sellos
+          {customer.currentStamps} / {customer.loyaltyCard?.totalSlots || 0}
+          sellos
         </Text>
-        <Text style={[styles.customerDetail, customer.isRewardClaimed ? styles.rewardClaimed : styles.active]}>
+        <Text
+          style={[
+            styles.customerDetail,
+            customer.isRewardClaimed ? styles.rewardClaimed : styles.active,
+          ]}
+        >
           {customer.isRewardClaimed ? "🎁 Recompensa reclamada" : "✅ Activo"}
         </Text>
       </View>
-      <Button 
-        title="Agregar Sello" 
-        onPress={() => navigation.navigate("AddStamp", { customerCardId: customer.id })} 
-        size="small" 
-        style={styles.addStampButton} 
+      <Button
+        title="Agregar Sello"
+        onPress={() =>
+          navigation.navigate("AddStamp", {
+            loyaltyCardId: customer.loyaltyCardId,
+          })
+        }
+        size="small"
+        style={styles.addStampButton}
       />
     </View>
   );
@@ -108,7 +136,9 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Gestión de Clientes</Text>
-        <Text style={styles.subtitle}>Gestiona los clientes de tu programa de lealtad</Text>
+        <Text style={styles.subtitle}>
+          Gestiona los clientes de tu programa de lealtad
+        </Text>
       </View>
       {customers.length === 0 ? (
         <EmptyState
@@ -119,10 +149,28 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
           onAction={() => navigation.navigate("CreateCard")}
         />
       ) : (
-        <FlatList data={customers} renderItem={({ item }) => <CustomerCard customer={item} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.customersList} />
+        <FlatList
+          data={customers}
+          renderItem={({ item }) => <CustomerCard customer={item} />}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.customersList}
+        />
       )}
       <View style={styles.actionContainer}>
-        <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp", { customerCardId: "" })} size="large" style={styles.actionButton} />
+        <Button
+          title="Agregar Sello a Cliente"
+          onPress={() => {
+            if (loyaltyCards.length > 0) {
+              navigation.navigate("AddStamp", {
+                loyaltyCardId: loyaltyCards[0].id,
+              });
+            } else {
+              alert("Primero debe crear una tarjeta de lealtad");
+            }
+          }}
+          size="large"
+          style={styles.actionButton}
+        />
       </View>
     </SafeAreaView>
   );
@@ -171,7 +219,8 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: COLORS.textPrimary,
     marginBottom: 4,
-  },  customerDetail: {
+  },
+  customerDetail: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     marginBottom: 2,

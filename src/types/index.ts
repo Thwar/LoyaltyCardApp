@@ -32,7 +32,7 @@ export interface LoyaltyCard {
   rewardDescription: string;
   stampDescription: string;
   cardColor?: string;
-  stampShape?: 'circle' | 'square' | 'egg';
+  stampShape?: "circle" | "square" | "egg";
   createdAt: Date;
   isActive: boolean;
 }
@@ -80,6 +80,19 @@ export interface AuthUser {
   photoURL: string | null;
 }
 
+export interface StampActivity {
+  id: string;
+  customerCardId: string;
+  customerId: string;
+  businessId: string;
+  loyaltyCardId: string;
+  timestamp: Date;
+  customerName?: string;
+  businessName?: string;
+  stampCount: number; // The stamp count after this activity
+  note?: string;
+}
+
 // Navigation types
 export type RootStackParamList = {
   AuthStack: undefined;
@@ -119,5 +132,5 @@ export type BusinessStackParamList = {
   CreateCard: undefined;
   EditCard: { cardId: string };
   CustomerDetails: { customerId: string };
-  AddStamp: { customerCardId: string };
+  AddStamp: { loyaltyCardId: string };
 };

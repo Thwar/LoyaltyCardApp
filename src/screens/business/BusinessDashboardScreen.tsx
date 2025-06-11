@@ -1,12 +1,23 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  RefreshControl,
+} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState } from "../../components";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
-import { BusinessService, LoyaltyCardService, CustomerCardService } from "../../services/api";
+import {
+  BusinessService,
+  LoyaltyCardService,
+  CustomerCardService,
+} from "../../services/api";
 import { Business, LoyaltyCard } from "../../types";
 
 interface BusinessDashboardScreenProps {
@@ -20,9 +31,12 @@ interface DashboardStats {
   claimedRewards: number;
 }
 
-export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = ({ navigation }) => {
+export const BusinessDashboardScreen: React.FC<
+  BusinessDashboardScreenProps
+> = ({ navigation }) => {
   const { user } = useAuth();
   const [business, setBusiness] = useState<Business | null>(null);
+  const [loyaltyCards, setLoyaltyCards] = useState<LoyaltyCard[]>([]);
   const [stats, setStats] = useState<DashboardStats>({
     totalCards: 0,
     activeCustomers: 0,
@@ -42,24 +56,35 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
       } else {
         setLoading(true);
       }
-      setError(null);      // Load business info
+      setError(null); // Load business info
       const businesses = await BusinessService.getBusinessesByOwner(user.id);
       console.log("Found businesses:", businesses.length);
       const userBusiness = businesses[0]; // Assuming one business per owner for now
       setBusiness(userBusiness);
-      console.log("User business:", userBusiness);if (userBusiness) {
+      console.log("User business:", userBusiness);
+      if (userBusiness) {
         // Load loyalty cards for this business
-        console.log("Loading loyalty cards for business:", userBusiness.id);        // Use the actual business ID instead of user ID
-        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(userBusiness.id);
-        console.log("Found loyalty cards:", loyaltyCards.length, loyaltyCards);        // Calculate stats
+        console.log("Loading loyalty cards for business:", userBusiness.id); // Use the actual business ID instead of user ID
+        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(
+          userBusiness.id
+        );
+        console.log("Found loyalty cards:", loyaltyCards.length, loyaltyCards);
+        setLoyaltyCards(loyaltyCards); // Store loyalty cards in state
+
+        // Calculate stats
         let totalStamps = 0;
         let activeCustomers = 0;
         let claimedRewards = 0;
         const uniqueCustomers = new Set<string>(); // Track unique customer IDs
 
         for (const card of loyaltyCards) {
-          const customerCards = await CustomerCardService.getCustomerCardsByLoyaltyCard(card.id);
-          console.log(`Customer cards for loyalty card ${card.id}:`, customerCards.length, customerCards);
+          const customerCards =
+            await CustomerCardService.getCustomerCardsByLoyaltyCard(card.id);
+          console.log(
+            `Customer cards for loyalty card ${card.id}:`,
+            customerCards.length,
+            customerCards
+          );
 
           customerCards.forEach((customerCard) => {
             totalStamps += customerCard.currentStamps;
@@ -104,7 +129,11 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
     loadDashboardData();
   };
 
-  const StatCard: React.FC<{ title: string; value: string | number; icon: string }> = ({ title, value, icon }) => (
+  const StatCard: React.FC<{
+    title: string;
+    value: string | number;
+    icon: string;
+  }> = ({ title, value, icon }) => (
     <View style={styles.statCard}>
       <Text style={styles.statIcon}>{icon}</Text>
       <Text style={styles.statValue}>{value}</Text>
@@ -122,40 +151,106 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboardData(true)} colors={[COLORS.primary]} tintColor={COLORS.primary} />}>
+      <ScrollView
+        style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => loadDashboardData(true)}
+            colors={[COLORS.primary]}
+            tintColor={COLORS.primary}
+          />
+        }
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.businessName}>{business?.name || user?.displayName}</Text>
+          <Text style={styles.businessName}>
+            {business?.name || user?.displayName}
+          </Text>
         </View>
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
           <Text style={styles.sectionTitle}>Resumen</Text>
           <View style={styles.statsGrid}>
-            <StatCard title="Tarjetas de Lealtad" value={stats.totalCards} icon="📄" />
-            <StatCard title="Clientes Activos" value={stats.activeCustomers} icon="👥" />
-            <StatCard title="Total de Sellos" value={stats.totalStamps} icon="⭐" />
-            <StatCard title="Recompensas Reclamadas" value={stats.claimedRewards} icon="🎁" />
+            <StatCard
+              title="Tarjetas de Lealtad"
+              value={stats.totalCards}
+              icon="📄"
+            />
+            <StatCard
+              title="Clientes Activos"
+              value={stats.activeCustomers}
+              icon="👥"
+            />
+            <StatCard
+              title="Total de Sellos"
+              value={stats.totalStamps}
+              icon="⭐"
+            />
+            <StatCard
+              title="Recompensas Reclamadas"
+              value={stats.claimedRewards}
+              icon="🎁"
+            />
           </View>
         </View>
 
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-        <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => navigation.navigate("CreateCard")} size="large" style={styles.actionButton} />
-
-          <Button title="Agregar Sello a Cliente" onPress={() => navigation.navigate("AddStamp", { customerCardId: "" })} variant="outline" size="large" style={styles.actionButton} />
-
-          <Button title="Ver Todos los Clientes" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.actionButton} />
+          <Button
+            title="Crear Nueva Tarjeta de Lealtad"
+            onPress={() => navigation.navigate("CreateCard")}
+            size="large"
+            style={styles.actionButton}
+          />
+          <Button
+            title="Agregar Sello a Cliente"
+            onPress={() => {
+              if (loyaltyCards.length > 0) {
+                navigation.navigate("AddStamp", {
+                  loyaltyCardId: loyaltyCards[0].id,
+                });
+              } else {
+                // Show alert to create a loyalty card first
+                alert("Primero debe crear una tarjeta de lealtad");
+              }
+            }}
+            variant="outline"
+            size="large"
+            style={styles.actionButton}
+          />
+          <Button
+            title="Ver Todos los Clientes"
+            onPress={() =>
+              navigation.navigate("BusinessTabs", { screen: "Customers" })
+            }
+            variant="outline"
+            size="large"
+            style={styles.actionButton}
+          />
         </View>
 
         {/* Business Setup */}
         {!business && (
           <View style={styles.setupContainer}>
-            <Text style={styles.setupTitle}>Completa la Configuración de Tu Negocio</Text>
-            <Text style={styles.setupText}>Configura el perfil de tu negocio para comenzar a crear tarjetas de lealtad y gestionar clientes.</Text>
-            <Button title="Configurar Perfil del Negocio" onPress={() => navigation.navigate("BusinessTabs", { screen: "Settings" })} size="large" style={styles.setupButton} />
+            <Text style={styles.setupTitle}>
+              Completa la Configuración de Tu Negocio
+            </Text>
+            <Text style={styles.setupText}>
+              Configura el perfil de tu negocio para comenzar a crear tarjetas
+              de lealtad y gestionar clientes.
+            </Text>
+            <Button
+              title="Configurar Perfil del Negocio"
+              onPress={() =>
+                navigation.navigate("BusinessTabs", { screen: "Settings" })
+              }
+              size="large"
+              style={styles.setupButton}
+            />
           </View>
         )}
       </ScrollView>

@@ -1,23 +1,41 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, useAlert, Dropdown, ImagePicker } from "../../components";
+import {
+  Button,
+  InputField,
+  LoadingState,
+  useAlert,
+  Dropdown,
+  ImagePicker,
+} from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { BusinessService } from "../../services/api";
 import { ImageUploadService } from "../../services/imageUpload";
 import { Business } from "../../types";
+import { testStoragePermissions } from "../../utils/firebaseTest";
 
 interface BusinessSettingsScreenProps {
   navigation: StackNavigationProp<any>;
 }
 
-export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ navigation }) => {
+export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({
+  navigation,
+}) => {
   const { user, logout } = useAuth();
   const { showAlert } = useAlert();
   const [business, setBusiness] = useState<Business | null>(null);
-  
+
   // Bolivian cities dropdown options
   const bolivianCities = [
     { label: "La Paz", value: "la_paz" },
@@ -56,7 +74,8 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
     try {
       setLoading(true);
       const businesses = await BusinessService.getBusinessesByOwner(user.id);
-      const userBusiness = businesses[0];      if (userBusiness) {
+      const userBusiness = businesses[0];
+      if (userBusiness) {
         setBusiness(userBusiness);
         setFormData({
           name: userBusiness.name,
@@ -101,37 +120,65 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };  const handleSave = async () => {
+  };
+  const handleSave = async () => {
     if (!validateForm() || !user) return;
 
     setSaving(true);
     try {
-      let logoUrl = formData.logoUrl;      // If a new image was selected (local URI), upload it
-      if (formData.logoUrl && !formData.logoUrl.startsWith('http')) {
+      let logoUrl = formData.logoUrl;
+
+      // If a new image was selected (local URI), upload it
+      if (formData.logoUrl && !formData.logoUrl.startsWith("http")) {
         try {
           // Create a temporary business ID for new businesses
           const businessId = business?.id || `temp_${user.id}_${Date.now()}`;
-          logoUrl = await ImageUploadService.uploadBusinessLogo(formData.logoUrl, businessId);        } catch (uploadError) {
+          console.log("Uploading logo for business ID:", businessId);
+          console.log("User ID:", user.id);
+
+          logoUrl = await ImageUploadService.uploadBusinessLogo(
+            formData.logoUrl,
+            businessId
+          );
+        } catch (uploadError) {
           console.error("Error uploading logo:", uploadError);
-          
+
           // Check if it's a CORS error
-          const errorMessage = uploadError instanceof Error ? uploadError.message : String(uploadError);
-          if (errorMessage.includes('CORS') || errorMessage.includes('Access-Control')) {
+          const errorMessage =
+            uploadError instanceof Error
+              ? uploadError.message
+              : String(uploadError);
+          if (
+            errorMessage.includes("CORS") ||
+            errorMessage.includes("Access-Control")
+          ) {
             showAlert({
               title: "Error de Configuración",
-              message: "Error de CORS en Firebase Storage. Por favor consulta FIREBASE_CORS_SETUP.md para configurar CORS. Usando imagen temporal.",
+              message:
+                "Error de CORS en Firebase Storage. Por favor consulta FIREBASE_CORS_SETUP.md para configurar CORS. Usando imagen temporal.",
             });
-            
+
             // For development, allow using the data URL directly (not recommended for production)
-            if (formData.logoUrl.startsWith('data:')) {
+            if (formData.logoUrl.startsWith("data:")) {
               logoUrl = formData.logoUrl;
             } else {
               logoUrl = "";
             }
+          } else if (
+            errorMessage.includes("unauthorized") ||
+            errorMessage.includes("permission")
+          ) {
+            showAlert({
+              title: "Error de Permisos",
+              message:
+                "No tienes permisos para subir imágenes. Por favor verifica que estés autenticado y que las reglas de Firebase Storage estén configuradas correctamente.",
+            });
+            logoUrl = ""; // Save without logo if upload fails
           } else {
             showAlert({
               title: "Error de Subida",
-              message: "No se pudo subir el logo. El negocio se guardará sin logo.",
+              message:
+                "No se pudo subir el logo. El negocio se guardará sin logo.",
             });
             logoUrl = ""; // Save without logo if upload fails
           }
@@ -155,14 +202,14 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       console.log("Saving business data:", businessData);
       console.log("Business exists:", !!business);
       console.log("Business ID:", business?.id);
-      
+
       if (business) {
         // Update existing business
         await BusinessService.updateBusiness(business.id, businessData);
-        
+
         // Update the form data with the uploaded logo URL
-        setFormData(prev => ({ ...prev, logoUrl: logoUrl }));
-        
+        setFormData((prev) => ({ ...prev, logoUrl: logoUrl }));
+
         showAlert({
           title: "Éxito",
           message: "Perfil del negocio actualizado exitosamente",
@@ -171,10 +218,10 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
         // Create new business
         const newBusiness = await BusinessService.createBusiness(businessData);
         setBusiness(newBusiness);
-        
+
         // Update the form data with the uploaded logo URL
-        setFormData(prev => ({ ...prev, logoUrl: logoUrl }));
-        
+        setFormData((prev) => ({ ...prev, logoUrl: logoUrl }));
+
         showAlert({
           title: "Éxito",
           message: "Perfil del negocio creado exitosamente",
@@ -184,7 +231,10 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       console.error("Error saving business:", error);
       showAlert({
         title: "Error",
-        message: error instanceof Error ? error.message : "Error al guardar el perfil del negocio",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Error al guardar el perfil del negocio",
       });
     } finally {
       setSaving(false);
@@ -193,9 +243,12 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   const handleLogout = () => {
     showAlert({
       title: "Cerrar Sesión",
-      message: "¿Estás seguro que quieres cerrar sesión?",
+      message: "¿Estás seguro de que quieres cerrar sesión?",
       buttons: [
-        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
         {
           text: "Cerrar Sesión",
           style: "destructive",
@@ -216,15 +269,25 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   if (loading) {
     return <LoadingState loading={true} />;
   }
-
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
-        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">          <View style={styles.header}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboardAvoid}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.header}>
             <Text style={styles.title}>Configuraciones del Negocio</Text>
-            <Text style={styles.subtitle}>{business ? "Actualiza la información de tu negocio" : "Configura el perfil de tu negocio"}</Text>
+            <Text style={styles.subtitle}>
+              {business
+                ? "Actualiza la información de tu negocio"
+                : "Configura el perfil de tu negocio"}
+            </Text>
           </View>
-        <View style={styles.form}>
+          <View style={styles.form}>
             <ImagePicker
               label="Logo del Negocio"
               value={formData.logoUrl}
@@ -276,7 +339,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
               leftIcon="call"
               error={errors.phone}
             />
-            
+
             {/* Social Media Section */}
             <View style={styles.socialSection}>
               <Text style={styles.socialTitle}>Redes Sociales (Opcional)</Text>
@@ -303,8 +366,15 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
                 placeholder="@tu_usuario_tiktok"
                 leftIcon="logo-tiktok"
                 error={errors.tiktok}
-              />            </View>
-            <Button title={business ? "Actualizar Perfil" : "Crear Perfil"} onPress={handleSave} loading={saving} size="large" style={styles.saveButton} />
+              />
+            </View>
+            <Button
+              title={business ? "Actualizar Perfil" : "Crear Perfil"}
+              onPress={handleSave}
+              loading={saving}
+              size="large"
+              style={styles.saveButton}
+            />
           </View>
 
           {/* Account Section */}
@@ -314,7 +384,13 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
               <Text style={styles.accountLabel}>Sesión iniciada como:</Text>
               <Text style={styles.accountValue}>{user?.email}</Text>
             </View>
-            <Button title="Cerrar Sesión" onPress={handleLogout} variant="outline" size="large" style={styles.logoutButton} />
+            <Button
+              title="Cerrar Sesión"
+              onPress={handleLogout}
+              variant="outline"
+              size="large"
+              style={styles.logoutButton}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -349,7 +425,8 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-  },  form: {
+  },
+  form: {
     padding: SPACING.lg,
   },
   socialSection: {
@@ -394,5 +471,8 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderColor: COLORS.error,
+  },
+  testButton: {
+    marginBottom: SPACING.md,
   },
 });

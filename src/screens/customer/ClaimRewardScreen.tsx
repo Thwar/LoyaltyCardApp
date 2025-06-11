@@ -13,7 +13,10 @@ interface ClaimRewardScreenProps {
   route: RouteProp<CustomerStackParamList, "ClaimReward">;
 }
 
-export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation, route }) => {
+export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({
+  navigation,
+  route,
+}) => {
   const { customerCard } = route.params;
   const { showAlert } = useAlert();
   const [claiming, setClaiming] = useState(false);
@@ -24,7 +27,8 @@ export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation
       await CustomerCardService.claimReward(customerCard.id);
       showAlert({
         title: "¡Recompensa Reclamada!",
-        message: "¡Felicitaciones! Tu recompensa ha sido reclamada exitosamente. Muestra esta pantalla al negocio para canjear tu recompensa.",
+        message:
+          "¡Felicitaciones! Tu recompensa ha sido reclamada exitosamente. Muestra esta pantalla al negocio para canjear tu recompensa.",
         buttons: [
           {
             text: "Listo",
@@ -38,7 +42,10 @@ export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation
     } catch (error) {
       showAlert({
         title: "Error",
-        message: error instanceof Error ? error.message : "Error al reclamar la recompensa",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Error al reclamar la recompensa",
       });
     } finally {
       setClaiming(false);
@@ -49,7 +56,8 @@ export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation
     return null;
   }
 
-  const isEligible = customerCard.currentStamps >= customerCard.loyaltyCard.totalSlots;
+  const isEligible =
+    customerCard.currentStamps >= customerCard.loyaltyCard.totalSlots;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,37 +65,59 @@ export const ClaimRewardScreen: React.FC<ClaimRewardScreenProps> = ({ navigation
         {/* Congratulations Header */}
         <View style={styles.header}>
           <Text style={styles.congratsText}>🎉 ¡Felicitaciones! 🎉</Text>
-          <Text style={styles.subText}>¡Has completado tu tarjeta de lealtad y ganado una recompensa!</Text>
+          <Text style={styles.subText}>
+            ¡Has completado tu tarjeta de lealtad y ganado una recompensa!
+          </Text>
         </View>
         {/* Card Display */}
         <View style={styles.cardContainer}>
-          <LoyaltyCard card={customerCard.loyaltyCard} currentStamps={customerCard.currentStamps} />
+          <LoyaltyCard
+            card={customerCard.loyaltyCard}
+            currentStamps={customerCard.currentStamps}
+          />
         </View>
         {/* Reward Details */}
         <View style={styles.rewardContainer}>
           <Text style={styles.rewardTitle}>Tu Recompensa</Text>
-          <Text style={styles.rewardDescription}>{customerCard.loyaltyCard.rewardDescription}</Text>
-        <View style={styles.instructionsContainer}>
+          <Text style={styles.rewardDescription}>
+            {customerCard.loyaltyCard.rewardDescription}
+          </Text>
+          <View style={styles.instructionsContainer}>
             <Text style={styles.instructionsTitle}>Cómo Canjear:</Text>
             <Text style={styles.instructionsText}>
-              1. Toca "Reclamar Recompensa" abajo{"\n"}
-              2. Muestra esta pantalla al negocio{"\n"}
-              3. ¡Disfruta tu recompensa!
+              1. Toca "Reclamar Recompensa" abajo 2. Muestra esta pantalla al
+              negocio 3. ¡Disfruta tu recompensa!
             </Text>
           </View>
         </View>
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           {!customerCard.isRewardClaimed && isEligible ? (
-            <Button title="Reclamar Mi Recompensa" onPress={handleClaimReward} loading={claiming} size="large" style={styles.claimButton} />
+            <Button
+              title="Reclamar Mi Recompensa"
+              onPress={handleClaimReward}
+              loading={claiming}
+              size="large"
+              style={styles.claimButton}
+            />
           ) : (
             <View style={styles.alreadyClaimedContainer}>
-              <Text style={styles.alreadyClaimedText}>✅ Recompensa Ya Reclamada</Text>
-              <Text style={styles.alreadyClaimedSubText}>¡Gracias por usar nuestro programa de lealtad!</Text>
+              <Text style={styles.alreadyClaimedText}>
+                ✅ Recompensa Ya Reclamada
+              </Text>
+              <Text style={styles.alreadyClaimedSubText}>
+                ¡Gracias por usar nuestro programa de lealtad!
+              </Text>
             </View>
           )}
 
-          <Button title="Volver a Mis Tarjetas" onPress={() => navigation.navigate("CustomerTabs")} variant="outline" size="large" style={styles.backButton} />
+          <Button
+            title="Volver a Mis Tarjetas"
+            onPress={() => navigation.navigate("CustomerTabs")}
+            variant="outline"
+            size="large"
+            style={styles.backButton}
+          />
         </View>
       </View>
     </SafeAreaView>

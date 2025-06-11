@@ -129,6 +129,7 @@ export const FIREBASE_COLLECTIONS = {
   CUSTOMER_CARDS: "customerCards",
   STAMPS: "stamps",
   REWARDS: "rewards",
+  STAMP_ACTIVITY: "stampActivity",
 } as const;
 
 export const USER_TYPES = {
