@@ -1,19 +1,19 @@
 import React, { useEffect, useRef } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Animated, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
   Dimensions,
-  ImageBackground 
+  ImageBackground,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
 import { LoyaltyCard as LoyaltyCardType } from "../types";
 
-type StampShape = 'circle' | 'square' | 'egg';
+type StampShape = "circle" | "square" | "egg";
 
 interface AnimatedLoyaltyCardProps {
   card: LoyaltyCardType;
@@ -25,23 +25,23 @@ interface AnimatedLoyaltyCardProps {
   stampShape?: StampShape;
 }
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
-export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ 
-  card, 
-  currentStamps = 0, 
-  onPress, 
+export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
+  card,
+  currentStamps = 0,
+  onPress,
   style,
   showAnimation = true,
   cardCode,
-  stampShape = 'circle'
+  stampShape = "circle",
 }) => {
   const progress = Math.min(currentStamps / card.totalSlots, 1);
   const isCompleted = currentStamps >= card.totalSlots;
-  
+
   // Use stampShape from card first, then prop, then default to circle
-  const selectedStampShape = card.stampShape || stampShape || 'circle';
-  
+  const selectedStampShape = card.stampShape || stampShape || "circle";
+
   // Animation values
   const scaleValue = useRef(new Animated.Value(1)).current;
   const progressAnimation = useRef(new Animated.Value(0)).current;
@@ -122,15 +122,16 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
           useNativeDriver: true,
         }),
       ]).start();
-      
+
       onPress();
     }
-  };  const getStampStyle = (shape: StampShape) => {
+  };
+  const getStampStyle = (shape: StampShape) => {
     // Calculate stamp size based on card width and number of columns
     const columns = getGridColumns(card.totalSlots);
-    const availableWidth = width - (SPACING.md * 4) - (SPACING.xs * (columns - 1)); // Account for padding and gaps
+    const availableWidth = width - SPACING.md * 4 - SPACING.xs * (columns - 1); // Account for padding and gaps
     const stampSize = Math.min(40, availableWidth / columns); // Max 40px, but scale down if needed
-    
+
     const baseStyle = {
       width: stampSize,
       height: stampSize,
@@ -141,18 +142,18 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     };
 
     switch (shape) {
-      case 'square':
+      case "square":
         return {
           ...baseStyle,
           borderRadius: 6,
         };
-      case 'egg':
+      case "egg":
         return {
           ...baseStyle,
           borderRadius: stampSize * 0.6,
           height: stampSize * 1.2,
         };
-      case 'circle':
+      case "circle":
       default:
         return {
           ...baseStyle,
@@ -166,17 +167,18 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     if (totalSlots <= 12) return 4;
     if (totalSlots <= 16) return 4;
     return 5;
-  };  const renderStamps = () => {
+  };
+  const renderStamps = () => {
     const stamps = [];
     const stampStyle = getStampStyle(selectedStampShape);
-    
+
     for (let i = 0; i < card.totalSlots; i++) {
       const isStamped = i < currentStamps;
       const animation = stampAnimations[i];
-      
+
       stamps.push(
-        <Animated.View 
-          key={i} 
+        <Animated.View
+          key={i}
           style={[
             stampStyle,
             isStamped ? styles.stampFilled : styles.stampEmpty,
@@ -193,7 +195,12 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
             },
           ]}
         >
-          <Text style={[styles.stampText, isStamped ? styles.stampTextFilled : styles.stampTextEmpty]}>
+          <Text
+            style={[
+              styles.stampText,
+              isStamped ? styles.stampTextFilled : styles.stampTextEmpty,
+            ]}
+          >
             {isStamped ? "✓" : ""}
           </Text>
         </Animated.View>
@@ -201,7 +208,6 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     }
     return stamps;
   };
-
 
   const CardContent = () => (
     <View style={styles.container}>
@@ -216,7 +222,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
           ]}
         />
       )}
-      
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.businessInfo}>
@@ -225,19 +231,20 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
           </Text>
         </View>
         <View style={styles.progressContainer}>
-          <Text style={styles.progress}>
-            #{cardCode}
-          </Text>
+          <Text style={styles.progress}>#{cardCode}</Text>
           {isCompleted && (
-            <Ionicons name="gift" size={16} color={COLORS.white} style={styles.giftIcon} />
+            <Ionicons
+              name="gift"
+              size={16}
+              color={COLORS.white}
+              style={styles.giftIcon}
+            />
           )}
         </View>
-      </View>         
-       {/* Stamps Grid */}
+      </View>
+      {/* Stamps Grid */}
       <View style={styles.stampsContainer}>
-        <View style={styles.stampsGrid}>
-          {renderStamps()}
-        </View>
+        <View style={styles.stampsGrid}>{renderStamps()}</View>
       </View>
 
       {/* Reward Description */}
@@ -247,13 +254,11 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
           🎁 {card.rewardDescription}
         </Text>
       </View>
-
-
     </View>
   );
 
   const cardStyle = [
-    styles.cardWrapper, 
+    styles.cardWrapper,
     style,
     showAnimation && {
       transform: [{ scale: scaleValue }],
@@ -264,13 +269,13 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     return (
       <Animated.View style={cardStyle}>
         <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
-          <LinearGradient 
+          <LinearGradient
             colors={[
-              card.cardColor || COLORS.primary, 
-              card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark
-            ]} 
-            style={styles.gradient} 
-            start={{ x: 0, y: 0 }} 
+              card.cardColor || COLORS.primary,
+              card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark,
+            ]}
+            style={styles.gradient}
+            start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
             <CardContent />
@@ -282,13 +287,13 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
 
   return (
     <Animated.View style={cardStyle}>
-      <LinearGradient 
+      <LinearGradient
         colors={[
-          card.cardColor || COLORS.primary, 
-          card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark
-        ]} 
-        style={styles.gradient} 
-        start={{ x: 0, y: 0 }} 
+          card.cardColor || COLORS.primary,
+          card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark,
+        ]}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
         <CardContent />
@@ -308,21 +313,22 @@ const styles = StyleSheet.create({
   gradient: {
     borderRadius: 20,
     padding: SPACING.lg,
-    overflow: 'hidden',
-    position: 'relative',
-  },  container: {
+    overflow: "hidden",
+    position: "relative",
+  },
+  container: {
     minHeight: 200,
     flex: 1,
   },
   shineOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     width: 100,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    transform: [{ skewX: '-20deg' }],
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    transform: [{ skewX: "-20deg" }],
   },
   header: {
     flexDirection: "row",
@@ -340,23 +346,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cardCodeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 8,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   cardCode: {
     fontSize: FONT_SIZES.md,
     color: COLORS.white,
     marginLeft: 4,
-    fontFamily: 'monospace',
-    fontWeight: '600',
+    fontFamily: "monospace",
+    fontWeight: "600",
   },
   progressContainer: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   progress: {
     fontSize: FONT_SIZES.md,
@@ -366,36 +372,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
     borderRadius: 15,
-    textAlign: 'center',
+    textAlign: "center",
     minWidth: 50,
   },
   giftIcon: {
     marginTop: 4,
   },
-  stampDescription: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
-    opacity: 0.9,
-    marginBottom: SPACING.md,
-    lineHeight: 20,
-  },  stampsContainer: {
+  stampsContainer: {
     flex: 1,
     marginBottom: SPACING.md,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   stampsTitle: {
     fontSize: FONT_SIZES.sm,
-    fontWeight: '600',
+    fontWeight: "600",
     color: COLORS.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: SPACING.sm,
-  },  stampsGrid: {
+  },
+  stampsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "center",
-    alignItems: 'center',
-    width: '100%',
+    alignItems: "center",
+    width: "100%",
     gap: SPACING.xs,
     paddingHorizontal: SPACING.sm,
   },
@@ -415,7 +416,8 @@ const styles = StyleSheet.create({
   stampText: {
     fontSize: FONT_SIZES.md,
     fontWeight: "bold",
-  },  stampTextEmpty: {
+  },
+  stampTextEmpty: {
     color: "rgba(128, 128, 128, 0.5)",
   },
   stampTextFilled: {
@@ -423,7 +425,7 @@ const styles = StyleSheet.create({
   },
   rewardContainer: {
     marginBottom: SPACING.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
     padding: SPACING.sm,
     borderRadius: 12,
   },
@@ -463,7 +465,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.white,
     marginTop: SPACING.sm,
-    textAlign: "center",    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textAlign: "center",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },

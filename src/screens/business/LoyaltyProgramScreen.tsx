@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, FlatList, SafeAreaView, RefreshControl, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  SafeAreaView,
+  RefreshControl,
+  TouchableOpacity,
+} from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
@@ -14,7 +22,9 @@ interface LoyaltyProgramScreenProps {
   navigation: StackNavigationProp<any>;
 }
 
-export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navigation }) => {
+export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({
+  navigation,
+}) => {
   const { user } = useAuth();
   const [loyaltyCards, setLoyaltyCards] = useState<LoyaltyCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,21 +43,28 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
 
       // Get or use business ID for the current user
       let businessId = user.id; // Default fallback
-      
+
       try {
         const businesses = await BusinessService.getBusinessesByOwner(user.id);
         if (businesses.length > 0) {
           businessId = businesses[0].id; // Use the first business found
         }
       } catch (businessError) {
-        console.warn("Could not fetch business, using user ID as fallback:", businessError);
+        console.warn(
+          "Could not fetch business, using user ID as fallback:",
+          businessError
+        );
         // Continue with user.id as businessId for backward compatibility
       }
 
-      const cards = await LoyaltyCardService.getLoyaltyCardsByBusiness(businessId);
+      const cards = await LoyaltyCardService.getLoyaltyCardsByBusiness(
+        businessId
+      );
       setLoyaltyCards(cards);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load loyalty cards");
+      setError(
+        err instanceof Error ? err.message : "Failed to load loyalty cards"
+      );
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -73,30 +90,41 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
   };
 
   const LoyaltyCardItem: React.FC<{ card: LoyaltyCard }> = ({ card }) => (
-    <TouchableOpacity style={styles.cardItem} onPress={() => handleEditCard(card.id)}>
+    <TouchableOpacity
+      style={styles.cardItem}
+      onPress={() => handleEditCard(card.id)}
+    >
       <View style={styles.cardHeader}>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle}>{card.businessName}</Text>
-          <Text style={styles.cardSubtitle}>{card.totalSlots} sellos requeridos</Text>
+          <Text style={styles.cardSubtitle}>
+            {card.totalSlots} sellos requeridos
+          </Text>
         </View>
         <View style={styles.cardActions}>
-          <View style={[styles.statusBadge, card.isActive ? styles.activeBadge : styles.inactiveBadge]}>
-            <Text style={[styles.statusText, card.isActive ? styles.activeText : styles.inactiveText]}>{card.isActive ? "Activo" : "Inactivo"}</Text>
+          <View
+            style={[
+              styles.statusBadge,
+              card.isActive ? styles.activeBadge : styles.inactiveBadge,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                card.isActive ? styles.activeText : styles.inactiveText,
+              ]}
+            >
+              {card.isActive ? "Activo" : "Inactivo"}
+            </Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
       </View>
-        <View style={styles.cardDetails}>
+      <View style={styles.cardDetails}>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>🎯 Recompensa:</Text>
           <Text style={styles.detailText} numberOfLines={2}>
             {card.rewardDescription}
-          </Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>📝 Cómo ganar:</Text>
-          <Text style={styles.detailText} numberOfLines={2}>
-            {card.stampDescription}
           </Text>
         </View>
       </View>
@@ -133,11 +161,21 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
             renderItem={({ item }) => <LoyaltyCardItem card={item} />}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.cardsList}
-            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadLoyaltyCards(true)} />}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => loadLoyaltyCards(true)}
+              />
+            }
           />
 
           <View style={styles.actionContainer}>
-            <Button title="Crear Nueva Tarjeta" onPress={handleCreateCard} size="large" style={styles.createButton} />
+            <Button
+              title="Crear Nueva Tarjeta"
+              onPress={handleCreateCard}
+              size="large"
+              style={styles.createButton}
+            />
           </View>
         </>
       )}

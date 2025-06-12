@@ -30,7 +30,6 @@ export interface LoyaltyCard {
   businessLogo?: string;
   totalSlots: number;
   rewardDescription: string;
-  stampDescription: string;
   cardColor?: string;
   stampShape?: "circle" | "square" | "egg";
   createdAt: Date;

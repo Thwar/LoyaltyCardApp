@@ -58,8 +58,33 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({
         ],
       });
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Error al agregar sello";
+      console.error("Error adding stamp:", err);
+      let errorMessage = "Error al agregar sello";
+
+      if (err instanceof Error) {
+        if (
+          err.message.includes("not found") ||
+          err.message.includes("no encontrada")
+        ) {
+          errorMessage =
+            "Código de tarjeta inválido o no pertenece a este programa de fidelidad";
+        } else if (
+          err.message.includes("permission") ||
+          err.message.includes("permisos")
+        ) {
+          errorMessage =
+            "No tienes permisos para agregar sellos a esta tarjeta";
+        } else if (
+          err.message.includes("network") ||
+          err.message.includes("connection")
+        ) {
+          errorMessage =
+            "Error de conexión. Verifica tu conexión a internet e intenta nuevamente";
+        } else {
+          errorMessage = err.message;
+        }
+      }
+
       setError(errorMessage);
       showAlert({
         title: "Error",

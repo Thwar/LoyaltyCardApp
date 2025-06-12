@@ -305,12 +305,6 @@ export const BusinessDiscoveryScreen: React.FC<
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>📝 Cómo ganar:</Text>
-            <Text style={styles.detailText} numberOfLines={2}>
-              {item.loyaltyCard.stampDescription}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>🎫 Sellos necesarios:</Text>
             <Text style={styles.detailText}>
               {item.loyaltyCard.totalSlots} sellos para completar

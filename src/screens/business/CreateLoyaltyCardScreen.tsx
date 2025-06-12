@@ -28,7 +28,6 @@ export const CreateLoyaltyCardScreen: React.FC<
   const [formData, setFormData] = useState({
     totalSlots: "10",
     rewardDescription: "",
-    stampDescription: "",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,14 +49,9 @@ export const CreateLoyaltyCardScreen: React.FC<
     ) {
       newErrors.totalSlots = "Los sellos deben estar entre 3 y 20";
     }
-
     if (!formData.rewardDescription.trim()) {
       newErrors.rewardDescription =
         "La descripción de la recompensa es requerida";
-    }
-
-    if (!formData.stampDescription.trim()) {
-      newErrors.stampDescription = "La descripción del sello es requerida";
     }
 
     setErrors(newErrors);
@@ -76,7 +70,6 @@ export const CreateLoyaltyCardScreen: React.FC<
           "No se encontró el perfil del negocio. Por favor, contacta al soporte."
         );
       }
-
       const businessId = businesses[0].id; // Use the first business found
 
       const cardData = {
@@ -85,7 +78,6 @@ export const CreateLoyaltyCardScreen: React.FC<
         businessLogo: businesses[0].logoUrl,
         totalSlots: parseInt(formData.totalSlots),
         rewardDescription: formData.rewardDescription,
-        stampDescription: formData.stampDescription,
         isActive: true,
       };
 
@@ -149,18 +141,6 @@ export const CreateLoyaltyCardScreen: React.FC<
             />
 
             <InputField
-              label="Cómo Ganar un Sello"
-              value={formData.stampDescription}
-              onChangeText={(value) =>
-                updateFormData("stampDescription", value)
-              }
-              placeholder="ej., Comprar cualquier café o Comprar $10 o más"
-              leftIcon="checkmark-circle"
-              error={errors.stampDescription}
-              multiline
-            />
-
-            <InputField
               label="Descripción de la Recompensa"
               value={formData.rewardDescription}
               onChangeText={(value) =>
@@ -181,9 +161,6 @@ export const CreateLoyaltyCardScreen: React.FC<
                 </Text>
                 <Text style={styles.previewStamps}>
                   0 / {formData.totalSlots || "10"} sellos
-                </Text>
-                <Text style={styles.previewStampDesc}>
-                  {formData.stampDescription || "Cómo ganar sellos"}
                 </Text>
                 <Text style={styles.previewReward}>
                   Recompensa:

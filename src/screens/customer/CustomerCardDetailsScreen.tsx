@@ -3,7 +3,12 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
-import { Button, AnimatedLoyaltyCard, LoadingState, useAlert } from "../../components";
+import {
+  Button,
+  AnimatedLoyaltyCard,
+  LoadingState,
+  useAlert,
+} from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
 import { CustomerCard, CustomerStackParamList } from "../../types";
@@ -13,13 +18,16 @@ interface CustomerCardDetailsScreenProps {
   route: RouteProp<CustomerStackParamList, "CardDetails">;
 }
 
-export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps> = ({ navigation, route }) => {
+export const CustomerCardDetailsScreen: React.FC<
+  CustomerCardDetailsScreenProps
+> = ({ navigation, route }) => {
   const { customerCard: initialCard } = route.params;
   const { showAlert } = useAlert();
   const [card, setCard] = useState<CustomerCard>(initialCard);
   const [loading, setLoading] = useState(false);
 
-  const isCardComplete = card.currentStamps >= (card.loyaltyCard?.totalSlots || 0);
+  const isCardComplete =
+    card.currentStamps >= (card.loyaltyCard?.totalSlots || 0);
   const canClaimReward = isCardComplete && !card.isRewardClaimed;
 
   const handleClaimReward = () => {
@@ -30,7 +38,9 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
 
   const handleViewBusiness = () => {
     if (card.loyaltyCard) {
-      navigation.navigate("BusinessProfile", { businessId: card.loyaltyCard.businessId });
+      navigation.navigate("BusinessProfile", {
+        businessId: card.loyaltyCard.businessId,
+      });
     }
   };
 
@@ -56,16 +66,22 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
   }, []);
 
   if (!card.loyaltyCard) {
-    return <LoadingState error="Detalles de la tarjeta no disponibles" onRetry={() => navigation.goBack()} />;
+    return (
+      <LoadingState
+        error="Detalles de la tarjeta no disponibles"
+        onRetry={() => navigation.goBack()}
+      />
+    );
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView style={styles.scrollView}>
         {/* Card Display */}
-        <View style={styles.cardContainer}>          <AnimatedLoyaltyCard 
-            card={card.loyaltyCard} 
-            currentStamps={card.currentStamps} 
+        <View style={styles.cardContainer}>
+          <AnimatedLoyaltyCard
+            card={card.loyaltyCard}
+            currentStamps={card.currentStamps}
             cardCode={card.cardCode}
             showAnimation={true}
             stampShape="circle"
@@ -82,14 +98,25 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
           </View>
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Estado:</Text>
-            <Text style={[styles.statusValue, canClaimReward && styles.statusValueSuccess]}>
-              {card.isRewardClaimed ? "Recompensa Reclamada" : canClaimReward ? "¡Listo para Reclamar!" : "En Progreso"}
+            <Text
+              style={[
+                styles.statusValue,
+                canClaimReward && styles.statusValueSuccess,
+              ]}
+            >
+              {card.isRewardClaimed
+                ? "Recompensa Reclamada"
+                : canClaimReward
+                ? "¡Listo para Reclamar!"
+                : "En Progreso"}
             </Text>
           </View>
           {card.lastStampDate && (
             <View style={styles.statusRow}>
               <Text style={styles.statusLabel}>Último Sello:</Text>
-              <Text style={styles.statusValue}>{new Date(card.lastStampDate).toLocaleDateString()}</Text>
+              <Text style={styles.statusValue}>
+                {new Date(card.lastStampDate).toLocaleDateString()}
+              </Text>
             </View>
           )}
         </View>
@@ -98,22 +125,35 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
           <Text style={styles.detailsTitle}>Cómo Funciona</Text>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>🎯 Meta:</Text>
-            <Text style={styles.detailText}>Coleccionar {card.loyaltyCard.totalSlots} sellos</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>📝 Cómo ganar:</Text>
-            <Text style={styles.detailText}>{card.loyaltyCard.stampDescription}</Text>
+            <Text style={styles.detailText}>
+              Coleccionar {card.loyaltyCard.totalSlots} sellos
+            </Text>
           </View>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>🎁 Recompensa:</Text>
-            <Text style={styles.detailText}>{card.loyaltyCard.rewardDescription}</Text>
+            <Text style={styles.detailText}>
+              {card.loyaltyCard.rewardDescription}
+            </Text>
           </View>
         </View>
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
-          {canClaimReward && <Button title="¡Reclama Tu Recompensa!" onPress={handleClaimReward} size="large" style={styles.claimButton} />}
+          {canClaimReward && (
+            <Button
+              title="¡Reclama Tu Recompensa!"
+              onPress={handleClaimReward}
+              size="large"
+              style={styles.claimButton}
+            />
+          )}
 
-          <Button title="Ver Perfil del Negocio" onPress={handleViewBusiness} variant="outline" size="large" style={styles.businessButton} />
+          <Button
+            title="Ver Perfil del Negocio"
+            onPress={handleViewBusiness}
+            variant="outline"
+            size="large"
+            style={styles.businessButton}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

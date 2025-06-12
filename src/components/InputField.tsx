@@ -79,7 +79,8 @@ export const InputField: React.FC<InputFieldProps> = ({
               size={20}
               color={isFocused ? COLORS.primary : COLORS.gray}
             />
-          </TouchableOpacity>        ) : null}
+          </TouchableOpacity>
+        ) : null}
       </View>
       {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>

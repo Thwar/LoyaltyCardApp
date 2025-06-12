@@ -75,44 +75,44 @@ export class AuthService {
         ...userData,
       };
     } catch (error: any) {
-      console.error("Registration error:", error);
-
-      // Provide more specific error messages based on Firebase error codes
-      let errorMessage = "Registration failed";
+      console.error("Registration error:", error); // Provide more specific error messages based on Firebase error codes
+      let errorMessage = "Registro fallido";
 
       if (error.code) {
         switch (error.code) {
           case "auth/email-already-in-use":
             errorMessage =
-              "This email address is already registered. Please use a different email or try signing in.";
+              "Esta dirección de correo electrónico ya está registrada. Por favor usa un correo diferente o intenta iniciar sesión.";
             break;
           case "auth/invalid-email":
-            errorMessage = "Please enter a valid email address.";
+            errorMessage =
+              "Por favor ingresa una dirección de correo electrónico válida.";
             break;
           case "auth/operation-not-allowed":
             errorMessage =
-              "Email/password accounts are not enabled. Please contact support.";
+              "Las cuentas de correo/contraseña no están habilitadas. Por favor contacta soporte.";
             break;
           case "auth/weak-password":
             errorMessage =
-              "Password is too weak. Please choose a stronger password.";
+              "La contraseña es muy débil. Por favor elige una contraseña más fuerte.";
             break;
           case "auth/network-request-failed":
             errorMessage =
-              "Network error. Please check your internet connection and try again.";
+              "Error de red. Por favor verifica tu conexión a internet e intenta de nuevo.";
             break;
           case "auth/too-many-requests":
             errorMessage =
-              "Too many unsuccessful attempts. Please try again later.";
+              "Demasiados intentos fallidos. Por favor intenta más tarde.";
             break;
           case "auth/api-key-not-valid":
-            errorMessage = "Invalid API configuration. Please contact support.";
+            errorMessage =
+              "Configuración de API inválida. Por favor contacta soporte.";
             break;
           default:
-            errorMessage = error.message || "Registration failed";
+            errorMessage = error.message || "Registro fallido";
         }
       } else {
-        errorMessage = error.message || "Registration failed";
+        errorMessage = error.message || "Registro fallido";
       }
 
       throw new Error(errorMessage);
@@ -131,7 +131,7 @@ export class AuthService {
         doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid)
       );
       if (!userDoc.exists()) {
-        throw new Error("User data not found");
+        throw new Error("Datos de usuario no encontrados");
       }
 
       const userData = userDoc.data();
@@ -144,40 +144,39 @@ export class AuthService {
         profileImage: userData.profileImage,
       };
     } catch (error: any) {
-      console.error("Login error:", error);
-
-      // Provide more specific error messages based on Firebase error codes
-      let errorMessage = "Login failed";
+      console.error("Login error:", error); // Provide more specific error messages based on Firebase error codes
+      let errorMessage = "Inicio de sesión fallido";
 
       if (error.code) {
         switch (error.code) {
           case "auth/user-not-found":
             errorMessage =
-              "No account found with this email address. Please check your email or register a new account.";
+              "No se encontró una cuenta con esta dirección de correo electrónico. Por favor verifica tu correo o registra una nueva cuenta.";
             break;
           case "auth/wrong-password":
-            errorMessage = "Incorrect password. Please try again.";
+            errorMessage = "Contraseña incorrecta. Por favor intenta de nuevo.";
             break;
           case "auth/invalid-email":
-            errorMessage = "Please enter a valid email address.";
+            errorMessage =
+              "Por favor ingresa una dirección de correo electrónico válida.";
             break;
           case "auth/user-disabled":
             errorMessage =
-              "This account has been disabled. Please contact support.";
+              "Esta cuenta ha sido deshabilitada. Por favor contacta soporte.";
             break;
           case "auth/too-many-requests":
             errorMessage =
-              "Too many unsuccessful attempts. Please try again later.";
+              "Demasiados intentos fallidos. Por favor intenta más tarde.";
             break;
           case "auth/network-request-failed":
             errorMessage =
-              "Network error. Please check your internet connection and try again.";
+              "Error de red. Por favor verifica tu conexión a internet e intenta de nuevo.";
             break;
           default:
-            errorMessage = error.message || "Login failed";
+            errorMessage = error.message || "Inicio de sesión fallido";
         }
       } else {
-        errorMessage = error.message || "Login failed";
+        errorMessage = error.message || "Inicio de sesión fallido";
       }
 
       throw new Error(errorMessage);
@@ -188,7 +187,7 @@ export class AuthService {
     try {
       await signOut(auth);
     } catch (error: any) {
-      throw new Error(error.message || "Logout failed");
+      throw new Error(error.message || "Cierre de sesión fallido");
     }
   }
 
@@ -196,7 +195,9 @@ export class AuthService {
     try {
       await sendPasswordResetEmail(auth, email);
     } catch (error: any) {
-      throw new Error(error.message || "Password reset failed");
+      throw new Error(
+        error.message || "Restablecimiento de contraseña fallido"
+      );
     }
   }
 
@@ -232,11 +233,11 @@ export class BusinessService {
     businessData: Omit<Business, "id" | "createdAt">
   ): Promise<Business> {
     try {
-      console.log("Creating business with data:", businessData);
-
-      // Check if user is authenticated
+      console.log("Creating business with data:", businessData); // Check if user is authenticated
       if (!auth.currentUser) {
-        throw new Error("User must be authenticated to create a business");
+        throw new Error(
+          "El usuario debe estar autenticado para crear un negocio"
+        );
       }
 
       // Filter out undefined values as Firestore doesn't accept them
@@ -264,38 +265,35 @@ export class BusinessService {
         createdAt: new Date(),
       };
     } catch (error: any) {
-      console.error("Failed to create business:", error);
-
-      // Provide more specific error messages
+      console.error("Failed to create business:", error); // Provide more specific error messages
       if (error.code) {
         switch (error.code) {
           case "permission-denied":
             throw new Error(
-              "Permission denied. Please check Firestore security rules."
+              "Permiso denegado. Por favor verifica las reglas de seguridad de Firestore."
             );
           case "unauthenticated":
             throw new Error(
-              "Authentication required. Please log in and try again."
+              "Autenticación requerida. Por favor inicia sesión e intenta de nuevo."
             );
           case "not-found":
             throw new Error(
-              "Firestore database not found. Please check Firebase configuration."
+              "Base de datos Firestore no encontrada. Por favor verifica la configuración de Firebase."
             );
           case "unavailable":
             throw new Error(
-              "Firestore service is temporarily unavailable. Please try again."
+              "El servicio Firestore no está disponible temporalmente. Por favor intenta de nuevo."
             );
           default:
             throw new Error(
-              `Firestore error (${error.code}): ${error.message}`
+              `Error de Firestore (${error.code}): ${error.message}`
             );
         }
       }
 
-      throw new Error(error.message || "Failed to create business");
+      throw new Error(error.message || "Error al crear el negocio");
     }
   }
-
   static async getBusinessByOwnerId(ownerId: string): Promise<Business | null> {
     try {
       const q = query(
@@ -324,7 +322,7 @@ export class BusinessService {
         isActive: data.isActive,
       };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get business");
+      throw new Error(error.message || "Error al obtener el negocio");
     }
   }
   static async updateBusiness(
@@ -354,33 +352,33 @@ export class BusinessService {
       );
       console.log("Business updated successfully");
     } catch (error: any) {
-      console.error("Failed to update business:", error);
-
-      // Provide more specific error messages
+      console.error("Failed to update business:", error); // Provide more specific error messages
       if (error.code) {
         switch (error.code) {
           case "permission-denied":
             throw new Error(
-              "Permission denied. Please check Firestore security rules."
+              "Permiso denegado. Por favor verifica las reglas de seguridad de Firestore."
             );
           case "unauthenticated":
             throw new Error(
-              "Authentication required. Please log in and try again."
+              "Autenticación requerida. Por favor inicia sesión e intenta de nuevo."
             );
           case "not-found":
-            throw new Error("Business not found. It may have been deleted.");
+            throw new Error(
+              "Negocio no encontrado. Puede haber sido eliminado."
+            );
           case "unavailable":
             throw new Error(
-              "Firestore service is temporarily unavailable. Please try again."
+              "El servicio Firestore no está disponible temporalmente. Por favor intenta de nuevo."
             );
           default:
             throw new Error(
-              `Firestore error (${error.code}): ${error.message}`
+              `Error de Firestore (${error.code}): ${error.message}`
             );
         }
       }
 
-      throw new Error(error.message || "Failed to update business");
+      throw new Error(error.message || "Error al actualizar el negocio");
     }
   }
   static async getAllBusinesses(): Promise<Business[]> {
@@ -411,7 +409,7 @@ export class BusinessService {
         };
       });
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get businesses");
+      throw new Error(error.message || "Error al obtener los negocios");
     }
   }
   static async getBusiness(businessId: string): Promise<Business | null> {
@@ -440,7 +438,7 @@ export class BusinessService {
         isActive: data.isActive,
       };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get business");
+      throw new Error(error.message || "Error al obtener el negocio");
     }
   }
   static async getBusinessesByOwner(ownerId: string): Promise<Business[]> {
@@ -471,7 +469,9 @@ export class BusinessService {
         };
       });
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get businesses by owner");
+      throw new Error(
+        error.message || "Error al obtener los negocios del propietario"
+      );
     }
   }
 }
@@ -484,7 +484,9 @@ export class LoyaltyCardService {
     try {
       // Check if user is authenticated
       if (!auth.currentUser) {
-        throw new Error("User must be authenticated to create a loyalty card");
+        throw new Error(
+          "El usuario debe estar autenticado para crear una tarjeta de fidelidad"
+        );
       }
 
       console.log("Creating loyalty card with data:", cardData);
@@ -520,32 +522,33 @@ export class LoyaltyCardService {
         createdAt: new Date(),
       };
     } catch (error: any) {
-      console.error("Failed to create loyalty card:", error);
-
-      // Provide more specific error messages
+      console.error("Failed to create loyalty card:", error); // Provide more specific error messages
       if (error.code) {
         switch (error.code) {
           case "permission-denied":
             throw new Error(
-              "Permission denied. Please check your authentication status or contact support."
+              "Permiso denegado. Por favor verifica tu estado de autenticación o contacta soporte."
             );
           case "unauthenticated":
-            throw new Error("You must be logged in to create a loyalty card.");
+            throw new Error(
+              "Debes iniciar sesión para crear una tarjeta de fidelidad."
+            );
           case "invalid-argument":
             throw new Error(
-              "Invalid data provided. Please check all required fields."
+              "Datos inválidos proporcionados. Por favor verifica todos los campos requeridos."
             );
           default:
             throw new Error(
-              `Firestore error (${error.code}): ${error.message}`
+              `Error de Firestore (${error.code}): ${error.message}`
             );
         }
       }
 
-      throw new Error(error.message || "Failed to create loyalty card");
+      throw new Error(
+        error.message || "Error al crear la tarjeta de fidelidad"
+      );
     }
   }
-
   static async getLoyaltyCardByBusinessId(
     businessId: string
   ): Promise<LoyaltyCard | null> {
@@ -560,7 +563,6 @@ export class LoyaltyCardService {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) return null;
-
       const doc = querySnapshot.docs[0];
       const data = doc.data();
       return {
@@ -570,16 +572,16 @@ export class LoyaltyCardService {
         businessLogo: data.businessLogo,
         totalSlots: data.totalSlots,
         rewardDescription: data.rewardDescription,
-        stampDescription: data.stampDescription,
         cardColor: data.cardColor,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get loyalty card");
+      throw new Error(
+        error.message || "Error al obtener la tarjeta de fidelidad"
+      );
     }
   }
-
   static async getLoyaltyCardsByBusinessId(
     businessId: string
   ): Promise<LoyaltyCard[]> {
@@ -600,17 +602,17 @@ export class LoyaltyCardService {
           businessLogo: data.businessLogo,
           totalSlots: data.totalSlots,
           rewardDescription: data.rewardDescription,
-          stampDescription: data.stampDescription,
           cardColor: data.cardColor,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
       });
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get loyalty cards");
+      throw new Error(
+        error.message || "Error al obtener las tarjetas de fidelidad"
+      );
     }
   }
-
   static async getAllActiveLoyaltyCards(): Promise<LoyaltyCard[]> {
     try {
       const q = query(
@@ -629,14 +631,15 @@ export class LoyaltyCardService {
           businessLogo: data.businessLogo,
           totalSlots: data.totalSlots,
           rewardDescription: data.rewardDescription,
-          stampDescription: data.stampDescription,
           cardColor: data.cardColor,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
       });
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get loyalty cards");
+      throw new Error(
+        error.message || "Error al obtener las tarjetas de fidelidad"
+      );
     }
   }
 
@@ -650,7 +653,9 @@ export class LoyaltyCardService {
         updates
       );
     } catch (error: any) {
-      throw new Error(error.message || "Failed to update loyalty card");
+      throw new Error(
+        error.message || "Error al actualizar la tarjeta de fidelidad"
+      );
     }
   }
 
@@ -660,10 +665,11 @@ export class LoyaltyCardService {
         isActive: false,
       });
     } catch (error: any) {
-      throw new Error(error.message || "Failed to delete loyalty card");
+      throw new Error(
+        error.message || "Error al eliminar la tarjeta de fidelidad"
+      );
     }
   }
-
   static async getLoyaltyCard(cardId: string): Promise<LoyaltyCard | null> {
     try {
       const docRef = doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId);
@@ -681,13 +687,14 @@ export class LoyaltyCardService {
         businessLogo: data.businessLogo,
         totalSlots: data.totalSlots,
         rewardDescription: data.rewardDescription,
-        stampDescription: data.stampDescription,
         cardColor: data.cardColor,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get loyalty card");
+      throw new Error(
+        error.message || "Error al obtener la tarjeta de fidelidad"
+      );
     }
   }
 
@@ -714,9 +721,8 @@ export class CustomerCardService {
         limit(1)
       );
       const existingCards = await getDocs(q);
-
       if (!existingCards.empty) {
-        throw new Error("You are already enrolled in this loyalty program");
+        throw new Error("Ya estás inscrito en este programa de fidelidad");
       }
 
       // Get customer name from the Users collection (customer can read their own data)
@@ -731,10 +737,10 @@ export class CustomerCardService {
         }
       } catch (error) {
         console.warn(
-          "Could not fetch customer name during card creation:",
+          "No se pudo obtener el nombre del cliente durante la creación de la tarjeta:",
           error
         );
-        // Continue without customer name if fetch fails
+        // Continuar sin el nombre del cliente si la obtención falla
       }
 
       const customerCardData = {
@@ -763,10 +769,11 @@ export class CustomerCardService {
         cardCode,
       };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to join loyalty program");
+      throw new Error(
+        error.message || "Error al unirse al programa de fidelidad"
+      );
     }
   }
-
   static async getCustomerCards(customerId: string): Promise<CustomerCard[]> {
     try {
       const q = query(
@@ -804,7 +811,6 @@ export class CustomerCardService {
               businessLogo: loyaltyCardData.businessLogo,
               totalSlots: loyaltyCardData.totalSlots,
               rewardDescription: loyaltyCardData.rewardDescription,
-              stampDescription: loyaltyCardData.stampDescription,
               cardColor: loyaltyCardData.cardColor,
               createdAt: loyaltyCardData.createdAt.toDate(),
               isActive: loyaltyCardData.isActive,
@@ -817,7 +823,9 @@ export class CustomerCardService {
 
       return customerCards;
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get customer cards");
+      throw new Error(
+        error.message || "Error al obtener las tarjetas del cliente"
+      );
     }
   }
   static async addStamp(
@@ -832,7 +840,7 @@ export class CustomerCardService {
         doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId)
       );
       if (!customerCardDoc.exists()) {
-        throw new Error("Customer card not found");
+        throw new Error("Tarjeta de cliente no encontrada");
       }
 
       const customerCardData = customerCardDoc.data();
@@ -863,10 +871,10 @@ export class CustomerCardService {
         businessId,
         loyaltyCardId,
         newStampCount,
-        "Stamp added"
+        "Sello agregado"
       );
     } catch (error: any) {
-      throw new Error(error.message || "Failed to add stamp");
+      throw new Error(error.message || "Error al agregar sello");
     }
   }
 
@@ -896,10 +904,9 @@ export class CustomerCardService {
         });
       }
     } catch (error: any) {
-      throw new Error(error.message || "Failed to claim reward");
+      throw new Error(error.message || "Error al reclamar recompensa");
     }
   }
-
   static async getCustomerCard(
     customerCardId: string
   ): Promise<CustomerCard | null> {
@@ -940,7 +947,6 @@ export class CustomerCardService {
           businessLogo: loyaltyCardData.businessLogo,
           totalSlots: loyaltyCardData.totalSlots,
           rewardDescription: loyaltyCardData.rewardDescription,
-          stampDescription: loyaltyCardData.stampDescription,
           cardColor: loyaltyCardData.cardColor,
           createdAt: loyaltyCardData.createdAt.toDate(),
           isActive: loyaltyCardData.isActive,
@@ -949,7 +955,9 @@ export class CustomerCardService {
 
       return customerCard;
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get customer card");
+      throw new Error(
+        error.message || "Error al obtener la tarjeta del cliente"
+      );
     }
   }
   static async getCustomerCardsByLoyaltyCard(
@@ -986,7 +994,8 @@ export class CustomerCardService {
       return customerCards;
     } catch (error: any) {
       throw new Error(
-        error.message || "Failed to get customer cards by loyalty card"
+        error.message ||
+          "Error al obtener las tarjetas del cliente por tarjeta de fidelidad"
       );
     }
   }
@@ -1021,9 +1030,7 @@ export class CustomerCardService {
         lastStampDate: data.lastStampDate?.toDate(),
         cardCode: data.cardCode,
         customerName: data.customerName,
-      };
-
-      // Get loyalty card details
+      }; // Get loyalty card details
       const loyaltyCardDoc = await getDoc(
         doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId)
       );
@@ -1036,7 +1043,6 @@ export class CustomerCardService {
           businessLogo: loyaltyCardData.businessLogo,
           totalSlots: loyaltyCardData.totalSlots,
           rewardDescription: loyaltyCardData.rewardDescription,
-          stampDescription: loyaltyCardData.stampDescription,
           cardColor: loyaltyCardData.cardColor,
           createdAt: loyaltyCardData.createdAt.toDate(),
           isActive: loyaltyCardData.isActive,
@@ -1045,10 +1051,11 @@ export class CustomerCardService {
 
       return customerCard;
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get customer card by code");
+      throw new Error(
+        error.message || "Error al obtener la tarjeta del cliente por código"
+      );
     }
   }
-
   static async addStampByCardCode(
     cardCode: string,
     loyaltyCardId: string
@@ -1060,7 +1067,9 @@ export class CustomerCardService {
         loyaltyCardId
       );
       if (!customerCard) {
-        throw new Error("Customer card not found with this card code");
+        throw new Error(
+          "Tarjeta de cliente no encontrada con este código de tarjeta"
+        );
       }
 
       // Get loyalty card to get business ID
@@ -1068,7 +1077,7 @@ export class CustomerCardService {
         doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, loyaltyCardId)
       );
       if (!loyaltyCardDoc.exists()) {
-        throw new Error("Loyalty card not found");
+        throw new Error("Tarjeta de fidelidad no encontrada");
       }
 
       const loyaltyCardData = loyaltyCardDoc.data();
@@ -1082,7 +1091,9 @@ export class CustomerCardService {
         loyaltyCardId
       );
     } catch (error: any) {
-      throw new Error(error.message || "Failed to add stamp by card code");
+      throw new Error(
+        error.message || "Error al agregar sello por código de tarjeta"
+      );
     }
   }
 }
@@ -1115,7 +1126,10 @@ export class StampActivityService {
           businessName = businessDoc.data().name || "";
         }
       } catch (error) {
-        console.warn("Could not fetch names for stamp activity:", error);
+        console.warn(
+          "No se pudieron obtener los nombres para la actividad de sello:",
+          error
+        );
       }
 
       const stampActivityData = {
@@ -1148,7 +1162,7 @@ export class StampActivityService {
         note,
       };
     } catch (error: any) {
-      throw new Error(error.message || "Failed to create stamp activity");
+      throw new Error(error.message || "Error al crear actividad de sello");
     }
   }
 
@@ -1179,7 +1193,9 @@ export class StampActivityService {
         };
       });
     } catch (error: any) {
-      throw new Error(error.message || "Failed to get stamp activities");
+      throw new Error(
+        error.message || "Error al obtener las actividades de sello"
+      );
     }
   }
 
@@ -1211,7 +1227,8 @@ export class StampActivityService {
       });
     } catch (error: any) {
       throw new Error(
-        error.message || "Failed to get stamp activities for customer card"
+        error.message ||
+          "Error al obtener las actividades de sello para la tarjeta del cliente"
       );
     }
   }

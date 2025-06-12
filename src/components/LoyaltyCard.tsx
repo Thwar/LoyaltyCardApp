@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ImageBackground,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
 import { LoyaltyCard as LoyaltyCardType } from "../types";
@@ -11,7 +17,12 @@ interface LoyaltyCardProps {
   style?: any;
 }
 
-export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 0, onPress, style }) => {
+export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
+  card,
+  currentStamps = 0,
+  onPress,
+  style,
+}) => {
   const progress = Math.min(currentStamps / card.totalSlots, 1);
   const isCompleted = currentStamps >= card.totalSlots;
 
@@ -20,8 +31,21 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 
     for (let i = 0; i < card.totalSlots; i++) {
       const isStamped = i < currentStamps;
       stamps.push(
-        <View key={i} style={[styles.stamp, isStamped ? styles.stampFilled : styles.stampEmpty]}>
-          <Text style={[styles.stampText, isStamped ? styles.stampTextFilled : styles.stampTextEmpty]}>{isStamped ? "✓" : ""}</Text>
+        <View
+          key={i}
+          style={[
+            styles.stamp,
+            isStamped ? styles.stampFilled : styles.stampEmpty,
+          ]}
+        >
+          <Text
+            style={[
+              styles.stampText,
+              isStamped ? styles.stampTextFilled : styles.stampTextEmpty,
+            ]}
+          >
+            {isStamped ? "✓" : ""}
+          </Text>
         </View>
       );
     }
@@ -39,10 +63,6 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 
           {currentStamps}/{card.totalSlots}
         </Text>
       </View>
-      {/* Stamp Description */}
-      <Text style={styles.stampDescription} numberOfLines={2}>
-        {card.stampDescription}
-      </Text>
       {/* Stamps Grid */}
       <View style={styles.stampsContainer}>
         <View style={styles.stampsGrid}>{renderStamps()}</View>
@@ -59,7 +79,9 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 
         <View style={styles.progressBarBackground}>
           <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
         </View>
-        {isCompleted && <Text style={styles.completedText}>¡Listo para Reclamar!</Text>}
+        {isCompleted && (
+          <Text style={styles.completedText}>¡Listo para Reclamar!</Text>
+        )}
       </View>
     </View>
   );
@@ -67,7 +89,12 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 
   if (onPress) {
     return (
       <TouchableOpacity style={[styles.cardWrapper, style]} onPress={onPress}>
-        <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+        <LinearGradient
+          colors={[COLORS.primary, COLORS.primaryDark]}
+          style={styles.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
           <CardContent />
         </LinearGradient>
       </TouchableOpacity>
@@ -76,7 +103,12 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 
 
   return (
     <View style={[styles.cardWrapper, style]}>
-      <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+      <LinearGradient
+        colors={[COLORS.primary, COLORS.primaryDark]}
+        style={styles.gradient}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         <CardContent />
       </LinearGradient>
     </View>
@@ -117,12 +149,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: 4,
     borderRadius: 12,
-  },
-  stampDescription: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
-    opacity: 0.9,
-    marginBottom: SPACING.md,
   },
   stampsContainer: {
     marginBottom: SPACING.md,
