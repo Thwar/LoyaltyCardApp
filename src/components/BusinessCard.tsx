@@ -10,7 +10,11 @@ interface BusinessCardProps {
   style?: any;
 }
 
-export const BusinessCard: React.FC<BusinessCardProps> = ({ business, onPress, style }) => {
+export const BusinessCard: React.FC<BusinessCardProps> = ({
+  business,
+  onPress,
+  style,
+}) => {
   const CardContent = () => (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -30,7 +34,12 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ business, onPress, s
             {business.description}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={COLORS.gray} style={styles.arrow} />
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={COLORS.gray}
+          style={styles.arrow}
+        />
       </View>
 
       {business.address && (
@@ -46,7 +55,11 @@ export const BusinessCard: React.FC<BusinessCardProps> = ({ business, onPress, s
 
   if (onPress) {
     return (
-      <TouchableOpacity style={[styles.cardWrapper, style]} onPress={onPress} activeOpacity={0.7}>
+      <TouchableOpacity
+        style={[styles.cardWrapper, style]}
+        onPress={onPress}
+        activeOpacity={0.7}
+      >
         <CardContent />
       </TouchableOpacity>
     );
@@ -63,6 +76,8 @@ const styles = StyleSheet.create({
   cardWrapper: {
     backgroundColor: COLORS.cardBackground,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.sm,
     ...SHADOWS.small,

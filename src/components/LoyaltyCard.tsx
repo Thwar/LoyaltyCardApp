@@ -120,6 +120,8 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.sm,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
     ...SHADOWS.medium,
   },
   gradient: {

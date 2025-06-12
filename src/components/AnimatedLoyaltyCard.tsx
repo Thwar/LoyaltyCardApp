@@ -312,7 +312,7 @@ const styles = StyleSheet.create({
   },
   gradient: {
     borderRadius: 20,
-    padding: SPACING.lg,
+    // padding: SPACING.lg,
     overflow: "hidden",
     position: "relative",
   },
@@ -335,6 +335,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: SPACING.md,
+    paddingTop: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
   },
   businessInfo: {
     flex: 1,

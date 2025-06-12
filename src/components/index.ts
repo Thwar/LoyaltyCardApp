@@ -8,3 +8,6 @@ export { ImagePicker } from "./ImagePicker";
 export { BusinessCard } from "./BusinessCard";
 export { LoadingState, EmptyState } from "./LoadingState";
 export { Alert, AlertProvider, useAlert, showAlert } from "./Alert";
+export { LoyaltyProgramListModal } from "./LoyaltyProgramListModal";
+export { LoyaltyProgramItem } from "./LoyaltyProgramItem";
+export { BusinessDiscoveryCard } from "./BusinessDiscoveryCard";

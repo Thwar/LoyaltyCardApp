@@ -15,7 +15,11 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { LoadingState } from "../../components";
+import {
+  LoadingState,
+  BusinessDiscoveryCard,
+  LoyaltyProgramListModal,
+} from "../../components";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import {
   BusinessService,
@@ -28,23 +32,23 @@ interface BusinessDiscoveryScreenProps {
   navigation: StackNavigationProp<any>;
 }
 
-interface BusinessWithCard extends Business {
-  loyaltyCard?: LoyaltyCard | null;
-  hasCard?: boolean;
-  customerCard?: CustomerCard;
+interface BusinessWithCards extends Business {
+  loyaltyCards: LoyaltyCard[];
+  customerCards: CustomerCard[];
 }
 
 export const BusinessDiscoveryScreen: React.FC<
   BusinessDiscoveryScreenProps
 > = ({ navigation }) => {
   const { user } = useAuth();
-  const [businesses, setBusinesses] = useState<BusinessWithCard[]>([]);
+  const [businesses, setBusinesses] = useState<BusinessWithCards[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creatingCard, setCreatingCard] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedBusiness, setSelectedBusiness] =
-    useState<BusinessWithCard | null>(null);
+    useState<BusinessWithCards | null>(null);
+  const [joiningCard, setJoiningCard] = useState<string | null>(null);
   const [newCardCode, setNewCardCode] = useState<string>("");
+
   useEffect(() => {
     console.log("🔄 useEffect triggered - user:", user?.id || "No user");
     loadBusinessesWithCards();
@@ -82,6 +86,7 @@ export const BusinessDiscoveryScreen: React.FC<
 
     return code;
   };
+
   const loadBusinessesWithCards = async () => {
     if (!user) {
       console.log("🚫 loadBusinessesWithCards: No user found");
@@ -95,22 +100,22 @@ export const BusinessDiscoveryScreen: React.FC<
         user.id
       );
 
-      // Get all businesses with active loyalty cards
+      // Get all businesses
       const allBusinesses = await BusinessService.getAllBusinesses();
       console.log(
         "🏢 loadBusinessesWithCards: Found",
         allBusinesses.length,
         "total businesses"
       );
-      console.log("🏢 loadBusinessesWithCards: All businesses:", allBusinesses);
 
+      // Get customer's existing cards
       const customerCards = await CustomerCardService.getCustomerCards(user.id);
       console.log(
         "🎫 loadBusinessesWithCards: Found",
         customerCards.length,
         "customer cards for user"
       );
-      console.log("🎫 loadBusinessesWithCards: Customer cards:", customerCards);
+
       const businessesWithCards = await Promise.all(
         allBusinesses.map(async (business) => {
           try {
@@ -121,6 +126,8 @@ export const BusinessDiscoveryScreen: React.FC<
               business.id,
               ")"
             );
+
+            // Get all loyalty cards for this business
             const loyaltyCards =
               await LoyaltyCardService.getLoyaltyCardsByBusinessId(business.id);
             console.log(
@@ -129,30 +136,21 @@ export const BusinessDiscoveryScreen: React.FC<
               "loyalty cards for business:",
               business.name
             );
-            console.log("💳 Loyalty cards:", loyaltyCards);
 
-            const loyaltyCard =
-              loyaltyCards.length > 0 ? loyaltyCards[0] : null;
-            const customerCard = customerCards.find(
+            // Filter only active loyalty cards
+            const activeLoyaltyCards = loyaltyCards.filter(
+              (card) => card.isActive
+            );
+
+            // Get customer cards for this business
+            const businessCustomerCards = customerCards.filter(
               (card) => card.loyaltyCard?.businessId === business.id
             );
 
-            if (loyaltyCard) {
-              console.log(
-                "✅ Business",
-                business.name,
-                "has loyalty card. Active:",
-                loyaltyCard.isActive
-              );
-            } else {
-              console.log("❌ Business", business.name, "has no loyalty card");
-            }
-
             const result = {
               ...business,
-              loyaltyCard,
-              hasCard: !!customerCard,
-              customerCard,
+              loyaltyCards: activeLoyaltyCards,
+              customerCards: businessCustomerCards,
             };
 
             console.log(
@@ -171,41 +169,22 @@ export const BusinessDiscoveryScreen: React.FC<
             );
             return {
               ...business,
-              loyaltyCard: null,
-              hasCard: false,
+              loyaltyCards: [],
+              customerCards: [],
             };
           }
         })
       );
 
-      console.log(
-        "🔗 All businesses with cards processed:",
-        businessesWithCards.length
-      );
-      console.log("🔗 Businesses with cards details:", businessesWithCards);
-
       // Filter to only show businesses that have active loyalty cards
       const activeBusinesses = businessesWithCards.filter(
-        (business) => business.loyaltyCard && business.loyaltyCard.isActive
-      ) as BusinessWithCard[];
+        (business) => business.loyaltyCards.length > 0
+      );
 
       console.log(
         "🟢 Active businesses after filtering:",
         activeBusinesses.length
       );
-      console.log("🟢 Active businesses list:", activeBusinesses);
-
-      // Log each business and why it was included or excluded
-      businessesWithCards.forEach((business) => {
-        const hasLoyaltyCard = !!business.loyaltyCard;
-        const isActive = business.loyaltyCard?.isActive;
-        console.log(`📊 Business: ${business.name}`);
-        console.log(`   - Has loyalty card: ${hasLoyaltyCard}`);
-        console.log(`   - Is active: ${isActive}`);
-        console.log(
-          `   - Included in final list: ${hasLoyaltyCard && isActive}`
-        );
-      });
 
       setBusinesses(activeBusinesses);
       console.log("✅ Final businesses set in state:", activeBusinesses.length);
@@ -217,123 +196,87 @@ export const BusinessDiscoveryScreen: React.FC<
       console.log("🏁 loadBusinessesWithCards completed");
     }
   };
+  const handleJoinLoyaltyProgram = async (loyaltyCard: LoyaltyCard) => {
+    if (!user) return;
 
-  const handleCreateCard = async (business: BusinessWithCard) => {
-    if (!user || !business.loyaltyCard) return;
-
-    setSelectedBusiness(business);
-    setCreatingCard(business.id);
+    // Note: setJoiningCard is now called in the onPress for immediate feedback
 
     try {
       // Generate unique 3-digit code
-      const cardCode = await generateUniqueCardCode(business.id, user.id);
+      const cardCode = await generateUniqueCardCode(
+        loyaltyCard.businessId,
+        user.id
+      );
 
       // Create the customer card
-      const newCard = await CustomerCardService.joinLoyaltyProgram(
+      await CustomerCardService.joinLoyaltyProgram(
         user.id,
-        business.loyaltyCard.id,
+        loyaltyCard.id,
         cardCode
       );
 
       setNewCardCode(cardCode);
       setModalVisible(true);
 
-      // Reload the businesses to update the UI
-      await loadBusinessesWithCards();
+      // Update only the specific business in state instead of reloading everything
+      setBusinesses((prevBusinesses) =>
+        prevBusinesses.map((business) => {
+          if (business.id === loyaltyCard.businessId) {
+            return {
+              ...business,
+              customerCards: [
+                ...business.customerCards,
+                {
+                  id: `temp-${Date.now()}`, // Temporary ID until next full refresh
+                  customerId: user.id,
+                  loyaltyCardId: loyaltyCard.id,
+                  currentStamps: 0,
+                  isRewardClaimed: false,
+                  createdAt: new Date(),
+                  cardCode: cardCode,
+                  loyaltyCard: loyaltyCard,
+                },
+              ],
+            };
+          }
+          return business;
+        })
+      );
     } catch (error) {
-      console.error("Error creating card:", error);
+      console.error("Error joining loyalty program:", error);
       Alert.alert(
         "Error",
-        error instanceof Error ? error.message : "Failed to create loyalty card"
+        error instanceof Error
+          ? error.message
+          : "Failed to join loyalty program"
       );
     } finally {
-      setCreatingCard(null);
+      setJoiningCard(null);
     }
   };
-
-  const handleViewCard = (business: BusinessWithCard) => {
-    if (business.customerCard) {
-      navigation.navigate("CardDetails", {
-        customerCard: business.customerCard,
-      });
-    }
+  const handleViewCard = (customerCard: CustomerCard) => {
+    navigation.navigate("CardDetails", {
+      customerCard: customerCard,
+    });
   };
-  const renderBusinessItem = ({ item }: { item: BusinessWithCard }) => (
-    <TouchableOpacity
-      style={styles.businessCard}
-      onPress={() =>
-        item.hasCard ? handleViewCard(item) : handleCreateCard(item)
-      }
-      disabled={creatingCard === item.id}
-    >
-      <View style={styles.businessHeader}>
-        <View style={styles.businessInfo}>
-          <View style={styles.logoContainer}>
-            {item.logoUrl ? (
-              <Image source={{ uri: item.logoUrl }} style={styles.logo} />
-            ) : (
-              <View style={[styles.logo, styles.logoPlaceholder]}>
-                <Ionicons name="business" size={24} color={COLORS.gray} />
-              </View>
-            )}
-          </View>
-          <View style={styles.businessDetails}>
-            <Text style={styles.businessName}>{item.name}</Text>
-            <Text style={styles.businessDescription} numberOfLines={2}>
-              {item.description}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.businessActions}>
-          {item.hasCard && (
-            <View style={[styles.statusBadge, styles.activeBadge]}>
-              <Text style={[styles.statusText, styles.activeText]}>
-                Miembro
-              </Text>
-            </View>
-          )}
-          <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
-        </View>
-      </View>
 
-      {item.loyaltyCard && (
-        <View style={styles.cardDetails}>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>🎯 Recompensa:</Text>
-            <Text style={styles.detailText} numberOfLines={2}>
-              {item.loyaltyCard.rewardDescription}
-            </Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>🎫 Sellos necesarios:</Text>
-            <Text style={styles.detailText}>
-              {item.loyaltyCard.totalSlots} sellos para completar
-            </Text>
-          </View>
-        </View>
-      )}
-
-      <View style={styles.actionContainer}>
-        {item.hasCard ? (
-          <View style={[styles.actionButton, styles.viewButton]}>
-            <Ionicons name="card" size={16} color={COLORS.white} />
-            <Text style={styles.viewButtonText}>Ver Mi Tarjeta</Text>
-          </View>
-        ) : (
-          <View style={[styles.actionButton, styles.createButton]}>
-            {creatingCard === item.id ? (
-              <ActivityIndicator size="small" color={COLORS.white} />
-            ) : (
-              <>
-                <Ionicons name="add" size={16} color={COLORS.white} />
-                <Text style={styles.createButtonText}>Unirse al Programa</Text>
-              </>
-            )}
-          </View>
-        )}
-      </View>
-    </TouchableOpacity>
+  const handleBusinessPress = (business: BusinessWithCards) => {
+    setSelectedBusiness(business);
+  };
+  const renderBusinessItem = ({ item }: { item: BusinessWithCards }) => (
+    <BusinessDiscoveryCard business={item} onPress={handleBusinessPress} />
   );
+  const handleJoinLoyaltyProgramFromModal = (loyaltyCard: LoyaltyCard) => {
+    // Set loading state immediately for instant feedback
+    setJoiningCard(loyaltyCard.id);
+    setSelectedBusiness(null);
+    handleJoinLoyaltyProgram(loyaltyCard);
+  };
+
+  const handleViewCardFromModal = (customerCard: CustomerCard) => {
+    setSelectedBusiness(null);
+    handleViewCard(customerCard);
+  };
 
   if (loading) {
     return <LoadingState loading={true} />;
@@ -365,7 +308,37 @@ export const BusinessDiscoveryScreen: React.FC<
           />
         )}
       </View>
-
+      <LoyaltyProgramListModal
+        selectedBusiness={selectedBusiness}
+        joiningCard={joiningCard}
+        onClose={() => setSelectedBusiness(null)}
+        onJoinProgram={handleJoinLoyaltyProgramFromModal}
+        onViewCard={handleViewCardFromModal}
+      />
+      {joiningCard && (
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={!!joiningCard}
+          onRequestClose={() => {
+            // Prevent closing while loading
+            Alert.alert(
+              "Procesando",
+              "Por favor espera mientras procesamos tu solicitud..."
+            );
+          }}
+        >
+          <View style={styles.loadingOverlay}>
+            <View style={styles.fullScreenLoadingContainer}>
+              <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={styles.fullScreenLoadingText}>Cargando...</Text>
+              <Text style={styles.loadingSubtext}>
+                Uniéndose al programa de lealtad...
+              </Text>
+            </View>
+          </View>
+        </Modal>
+      )}
       {/* Success Modal */}
       <Modal
         animationType="fade"
@@ -374,7 +347,7 @@ export const BusinessDiscoveryScreen: React.FC<
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={styles.successModalContent}>
             <View style={styles.successIcon}>
               <Ionicons
                 name="checkmark-circle"
@@ -382,11 +355,12 @@ export const BusinessDiscoveryScreen: React.FC<
                 color={COLORS.success}
               />
             </View>
-            <Text style={styles.modalTitle}>¡Bienvenido al Programa!</Text>
+            <Text style={styles.successModalTitle}>
+              ¡Bienvenido al Programa!
+            </Text>
             <Text style={styles.modalMessage}>
-              ¡Te has unido exitosamente al programa de lealtad de
-              {selectedBusiness?.name}! Ahora puedes empezar a ganar sellos y
-              recompensas.
+              ¡Te has unido exitosamente al programa de lealtad! Ahora puedes
+              empezar a ganar sellos y recompensas.
             </Text>
             <View style={styles.cardCodeContainer}>
               <Text style={styles.cardCodeLabel}>
@@ -402,14 +376,11 @@ export const BusinessDiscoveryScreen: React.FC<
               style={styles.modalButton}
               onPress={() => {
                 setModalVisible(false);
-                if (selectedBusiness?.customerCard) {
-                  navigation.navigate("CardDetails", {
-                    customerCard: selectedBusiness.customerCard,
-                  });
-                }
+                // Navigate to customer home or cards list
+                navigation.navigate("CustomerTabs", { screen: "Home" });
               }}
             >
-              <Text style={styles.modalButtonText}>Ver Mi Tarjeta</Text>
+              <Text style={styles.modalButtonText}>Ver Mis Tarjetas</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.modalCloseButton}
@@ -429,28 +400,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.inputBorder,
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  backButton: {
-    marginRight: SPACING.md,
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-  },
   content: {
     flex: 1,
     paddingHorizontal: SPACING.lg,
@@ -464,32 +413,10 @@ const styles = StyleSheet.create({
   businessList: {
     paddingBottom: SPACING.xl,
   },
-  businessCard: {
-    backgroundColor: COLORS.cardBackground,
-    borderRadius: 12,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.inputBorder,
-    ...SHADOWS.small,
-  },
-  businessHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: SPACING.md,
-  },
-  businessInfo: {
-    flexDirection: "row",
-    flex: 1,
-  },
-  logoContainer: {
-    marginRight: SPACING.md,
-  },
-  logo: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  logoLarge: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   logoPlaceholder: {
     backgroundColor: COLORS.lightGray,
@@ -505,80 +432,35 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: 4,
   },
+  businessNameLarge: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  businessCity: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  businessCityLarge: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
   businessDescription: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     lineHeight: 18,
   },
-  businessActions: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: SPACING.sm,
-  },
-  statusBadge: {
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  activeBadge: {
-    backgroundColor: `${COLORS.success}20`,
-  },
-  statusText: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: "600",
-  },
-  activeText: {
-    color: COLORS.success,
-  },
-  cardDetails: {
-    gap: SPACING.sm,
-    marginBottom: SPACING.md,
-  },
-  detailRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: SPACING.sm,
-  },
-  detailLabel: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    minWidth: 120,
-  },
-  detailText: {
-    fontSize: FONT_SIZES.sm,
+  businessDescriptionLarge: {
+    fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
-    flex: 1,
-    lineHeight: 18,
-  },
-  actionContainer: {
-    alignItems: "stretch",
-  },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    justifyContent: "center",
-  },
-  createButton: {
-    backgroundColor: COLORS.primary,
-  },
-  viewButton: {
-    backgroundColor: COLORS.success,
-  },
-  createButtonText: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
-    marginLeft: 6,
-  },
-  viewButtonText: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
-    marginLeft: 6,
+    lineHeight: 22,
   },
   emptyState: {
     flex: 1,
@@ -599,28 +481,31 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
   },
+  // Success modal styles
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
     justifyContent: "center",
     alignItems: "center",
   },
-  modalContent: {
+  successModalContent: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
     padding: SPACING.xl,
     alignItems: "center",
     marginHorizontal: SPACING.lg,
     minWidth: 300,
+    maxWidth: "90%",
   },
   successIcon: {
     marginBottom: SPACING.lg,
   },
-  modalTitle: {
+  successModalTitle: {
     fontSize: FONT_SIZES.xl,
     fontWeight: "bold",
     color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
+    textAlign: "center",
   },
   modalMessage: {
     fontSize: FONT_SIZES.md,
@@ -675,5 +560,31 @@ const styles = StyleSheet.create({
   modalCloseText: {
     color: COLORS.textSecondary,
     fontSize: FONT_SIZES.md,
+  },
+  // Loading overlay styles
+  loadingOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  fullScreenLoadingContainer: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: SPACING.xl,
+    alignItems: "center",
+    minWidth: 200,
+  },
+  fullScreenLoadingText: {
+    color: COLORS.textPrimary,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "600",
+    marginTop: SPACING.md,
+  },
+  loadingSubtext: {
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.sm,
+    textAlign: "center",
+    marginTop: SPACING.sm,
   },
 });

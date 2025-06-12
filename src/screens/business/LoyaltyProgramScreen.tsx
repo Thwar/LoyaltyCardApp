@@ -213,6 +213,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: SPACING.lg,
     marginBottom: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
     ...SHADOWS.small,
   },
   cardHeader: {

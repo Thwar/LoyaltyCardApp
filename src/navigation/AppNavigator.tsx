@@ -6,14 +6,20 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../constants";
-import { AuthStackParamList, CustomerTabParamList, BusinessTabParamList, CustomerStackParamList, BusinessStackParamList } from "../types";
+import {
+  AuthStackParamList,
+  CustomerTabParamList,
+  BusinessTabParamList,
+  CustomerStackParamList,
+  BusinessStackParamList,
+} from "../types";
 
 import { LandingScreen } from "../screens/LandingScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { CustomerHomeScreen } from "../screens/customer/CustomerHomeScreen";
 import { CustomerCardDetailsScreen } from "../screens/customer/CustomerCardDetailsScreen";
-import { CustomerProfileScreen } from "../screens/customer/BusinessProfileScreen";
+import { CustomerProfileScreen } from "../screens/customer/CustomerProfileScreen";
 import { ClaimRewardScreen } from "../screens/customer/ClaimRewardScreen";
 import { BusinessDiscoveryScreen } from "../screens/customer/BusinessDiscoveryScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
@@ -77,9 +83,21 @@ const CustomerNavigator = () => {
         },
       })}
     >
-      <CustomerTab.Screen name="Home" component={CustomerHomeScreen} options={{ title: "Mis Tarjetas" }} />
-      <CustomerTab.Screen name="Discovery" component={BusinessDiscoveryScreen} options={{ title: "Descubrir Negocios" }} />
-      <CustomerTab.Screen name="Profile" component={CustomerProfileScreen} options={{ title: "Perfil" }} />
+      <CustomerTab.Screen
+        name="Home"
+        component={CustomerHomeScreen}
+        options={{ title: "Mis Tarjetas" }}
+      />
+      <CustomerTab.Screen
+        name="Discovery"
+        component={BusinessDiscoveryScreen}
+        options={{ title: "Descubrir Negocios" }}
+      />
+      <CustomerTab.Screen
+        name="Profile"
+        component={CustomerProfileScreen}
+        options={{ title: "Perfil" }}
+      />
     </CustomerTab.Navigator>
   );
 };
@@ -119,10 +137,26 @@ const BusinessNavigator = () => {
         },
       })}
     >
-      <BusinessTab.Screen name="Dashboard" component={BusinessDashboardScreen} options={{ title: "Resumen" }} />
-      <BusinessTab.Screen name="MyProgram" component={LoyaltyProgramScreen} options={{ title: "Mi Programa" }} />
-      <BusinessTab.Screen name="Customers" component={CustomerManagementScreen} options={{ title: "Clientes" }} />
-      <BusinessTab.Screen name="Profile" component={BusinessSettingsScreen} options={{ title: "Perfil" }} />
+      <BusinessTab.Screen
+        name="Dashboard"
+        component={BusinessDashboardScreen}
+        options={{ title: "Resumen" }}
+      />
+      <BusinessTab.Screen
+        name="MyProgram"
+        component={LoyaltyProgramScreen}
+        options={{ title: "Mi Programa" }}
+      />
+      <BusinessTab.Screen
+        name="Customers"
+        component={CustomerManagementScreen}
+        options={{ title: "Clientes" }}
+      />
+      <BusinessTab.Screen
+        name="Profile"
+        component={BusinessSettingsScreen}
+        options={{ title: "Perfil" }}
+      />
     </BusinessTab.Navigator>
   );
 };
@@ -139,15 +173,34 @@ const CustomerStackNavigator = () => {
           backgroundColor: COLORS.primary,
         },
         headerTintColor: COLORS.white,
-        headerTitleStyle: {          fontWeight: "bold",
-        },
+        headerTitleStyle: { fontWeight: "bold" },
       }}
     >
-      <CustomerStack.Screen name="CustomerTabs" component={CustomerNavigator} options={{ headerShown: false }} />
-      <CustomerStack.Screen name="CardDetails" component={CustomerCardDetailsScreen} options={{ title: "Detalles de Tarjeta" }} />
-      <CustomerStack.Screen name="BusinessProfile" component={CustomerProfileScreen} options={{ title: "Perfil del Negocio" }} />
-      <CustomerStack.Screen name="ClaimReward" component={ClaimRewardScreen} options={{ title: "Reclamar Recompensa" }} />
-      <CustomerStack.Screen name="BusinessDiscovery" component={BusinessDiscoveryScreen} options={{ title: "Descubrir Negocios" }} />
+      <CustomerStack.Screen
+        name="CustomerTabs"
+        component={CustomerNavigator}
+        options={{ headerShown: false }}
+      />
+      <CustomerStack.Screen
+        name="CardDetails"
+        component={CustomerCardDetailsScreen}
+        options={{ title: "Detalles de Tarjeta" }}
+      />
+      <CustomerStack.Screen
+        name="BusinessProfile"
+        component={CustomerProfileScreen}
+        options={{ title: "Perfil del Negocio" }}
+      />
+      <CustomerStack.Screen
+        name="ClaimReward"
+        component={ClaimRewardScreen}
+        options={{ title: "Reclamar Recompensa" }}
+      />
+      <CustomerStack.Screen
+        name="BusinessDiscovery"
+        component={BusinessDiscoveryScreen}
+        options={{ title: "Descubrir Negocios" }}
+      />
     </CustomerStack.Navigator>
   );
 };
@@ -165,10 +218,26 @@ const BusinessStackNavigator = () => {
         },
       }}
     >
-      <BusinessStack.Screen name="BusinessTabs" component={BusinessNavigator} options={{ headerShown: false }} />
-      <BusinessStack.Screen name="CreateCard" component={CreateLoyaltyCardScreen} options={{ title: "Crear Tarjeta de Lealtad" }} />
-      <BusinessStack.Screen name="EditCard" component={EditLoyaltyCardScreen} options={{ title: "Editar Tarjeta de Lealtad" }} />
-      <BusinessStack.Screen name="AddStamp" component={AddStampScreen} options={{ title: "Agregar Sello" }} />
+      <BusinessStack.Screen
+        name="BusinessTabs"
+        component={BusinessNavigator}
+        options={{ headerShown: false }}
+      />
+      <BusinessStack.Screen
+        name="CreateCard"
+        component={CreateLoyaltyCardScreen}
+        options={{ title: "Crear Tarjeta de Lealtad" }}
+      />
+      <BusinessStack.Screen
+        name="EditCard"
+        component={EditLoyaltyCardScreen}
+        options={{ title: "Editar Tarjeta de Lealtad" }}
+      />
+      <BusinessStack.Screen
+        name="AddStamp"
+        component={AddStampScreen}
+        options={{ title: "Agregar Sello" }}
+      />
     </BusinessStack.Navigator>
   );
 };
@@ -180,5 +249,15 @@ export const AppNavigator = () => {
     return null; // Or a loading screen
   }
 
-  return <NavigationContainer>{!user ? <AuthNavigator /> : user.userType === "customer" ? <CustomerStackNavigator /> : <BusinessStackNavigator />}</NavigationContainer>;
+  return (
+    <NavigationContainer>
+      {!user ? (
+        <AuthNavigator />
+      ) : user.userType === "customer" ? (
+        <CustomerStackNavigator />
+      ) : (
+        <BusinessStackNavigator />
+      )}
+    </NavigationContainer>
+  );
 };

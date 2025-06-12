@@ -6,7 +6,7 @@ export { RegisterScreen } from "./RegisterScreen";
 // Customer Screens
 export { CustomerHomeScreen } from "./customer/CustomerHomeScreen";
 export { CustomerCardDetailsScreen } from "./customer/CustomerCardDetailsScreen";
-export { CustomerProfileScreen as BusinessProfileScreen } from "./customer/BusinessProfileScreen";
+export { CustomerProfileScreen as BusinessProfileScreen } from "./customer/CustomerProfileScreen";
 export { ClaimRewardScreen } from "./customer/ClaimRewardScreen";
 
 // Business Screens
