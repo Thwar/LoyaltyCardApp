@@ -1,10 +1,10 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, initializeAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
+import { Platform } from "react-native";
 
-// TODO: Replace with your Firebase config object
-// You can get this from your Firebase console -> Project Settings -> General tab
+// Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyDFlVbiMMKSOOZHOgFCflsxMOdv-3xvORk",
   authDomain: "casero-app.firebaseapp.com",
@@ -15,32 +15,24 @@ const firebaseConfig = {
   measurementId: "G-VVPKMS0QEH",
 };
 
-// Validate configuration
-const validateConfig = () => {
-  const requiredFields = ["apiKey", "authDomain", "projectId"];
-  const missing = requiredFields.filter((field) => !firebaseConfig[field as keyof typeof firebaseConfig]);
-
-  if (missing.length > 0) {
-    console.error("Missing Firebase configuration fields:", missing);
-    throw new Error(`Missing Firebase config: ${missing.join(", ")}`);
-  }
-
-  console.log("Firebase configuration validated successfully");
-};
-
-// Validate before initialization
-validateConfig();
-
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firebase services
-export const auth = getAuth(app);
+// Initialize auth based on platform
+let auth;
+if (Platform.OS === "web") {
+  // For web, use the default getAuth which handles persistence automatically
+  auth = getAuth(app);
+} else {
+  // For React Native, use initializeAuth with AsyncStorage persistence
+  const { getReactNativePersistence } = require("firebase/auth");
+  const ReactNativeAsyncStorage = require("@react-native-async-storage/async-storage").default;
+
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(ReactNativeAsyncStorage),
+  });
+}
+
+export { auth };
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-// Test the connection
-console.log("Firebase initialized with project:", firebaseConfig.projectId);
-console.log("Auth domain:", firebaseConfig.authDomain);
-
 export default app;

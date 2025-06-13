@@ -6,6 +6,9 @@ import { AlertProvider } from "./src/components";
 import { AppNavigator } from "./src/navigation/AppNavigator";
 import { COLORS } from "./src/constants";
 
+// Import Firebase services to ensure they're initialized early
+import "./src/services/firebase";
+
 export default function App() {
   return (
     <SafeAreaProvider>

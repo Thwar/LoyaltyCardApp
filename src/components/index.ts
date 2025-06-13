@@ -11,3 +11,4 @@ export { Alert, AlertProvider, useAlert, showAlert } from "./Alert";
 export { LoyaltyProgramListModal } from "./LoyaltyProgramListModal";
 export { LoyaltyProgramItem } from "./LoyaltyProgramItem";
 export { BusinessDiscoveryCard } from "./BusinessDiscoveryCard";
+export { default as FirebaseAuthTest } from "./FirebaseAuthTest";
