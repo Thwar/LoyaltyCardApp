@@ -50,7 +50,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     } catch (error) {
       console.error("LoginScreen: Login error caught:", error);
       showAlert({
-        title: "Error de Inicio de Sesión",
+        title: "Login Incorrecto",
         message: error instanceof Error ? error.message : "Ocurrió un error inesperado",
       });
       // Clear form on error to prevent confusion

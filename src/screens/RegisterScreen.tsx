@@ -51,7 +51,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };  const handleRegister = async () => {
+  };
+  const handleRegister = async () => {
     if (!validateForm()) return; // Test Firebase connection first
     const isFirebaseConnected = testFirebaseConnection();
     if (!isFirebaseConnected) {
@@ -65,7 +66,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     setLoading(true);
     try {
       const userData = await register(formData.email, formData.password, formData.displayName, formData.userType);
-      
+
       // If registering as business, create the business profile automatically
       if (formData.userType === "business") {
         try {
@@ -83,7 +84,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           });
         }
       }
-      
+
       // Navigation will be handled by the auth context
     } catch (error) {
       console.error("Registration error details:", error);
@@ -124,7 +125,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           <View style={styles.header}>
             <Text style={styles.title}>Crear Cuenta</Text>
             <Text style={styles.subtitle}>Únete a TarjetaLealtad hoy</Text>
-          </View>          <View style={styles.form}>
+          </View>{" "}
+          <View style={styles.form}>
             <InputField
               label={formData.userType === "business" ? "Nombre del Negocio" : "Nombre Completo"}
               value={formData.displayName}
@@ -185,7 +187,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           </View>
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              ¿Ya tienes una cuenta?
+              ¿Ya tienes una cuenta?{" "}
               <Text style={styles.linkText} onPress={navigateToLogin}>
                 Iniciar sesión
               </Text>
