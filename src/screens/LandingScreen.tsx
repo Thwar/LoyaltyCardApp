@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, ImageBackground, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { StackNavigationProp } from "@react-navigation/stack";
 
@@ -21,10 +21,9 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ navigation }) => {
   const navigateToRegister = () => {
     navigation.navigate("Register");
   };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.gradient}>
+    <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.gradient}>
+      <SafeAreaView style={styles.container}>
         <View style={styles.content}>
           {/* Hero Section */}
           <View style={styles.heroSection}>
@@ -53,16 +52,16 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ navigation }) => {
             <Button title="Ya Tengo una Cuenta" onPress={navigateToLogin} variant="outline" size="large" style={styles.secondaryButton} textStyle={styles.secondaryButtonText} />
           </View>
         </View>
-      </LinearGradient>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  gradient: {
     flex: 1,
   },
-  gradient: {
+  container: {
     flex: 1,
   },
   content: {

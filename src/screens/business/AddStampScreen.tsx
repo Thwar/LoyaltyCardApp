@@ -13,10 +13,7 @@ interface AddStampScreenProps {
   route: RouteProp<BusinessStackParamList, "AddStamp">;
 }
 
-export const AddStampScreen: React.FC<AddStampScreenProps> = ({
-  navigation,
-  route,
-}) => {
+export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, route }) => {
   const { loyaltyCardId } = route.params;
   const { showAlert } = useAlert();
   const [cardCode, setCardCode] = useState("");
@@ -38,10 +35,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({
     setError("");
 
     try {
-      await CustomerCardService.addStampByCardCode(
-        cardCode.trim(),
-        loyaltyCardId
-      );
+      await CustomerCardService.addStampByCardCode(cardCode.trim(), loyaltyCardId);
 
       showAlert({
         title: "¡Sello Agregado!",
@@ -58,28 +52,16 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({
         ],
       });
     } catch (err) {
-      console.error("Error adding stamp:", err);
+      console.log("Error adding stamp:", err);
       let errorMessage = "Error al agregar sello";
 
       if (err instanceof Error) {
-        if (
-          err.message.includes("not found") ||
-          err.message.includes("no encontrada")
-        ) {
-          errorMessage =
-            "Código de tarjeta inválido o no pertenece a este programa de fidelidad";
-        } else if (
-          err.message.includes("permission") ||
-          err.message.includes("permisos")
-        ) {
-          errorMessage =
-            "No tienes permisos para agregar sellos a esta tarjeta";
-        } else if (
-          err.message.includes("network") ||
-          err.message.includes("connection")
-        ) {
-          errorMessage =
-            "Error de conexión. Verifica tu conexión a internet e intenta nuevamente";
+        if (err.message.includes("not found") || err.message.includes("no encontrada")) {
+          errorMessage = "Código de tarjeta inválido o no pertenece a este programa de fidelidad";
+        } else if (err.message.includes("permission") || err.message.includes("permisos")) {
+          errorMessage = "No tienes permisos para agregar sellos a esta tarjeta";
+        } else if (err.message.includes("network") || err.message.includes("connection")) {
+          errorMessage = "Error de conexión. Verifica tu conexión a internet e intenta nuevamente";
         } else {
           errorMessage = err.message;
         }
@@ -100,9 +82,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Agregar Sello</Text>
-          <Text style={styles.subtitle}>
-            Agrega un sello a la tarjeta de lealtad de un cliente
-          </Text>
+          <Text style={styles.subtitle}>Agrega un sello a la tarjeta de lealtad de un cliente</Text>
         </View>
         <View style={styles.form}>
           <InputField
@@ -123,13 +103,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({
               3. El cliente verá el nuevo sello en su tarjeta
             </Text>
           </View>
-          <Button
-            title="Agregar Sello"
-            onPress={handleAddStamp}
-            loading={loading}
-            size="large"
-            style={styles.addButton}
-          />
+          <Button title="Agregar Sello" onPress={handleAddStamp} loading={loading} size="large" style={styles.addButton} />
         </View>
         {/* Quick Actions */}
         <View style={styles.quickActions}>
@@ -140,21 +114,14 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({
               // TODO: Implement QR code scanning
               showAlert({
                 title: "Próximamente",
-                message:
-                  "El escaneo de códigos QR estará disponible en una futura actualización",
+                message: "El escaneo de códigos QR estará disponible en una futura actualización",
               });
             }}
             variant="outline"
             size="large"
             style={styles.quickActionButton}
           />
-          <Button
-            title="Ver Clientes Recientes"
-            onPress={() => navigation.navigate("BusinessTabs")}
-            variant="outline"
-            size="large"
-            style={styles.quickActionButton}
-          />
+          <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
         </View>
       </View>
     </SafeAreaView>

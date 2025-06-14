@@ -6,13 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../constants";
-import {
-  AuthStackParamList,
-  CustomerTabParamList,
-  BusinessTabParamList,
-  CustomerStackParamList,
-  BusinessStackParamList,
-} from "../types";
+import { AuthStackParamList, CustomerTabParamList, BusinessTabParamList, CustomerStackParamList, BusinessStackParamList } from "../types";
 
 import { LandingScreen } from "../screens/LandingScreen";
 import { LoginScreen } from "../screens/LoginScreen";
@@ -83,21 +77,9 @@ const CustomerNavigator = () => {
         },
       })}
     >
-      <CustomerTab.Screen
-        name="Home"
-        component={CustomerHomeScreen}
-        options={{ title: "Mis Tarjetas" }}
-      />
-      <CustomerTab.Screen
-        name="Discovery"
-        component={BusinessDiscoveryScreen}
-        options={{ title: "Descubrir Negocios" }}
-      />
-      <CustomerTab.Screen
-        name="Profile"
-        component={CustomerProfileScreen}
-        options={{ title: "Perfil" }}
-      />
+      <CustomerTab.Screen name="Home" component={CustomerHomeScreen} options={{ title: "Mis Tarjetas" }} />
+      <CustomerTab.Screen name="Discovery" component={BusinessDiscoveryScreen} options={{ title: "Descubrir Negocios" }} />
+      <CustomerTab.Screen name="Profile" component={CustomerProfileScreen} options={{ title: "Perfil" }} />
     </CustomerTab.Navigator>
   );
 };
@@ -137,26 +119,10 @@ const BusinessNavigator = () => {
         },
       })}
     >
-      <BusinessTab.Screen
-        name="Dashboard"
-        component={BusinessDashboardScreen}
-        options={{ title: "Resumen" }}
-      />
-      <BusinessTab.Screen
-        name="MyProgram"
-        component={LoyaltyProgramScreen}
-        options={{ title: "Mi Programa" }}
-      />
-      <BusinessTab.Screen
-        name="Customers"
-        component={CustomerManagementScreen}
-        options={{ title: "Clientes" }}
-      />
-      <BusinessTab.Screen
-        name="Profile"
-        component={BusinessSettingsScreen}
-        options={{ title: "Perfil" }}
-      />
+      <BusinessTab.Screen name="Dashboard" component={BusinessDashboardScreen} options={{ title: "Resumen" }} />
+      <BusinessTab.Screen name="MyProgram" component={LoyaltyProgramScreen} options={{ title: "Mi Programa" }} />
+      <BusinessTab.Screen name="Customers" component={CustomerManagementScreen} options={{ title: "Clientes" }} />
+      <BusinessTab.Screen name="Profile" component={BusinessSettingsScreen} options={{ title: "Perfil" }} />
     </BusinessTab.Navigator>
   );
 };
@@ -174,32 +140,41 @@ const CustomerStackNavigator = () => {
         },
         headerTintColor: COLORS.white,
         headerTitleStyle: { fontWeight: "bold" },
+        headerBackTitle: "Atrás",
       }}
     >
-      <CustomerStack.Screen
-        name="CustomerTabs"
-        component={CustomerNavigator}
-        options={{ headerShown: false }}
-      />
+      <CustomerStack.Screen name="CustomerTabs" component={CustomerNavigator} options={{ headerShown: false }} />
       <CustomerStack.Screen
         name="CardDetails"
         component={CustomerCardDetailsScreen}
-        options={{ title: "Detalles de Tarjeta" }}
+        options={{
+          title: "Detalles de Tarjeta",
+          headerBackTitle: "Atrás",
+        }}
       />
       <CustomerStack.Screen
         name="BusinessProfile"
         component={CustomerProfileScreen}
-        options={{ title: "Perfil del Negocio" }}
+        options={{
+          title: "Perfil del Negocio",
+          headerBackTitle: "Atrás",
+        }}
       />
       <CustomerStack.Screen
         name="ClaimReward"
         component={ClaimRewardScreen}
-        options={{ title: "Reclamar Recompensa" }}
+        options={{
+          title: "Reclamar Recompensa",
+          headerBackTitle: "Atrás",
+        }}
       />
       <CustomerStack.Screen
         name="BusinessDiscovery"
         component={BusinessDiscoveryScreen}
-        options={{ title: "Descubrir Negocios" }}
+        options={{
+          title: "Descubrir Negocios",
+          headerBackTitle: "Atrás",
+        }}
       />
     </CustomerStack.Navigator>
   );
@@ -216,27 +191,33 @@ const BusinessStackNavigator = () => {
         headerTitleStyle: {
           fontWeight: "bold",
         },
+        headerBackTitle: "Atrás",
       }}
     >
-      <BusinessStack.Screen
-        name="BusinessTabs"
-        component={BusinessNavigator}
-        options={{ headerShown: false }}
-      />
+      <BusinessStack.Screen name="BusinessTabs" component={BusinessNavigator} options={{ headerShown: false }} />
       <BusinessStack.Screen
         name="CreateCard"
         component={CreateLoyaltyCardScreen}
-        options={{ title: "Crear Tarjeta de Lealtad" }}
+        options={{
+          title: "Crear Tarjeta de Lealtad",
+          headerBackTitle: "Atrás",
+        }}
       />
       <BusinessStack.Screen
         name="EditCard"
         component={EditLoyaltyCardScreen}
-        options={{ title: "Editar Tarjeta de Lealtad" }}
+        options={{
+          title: "Editar Tarjeta de Lealtad",
+          headerBackTitle: "Atrás",
+        }}
       />
       <BusinessStack.Screen
         name="AddStamp"
         component={AddStampScreen}
-        options={{ title: "Agregar Sello" }}
+        options={{
+          title: "Agregar Sello",
+          headerBackTitle: "Atrás",
+        }}
       />
     </BusinessStack.Navigator>
   );
@@ -249,15 +230,5 @@ export const AppNavigator = () => {
     return null; // Or a loading screen
   }
 
-  return (
-    <NavigationContainer>
-      {!user ? (
-        <AuthNavigator />
-      ) : user.userType === "customer" ? (
-        <CustomerStackNavigator />
-      ) : (
-        <BusinessStackNavigator />
-      )}
-    </NavigationContainer>
-  );
+  return <NavigationContainer>{!user ? <AuthNavigator /> : user.userType === "customer" ? <CustomerStackNavigator /> : <BusinessStackNavigator />}</NavigationContainer>;
 };

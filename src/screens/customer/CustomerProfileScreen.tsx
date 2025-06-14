@@ -1,35 +1,18 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, InputField, LoadingState, useAlert } from "../../components";
-import {
-  COLORS,
-  FONT_SIZES,
-  SPACING,
-  SHADOWS,
-  BORDER_RADIUS,
-} from "../../constants";
+import { COLORS, FONT_SIZES, SPACING, SHADOWS, BORDER_RADIUS } from "../../constants";
 import { CustomerCardService } from "../../services/api";
 
 interface CustomerProfileScreenProps {
   navigation: StackNavigationProp<any>;
 }
 
-export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
-  navigation,
-}) => {
+export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ navigation }) => {
   const { user, logout } = useAuth();
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
@@ -61,13 +44,8 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
     try {
       const customerCards = await CustomerCardService.getCustomerCards(user.id);
       const totalCards = customerCards.length;
-      const totalStamps = customerCards.reduce(
-        (sum, card) => sum + card.currentStamps,
-        0
-      );
-      const totalRewards = customerCards.filter(
-        (card) => card.isRewardClaimed
-      ).length;
+      const totalStamps = customerCards.reduce((sum, card) => sum + card.currentStamps, 0);
+      const totalRewards = customerCards.filter((card) => card.isRewardClaimed).length;
 
       setStats({
         totalCards,
@@ -109,10 +87,7 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
     } catch (error) {
       showAlert({
         title: "Error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Error al actualizar el perfil",
+        message: error instanceof Error ? error.message : "Error al actualizar el perfil",
       });
     } finally {
       setSaving(false);
@@ -126,7 +101,7 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
       buttons: [
         { text: "Cancelar", style: "cancel" },
         {
-          text: "Cerrar Sesión",
+          text: "Salir",
           style: "destructive",
           onPress: logout,
         },
@@ -148,22 +123,13 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoid}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          keyboardShouldPersistTaps="handled"
-        >
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
+        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           {/* Profile Header */}
           <View style={styles.header}>
             <View style={styles.profileImageContainer}>
               {user?.profileImage ? (
-                <Image
-                  source={{ uri: user.profileImage }}
-                  style={styles.profileImage}
-                />
+                <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
               ) : (
                 <View style={styles.profileImagePlaceholder}>
                   <Ionicons name="person" size={48} color={COLORS.gray} />
@@ -173,11 +139,8 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
             <Text style={styles.userName}>{user?.displayName}</Text>
             <Text style={styles.userEmail}>{user?.email}</Text>
             <Text style={styles.memberSince}>
-              Casero desde{" "}
-              {new Date(user?.createdAt || new Date()).toLocaleDateString(
-                "es-ES",
-                { month: "long", year: "numeric" }
-              )}
+              Casero desde
+              {new Date(user?.createdAt || new Date()).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}
             </Text>
           </View>
 
@@ -221,13 +184,7 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
               leftIcon="mail"
               error={errors.email}
             />
-            <Button
-              title="Actualizar Perfil"
-              onPress={handleSave}
-              loading={saving}
-              size="large"
-              style={styles.saveButton}
-            />
+            <Button title="Actualizar Perfil" onPress={handleSave} loading={saving} size="large" style={styles.saveButton} />
           </View>
 
           {/* Account Section */}
@@ -241,13 +198,7 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({
               <Text style={styles.accountLabel}>Estado:</Text>
               <Text style={styles.accountValue}>Activo</Text>
             </View>
-            <Button
-              title="Cerrar Sesión"
-              onPress={handleLogout}
-              variant="outline"
-              size="large"
-              style={styles.logoutButton}
-            />
+            <Button title="Cerrar Sesión" onPress={handleLogout} variant="outline" size="large" style={styles.logoutButton} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
