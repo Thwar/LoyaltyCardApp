@@ -146,7 +146,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
             <StatCard title="Total de Sellos" value={stats.totalStamps} icon="⭐" />
             <StatCard title="Recompensas Reclamadas" value={stats.claimedRewards} icon="🎁" />
           </View>
-        </View>{" "}
+        </View>
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
@@ -154,9 +154,10 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
           <Button
             title="Agregar Sello a Cliente"
             onPress={() => {
-              if (loyaltyCards.length > 0) {
+              if (loyaltyCards.length > 0 && business) {
                 navigation.navigate("AddStamp", {
                   loyaltyCardId: loyaltyCards[0].id,
+                  businessId: business.id,
                 });
               } else {
                 // Show alert to create a loyalty card first

@@ -13,6 +13,7 @@ interface AuthContextType {
   register: (email: string, password: string, displayName: string, userType: "customer" | "business") => Promise<User>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -140,7 +141,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     }
   };
-
   const resetPassword = async (email: string): Promise<void> => {
     try {
       await AuthService.resetPassword(email);
@@ -148,6 +148,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw error;
     }
   };
+
+  const refreshUser = async (): Promise<void> => {
+    try {
+      if (auth.currentUser) {
+        const userData = await AuthService.getCurrentUser();
+        if (userData) {
+          setUser(userData);
+          console.log("User data refreshed:", userData.email);
+        }
+      }
+    } catch (error) {
+      console.error("Error refreshing user data:", error);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     authUser,
@@ -157,6 +172,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     resetPassword,
+    refreshUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

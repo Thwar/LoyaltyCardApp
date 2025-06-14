@@ -1,23 +1,27 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Image } from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Image, TouchableOpacity } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, InputField, LoadingState, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS, BORDER_RADIUS } from "../../constants";
-import { CustomerCardService } from "../../services/api";
+import { CustomerCardService, UserService } from "../../services/api";
+import { ImageUploadService } from "../../services/imageUpload";
+import { auth } from "../../services/firebase";
+import * as ImagePickerExpo from "expo-image-picker";
 
 interface CustomerProfileScreenProps {
   navigation: StackNavigationProp<any>;
 }
 
 export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ navigation }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     displayName: "",
     email: "",
+    profileImage: "",
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -33,6 +37,7 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
       setFormData({
         displayName: user.displayName || "",
         email: user.email || "",
+        profileImage: user.profileImage || "",
       });
       loadStats();
     }
@@ -72,14 +77,84 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   const handleSave = async () => {
     if (!validateForm() || !user) return;
 
     setSaving(true);
     try {
-      // Note: In a real app, you would implement user profile update in the API
-      // For now, we'll just show a success message
+      let profileImageUrl = formData.profileImage; // If a new image was selected (local URI), upload it
+      if (formData.profileImage && !formData.profileImage.startsWith("http")) {
+        try {
+          console.log("Uploading profile image for user ID:", user.id);
+          console.log("Auth user:", auth.currentUser?.uid);
+          console.log("Auth user email:", auth.currentUser?.email);
+
+          // Ensure we have a fresh auth token before upload
+          if (auth.currentUser) {
+            const token = await auth.currentUser.getIdToken(true);
+            console.log("Got fresh auth token:", token ? "✓" : "✗");
+          }
+
+          profileImageUrl = await ImageUploadService.uploadUserProfileImage(formData.profileImage, user.id);
+        } catch (uploadError) {
+          console.error("Error uploading profile image:", uploadError);
+
+          // Check if it's a CORS error
+          const errorMessage = uploadError instanceof Error ? uploadError.message : String(uploadError);
+          if (errorMessage.includes("CORS") || errorMessage.includes("Access-Control")) {
+            showAlert({
+              title: "Error de Configuración",
+              message: "Error de CORS en Firebase Storage. Por favor consulta FIREBASE_CORS_SETUP.md para configurar CORS. Usando imagen temporal.",
+            });
+
+            // For development, allow using the data URL directly (not recommended for production)
+            if (formData.profileImage.startsWith("data:")) {
+              profileImageUrl = formData.profileImage;
+            } else {
+              profileImageUrl = "";
+            }
+          } else if (errorMessage.includes("unauthorized") || errorMessage.includes("permission")) {
+            showAlert({
+              title: "Error de Permisos",
+              message: "No se pudo subir la imagen debido a problemas de autenticación. Por favor, cierra sesión y vuelve a iniciar sesión, luego intenta de nuevo.",
+              buttons: [
+                {
+                  text: "Cancelar",
+                  style: "cancel",
+                },
+                {
+                  text: "Cerrar Sesión",
+                  style: "destructive",
+                  onPress: () => logout(),
+                },
+              ],
+            });
+            profileImageUrl = ""; // Save without image if upload fails
+          } else {
+            showAlert({
+              title: "Error de Subida",
+              message: "No se pudo subir la imagen de perfil. El perfil se guardará sin imagen.",
+            });
+            profileImageUrl = ""; // Save without image if upload fails
+          }
+        }
+      }
+
+      // Update user profile
+      const updateData: { displayName: string; profileImage?: string } = {
+        displayName: formData.displayName,
+      };
+
+      if (profileImageUrl) {
+        updateData.profileImage = profileImageUrl;
+      }
+
+      await UserService.updateUser(user.id, updateData); // Update the form data with the uploaded image URL
+      setFormData((prev) => ({ ...prev, profileImage: profileImageUrl }));
+
+      // Refresh user data in context
+      await refreshUser();
+
       showAlert({
         title: "Éxito",
         message: "Perfil actualizado exitosamente",
@@ -108,12 +183,89 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
       ],
     });
   };
-
   const updateFormData = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const requestPermissions = async () => {
+    if (Platform.OS !== "web") {
+      const { status } = await ImagePickerExpo.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        showAlert({
+          title: "Permisos requeridos",
+          message: "Necesitamos permisos para acceder a tu galería de fotos.",
+        });
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const convertToDataUrl = async (uri: string): Promise<string> => {
+    if (Platform.OS === "web") {
+      try {
+        const response = await fetch(uri);
+        const blob = await response.blob();
+
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        console.error("Error converting to data URL:", error);
+        throw error;
+      }
+    }
+    return uri; // For mobile, return original URI
+  };
+
+  const pickProfileImage = async () => {
+    try {
+      const hasPermission = await requestPermissions();
+      if (!hasPermission) return;
+
+      let result;
+
+      if (Platform.OS === "web") {
+        result = await ImagePickerExpo.launchImageLibraryAsync({
+          mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1], // Square aspect ratio for profile
+          quality: 0.8,
+          base64: false,
+        });
+      } else {
+        result = await ImagePickerExpo.launchImageLibraryAsync({
+          mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [1, 1], // Square aspect ratio for profile
+          quality: 0.8,
+          base64: false,
+        });
+      }
+
+      if (!result.canceled && result.assets[0]) {
+        let imageUri = result.assets[0].uri;
+
+        // Convert to data URL for web compatibility
+        if (Platform.OS === "web") {
+          imageUri = await convertToDataUrl(imageUri);
+        }
+
+        updateFormData("profileImage", imageUri);
+      }
+    } catch (error) {
+      console.error("Error picking image:", error);
+      showAlert({
+        title: "Error",
+        message: "No se pudo seleccionar la imagen",
+      });
     }
   };
 
@@ -127,20 +279,29 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           {/* Profile Header */}
           <View style={styles.header}>
-            <View style={styles.profileImageContainer}>
-              {user?.profileImage ? (
-                <Image source={{ uri: user.profileImage }} style={styles.profileImage} />
+            <TouchableOpacity
+              style={styles.profileImageContainer}
+              onPress={pickProfileImage}
+              disabled={saving}
+              activeOpacity={0.7}
+              accessibilityLabel="Cambiar foto de perfil"
+              accessibilityHint="Toca para seleccionar una nueva foto de perfil"
+            >
+              {formData.profileImage ? (
+                <Image source={{ uri: formData.profileImage }} style={styles.profileImage} />
               ) : (
                 <View style={styles.profileImagePlaceholder}>
                   <Ionicons name="person" size={48} color={COLORS.gray} />
                 </View>
               )}
-            </View>
+              <View style={[styles.uploadIconContainer, saving && styles.uploadIconDisabled]}>
+                <Ionicons name="camera" size={16} color={COLORS.white} style={styles.uploadIcon} />
+              </View>
+            </TouchableOpacity>
             <Text style={styles.userName}>{user?.displayName}</Text>
             <Text style={styles.userEmail}>{user?.email}</Text>
             <Text style={styles.memberSince}>Casero desde {new Date(user?.createdAt || new Date()).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</Text>
           </View>
-
           {/* Stats Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Mis Estadísticas</Text>
@@ -159,7 +320,6 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
               </View>
             </View>
           </View>
-
           {/* Profile Form */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Información Personal</Text>
@@ -183,7 +343,6 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
             />
             <Button title="Actualizar Perfil" onPress={handleSave} loading={saving} size="large" style={styles.saveButton} />
           </View>
-
           {/* Account Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Cuenta</Text>
@@ -219,10 +378,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     paddingVertical: SPACING.xl,
     paddingHorizontal: SPACING.lg,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.xs,
   },
   profileImageContainer: {
     marginBottom: SPACING.md,
+    position: "relative",
   },
   profileImage: {
     width: 80,
@@ -236,6 +396,26 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.lightGray,
     alignItems: "center",
     justifyContent: "center",
+  },
+  uploadIconContainer: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: COLORS.white,
+  },
+  uploadIconDisabled: {
+    backgroundColor: COLORS.gray,
+    opacity: 0.6,
+  },
+  uploadIcon: {
+    // Additional styles if needed
   },
   userName: {
     fontSize: FONT_SIZES.xl,

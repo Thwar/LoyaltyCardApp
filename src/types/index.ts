@@ -131,5 +131,5 @@ export type BusinessStackParamList = {
   CreateCard: undefined;
   EditCard: { cardId: string };
   CustomerDetails: { customerId: string };
-  AddStamp: { loyaltyCardId: string };
+  AddStamp: { loyaltyCardId: string; businessId: string };
 };

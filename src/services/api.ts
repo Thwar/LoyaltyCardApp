@@ -189,6 +189,56 @@ export class AuthService {
   }
 }
 
+// User Service
+export class UserService {
+  static async updateUser(userId: string, userData: Partial<Pick<User, "displayName" | "profileImage">>): Promise<void> {
+    try {
+      console.log("Updating user with data:", userData);
+
+      // Update user document in Firestore
+      const userRef = doc(db, FIREBASE_COLLECTIONS.USERS, userId);
+      await updateDoc(userRef, {
+        ...userData,
+        updatedAt: new Date(),
+      });
+
+      // If displayName is being updated, also update Firebase Auth profile
+      if (userData.displayName && auth.currentUser) {
+        await updateProfile(auth.currentUser, {
+          displayName: userData.displayName,
+        });
+      }
+
+      console.log("User updated successfully");
+    } catch (error) {
+      console.error("Error updating user:", error);
+      throw new Error("Error al actualizar el perfil del usuario");
+    }
+  }
+
+  static async getUser(userId: string): Promise<User | null> {
+    try {
+      const userDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
+      if (!userDoc.exists()) {
+        return null;
+      }
+
+      const userData = userDoc.data();
+      return {
+        id: userDoc.id,
+        email: userData.email,
+        displayName: userData.displayName,
+        userType: userData.userType,
+        createdAt: userData.createdAt.toDate(),
+        profileImage: userData.profileImage,
+      };
+    } catch (error) {
+      console.error("Error getting user:", error);
+      return null;
+    }
+  }
+}
+
 // Business Service
 export class BusinessService {
   static async createBusiness(businessData: Omit<Business, "id" | "createdAt">): Promise<Business> {
@@ -643,6 +693,8 @@ export class CustomerCardService {
   }
   static async addStamp(customerCardId: string, customerId: string, businessId: string, loyaltyCardId: string): Promise<void> {
     try {
+      console.log("addStamp: Starting stamp addition process", { customerCardId, customerId, businessId, loyaltyCardId });
+
       // Get current customer card
       const customerCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId));
       if (!customerCardDoc.exists()) {
@@ -651,6 +703,7 @@ export class CustomerCardService {
 
       const customerCardData = customerCardDoc.data();
       const newStampCount = customerCardData.currentStamps + 1;
+      console.log("addStamp: Current stamps:", customerCardData.currentStamps, "New count:", newStampCount);
 
       // Add stamp record
       await addDoc(collection(db, FIREBASE_COLLECTIONS.STAMPS), {
@@ -660,16 +713,21 @@ export class CustomerCardService {
         loyaltyCardId,
         timestamp: Timestamp.now(),
       });
+      console.log("addStamp: Stamp record added");
 
       // Update customer card
       await updateDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId), {
         currentStamps: newStampCount,
         lastStampDate: Timestamp.now(),
       });
+      console.log("addStamp: Customer card updated");
 
       // Create stamp activity record
+      console.log("addStamp: Creating stamp activity...");
       await StampActivityService.createStampActivity(customerCardId, customerId, businessId, loyaltyCardId, newStampCount, "Sello agregado");
+      console.log("addStamp: Stamp activity created successfully");
     } catch (error: any) {
+      console.error("addStamp: Error occurred:", error);
       throw new Error(error.message || "Error al agregar sello");
     }
   }
@@ -816,6 +874,65 @@ export class CustomerCardService {
       throw new Error(error.message || "Error al obtener la tarjeta del cliente por código");
     }
   }
+
+  static async getCustomerCardByCodeAndBusiness(cardCode: string, businessId: string): Promise<CustomerCard | null> {
+    try {
+      // First, get all loyalty cards for this business
+      const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessId(businessId);
+
+      if (loyaltyCards.length === 0) {
+        throw new Error("No se encontraron tarjetas de fidelidad para este negocio");
+      }
+
+      // Search for customer card with the given code across all loyalty cards of this business
+      const loyaltyCardIds = loyaltyCards.map((card) => card.id);
+
+      const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("cardCode", "==", cardCode), where("loyaltyCardId", "in", loyaltyCardIds), limit(1));
+
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        return null;
+      }
+
+      const docSnapshot = querySnapshot.docs[0];
+      const data = docSnapshot.data();
+
+      const customerCard: CustomerCard = {
+        id: docSnapshot.id,
+        customerId: data.customerId,
+        loyaltyCardId: data.loyaltyCardId,
+        currentStamps: data.currentStamps,
+        isRewardClaimed: data.isRewardClaimed,
+        createdAt: data.createdAt.toDate(),
+        lastStampDate: data.lastStampDate?.toDate(),
+        cardCode: data.cardCode,
+        customerName: data.customerName,
+      };
+
+      // Get loyalty card details
+      const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
+      if (loyaltyCardDoc.exists()) {
+        const loyaltyCardData = loyaltyCardDoc.data();
+        customerCard.loyaltyCard = {
+          id: loyaltyCardDoc.id,
+          businessId: loyaltyCardData.businessId,
+          businessName: loyaltyCardData.businessName,
+          businessLogo: loyaltyCardData.businessLogo,
+          totalSlots: loyaltyCardData.totalSlots,
+          rewardDescription: loyaltyCardData.rewardDescription,
+          cardColor: loyaltyCardData.cardColor,
+          createdAt: loyaltyCardData.createdAt.toDate(),
+          isActive: loyaltyCardData.isActive,
+        };
+      }
+
+      return customerCard;
+    } catch (error: any) {
+      throw new Error(error.message || "Error al obtener la tarjeta del cliente por código y negocio");
+    }
+  }
+
   static async addStampByCardCode(cardCode: string, loyaltyCardId: string): Promise<void> {
     try {
       // Find customer card by card code
@@ -839,12 +956,29 @@ export class CustomerCardService {
       throw new Error(error.message || "Error al agregar sello por código de tarjeta");
     }
   }
+
+  static async addStampByCardCodeAndBusiness(cardCode: string, businessId: string): Promise<void> {
+    try {
+      // Find customer card by card code and business ID
+      const customerCard = await this.getCustomerCardByCodeAndBusiness(cardCode, businessId);
+      if (!customerCard) {
+        throw new Error("Tarjeta de cliente no encontrada con este código para este negocio");
+      }
+
+      // Add stamp
+      await this.addStamp(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId);
+    } catch (error: any) {
+      throw new Error(error.message || "Error al agregar sello por código de tarjeta y negocio");
+    }
+  }
 }
 
 // Stamp Activity Service
 export class StampActivityService {
   static async createStampActivity(customerCardId: string, customerId: string, businessId: string, loyaltyCardId: string, stampCount: number, note?: string): Promise<StampActivity> {
     try {
+      console.log("createStampActivity: Starting activity creation", { customerCardId, customerId, businessId, loyaltyCardId, stampCount, note });
+
       // Get customer and business names for the activity record
       let customerName = "";
       let businessName = "";
@@ -854,12 +988,14 @@ export class StampActivityService {
 
         if (userDoc.exists()) {
           customerName = userDoc.data().displayName || "";
+          console.log("createStampActivity: Customer name found:", customerName);
         }
         if (businessDoc.exists()) {
           businessName = businessDoc.data().name || "";
+          console.log("createStampActivity: Business name found:", businessName);
         }
       } catch (error) {
-        console.warn("No se pudieron obtener los nombres para la actividad de sello:", error);
+        console.warn("createStampActivity: No se pudieron obtener los nombres para la actividad de sello:", error);
       }
 
       const stampActivityData = {
@@ -874,7 +1010,10 @@ export class StampActivityService {
         ...(note && { note }),
       };
 
+      console.log("createStampActivity: Adding document with data:", stampActivityData);
+      console.log("createStampActivity: Adding document with data:", stampActivityData);
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY), stampActivityData);
+      console.log("createStampActivity: Document added successfully with ID:", docRef.id);
 
       return {
         id: docRef.id,
@@ -889,6 +1028,7 @@ export class StampActivityService {
         note,
       };
     } catch (error: any) {
+      console.error("createStampActivity: Error creating stamp activity:", error);
       throw new Error(error.message || "Error al crear actividad de sello");
     }
   }

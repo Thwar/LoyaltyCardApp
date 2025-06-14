@@ -125,7 +125,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           <View style={styles.header}>
             <Text style={styles.title}>Crear Cuenta</Text>
             <Text style={styles.subtitle}>Únete a TarjetaLealtad hoy</Text>
-          </View>{" "}
+          </View>
           <View style={styles.form}>
             <InputField
               label={formData.userType === "business" ? "Nombre del Negocio" : "Nombre Completo"}

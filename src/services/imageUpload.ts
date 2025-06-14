@@ -9,25 +9,28 @@ export class ImageUploadService {
    * @param folder Storage folder path (e.g., 'business-logos')
    * @param fileName Optional custom filename
    * @returns Promise<string> Download URL of uploaded image
-   */
-  static async uploadImage(
-    imageUri: string,
-    folder: string,
-    fileName?: string
-  ): Promise<string> {
+   */ static async uploadImage(imageUri: string, folder: string, fileName?: string): Promise<string> {
     try {
-      // Check if user is authenticated
+      // Check if user is authenticated and wait for auth state to be ready
       if (!auth.currentUser) {
-        throw new Error('User must be authenticated to upload images');
+        // Wait a bit for auth state to sync
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        if (!auth.currentUser) {
+          throw new Error("User must be authenticated to upload images");
+        }
       }
 
-      console.log('Current user:', auth.currentUser.uid);
-      console.log('Uploading to folder:', folder, 'filename:', fileName);
+      // Force token refresh to ensure we have a valid token
+      await auth.currentUser.getIdToken(true);
+
+      console.log("Current user:", auth.currentUser.uid);
+      console.log("Uploading to folder:", folder, "filename:", fileName);
 
       // Generate filename if not provided
       if (!fileName) {
         const timestamp = Date.now();
-        const extension = imageUri.split('.').pop() || 'jpg';
+        const extension = imageUri.split(".").pop() || "jpg";
         fileName = `${timestamp}.${extension}`;
       }
 
@@ -36,21 +39,21 @@ export class ImageUploadService {
 
       // Convert image to blob based on platform
       let blob: Blob;
-      
-      if (Platform.OS === 'web') {
+
+      if (Platform.OS === "web") {
         // For web platform - handle different image sources
-        if (imageUri.startsWith('data:')) {
+        if (imageUri.startsWith("data:")) {
           // Data URL
           const response = await fetch(imageUri);
           blob = await response.blob();
-        } else if (imageUri.startsWith('blob:')) {
+        } else if (imageUri.startsWith("blob:")) {
           // Blob URL
           const response = await fetch(imageUri);
           blob = await response.blob();
         } else {
           // Regular URL
           const response = await fetch(imageUri, {
-            mode: 'cors',
+            mode: "cors",
           });
           blob = await response.blob();
         }
@@ -61,25 +64,25 @@ export class ImageUploadService {
       }
 
       // Ensure the blob is a valid image
-      if (!blob.type.startsWith('image/')) {
-        throw new Error('Selected file is not a valid image');
+      if (!blob.type.startsWith("image/")) {
+        throw new Error("Selected file is not a valid image");
       }
 
       // Upload the blob
-      console.log('Uploading image to:', `${folder}/${fileName}`);
+      console.log("Uploading image to:", `${folder}/${fileName}`);
       const snapshot = await uploadBytes(storageRef, blob);
-      
+
       // Get download URL
       const downloadURL = await getDownloadURL(snapshot.ref);
-      
-      console.log('Image uploaded successfully:', downloadURL);
+
+      console.log("Image uploaded successfully:", downloadURL);
       return downloadURL;
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error("Error uploading image:", error);
       if (error instanceof Error) {
         throw new Error(`Failed to upload image: ${error.message}`);
       }
-      throw new Error('Failed to upload image');
+      throw new Error("Failed to upload image");
     }
   }
 
@@ -92,16 +95,16 @@ export class ImageUploadService {
       // Extract the storage path from the download URL
       const pathMatch = imageUrl.match(/\/o\/(.+?)\?/);
       if (!pathMatch) {
-        throw new Error('Invalid image URL format');
+        throw new Error("Invalid image URL format");
       }
 
       const storagePath = decodeURIComponent(pathMatch[1]);
       const storageRef = ref(storage, storagePath);
-      
+
       await deleteObject(storageRef);
-      console.log('Image deleted successfully');
+      console.log("Image deleted successfully");
     } catch (error) {
-      console.error('Error deleting image:', error);
+      console.error("Error deleting image:", error);
       // Don't throw error here as the image might already be deleted
       // or the URL might be invalid
     }
@@ -113,12 +116,9 @@ export class ImageUploadService {
    * @param businessId Business ID for unique naming
    * @returns Promise<string> Download URL of uploaded logo
    */
-  static async uploadBusinessLogo(
-    imageUri: string,
-    businessId: string
-  ): Promise<string> {
+  static async uploadBusinessLogo(imageUri: string, businessId: string): Promise<string> {
     const fileName = `${businessId}_logo.jpg`;
-    return this.uploadImage(imageUri, 'business-logos', fileName);
+    return this.uploadImage(imageUri, "business-logos", fileName);
   }
 
   /**
@@ -127,5 +127,24 @@ export class ImageUploadService {
    */
   static async deleteBusinessLogo(logoUrl: string): Promise<void> {
     return this.deleteImage(logoUrl);
+  }
+
+  /**
+   * Upload user profile image
+   * @param imageUri Local URI of the profile image
+   * @param userId User ID for unique naming
+   * @returns Promise<string> Download URL of uploaded profile image
+   */
+  static async uploadUserProfileImage(imageUri: string, userId: string): Promise<string> {
+    const fileName = `${userId}_profile.jpg`;
+    return this.uploadImage(imageUri, "user-profiles", fileName);
+  }
+
+  /**
+   * Delete user profile image
+   * @param profileImageUrl Full download URL of the profile image
+   */
+  static async deleteUserProfileImage(profileImageUrl: string): Promise<void> {
+    return this.deleteImage(profileImageUrl);
   }
 }

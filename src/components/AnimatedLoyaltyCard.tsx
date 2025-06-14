@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
@@ -95,15 +95,18 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.businessInfo}>
-          <Text style={styles.businessName} numberOfLines={1}>
-            {card.businessName}
-          </Text>
+          <View style={styles.businessNameContainer}>
+            {card.businessLogo && <Image source={{ uri: card.businessLogo }} style={styles.businessLogo} resizeMode="contain" />}
+            <Text style={styles.businessName} numberOfLines={1}>
+              {card.businessName}
+            </Text>
+          </View>
         </View>
         <View style={styles.progressContainer}>
           <Text style={styles.progress}>#{cardCode}</Text>
           {isCompleted && <Ionicons name="gift" size={16} color={COLORS.white} style={styles.giftIcon} />}
         </View>
-      </View>{" "}
+      </View>
       {/* Stamps Grid */}
       <StampsGrid
         totalSlots={card.totalSlots}
@@ -191,11 +194,22 @@ const styles = StyleSheet.create({
   businessInfo: {
     flex: 1,
   },
+  businessNameContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  businessLogo: {
+    width: 24,
+    height: 24,
+    marginRight: SPACING.sm,
+    borderRadius: 12,
+  },
   businessName: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "bold",
     color: COLORS.white,
     marginBottom: 4,
+    flex: 1,
   },
   cardCodeContainer: {
     flexDirection: "row",

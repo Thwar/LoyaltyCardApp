@@ -14,6 +14,11 @@ service firebase.storage {
       allow read: if true; // Public read access for displaying logos
       allow write: if request.auth != null; // Authenticated users can upload
     }
+      // User profile images - Allow authenticated users to upload their profile images
+    match /user-profiles/{fileName} {
+      allow read: if true; // Anyone can read profile images (for displaying in app)
+      allow write: if request.auth != null && request.auth.uid != null; // Only authenticated users with valid UID can upload/modify
+    }
     
     // Default rule - deny all other access
     match /{allPaths=**} {

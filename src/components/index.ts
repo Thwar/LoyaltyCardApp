@@ -11,3 +11,4 @@ export { LoyaltyProgramListModal } from "./LoyaltyProgramListModal";
 export { LoyaltyProgramItem } from "./LoyaltyProgramItem";
 export { BusinessDiscoveryCard } from "./BusinessDiscoveryCard";
 export { StampsGrid } from "./StampsGrid";
+export { StampConfirmationModal } from "./StampConfirmationModal";

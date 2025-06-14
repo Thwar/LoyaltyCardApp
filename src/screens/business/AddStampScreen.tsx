@@ -3,10 +3,10 @@ import { View, Text, StyleSheet, SafeAreaView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 
-import { Button, InputField, useAlert } from "../../components";
+import { Button, InputField, useAlert, StampConfirmationModal } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService, StampActivityService } from "../../services/api";
-import { BusinessStackParamList } from "../../types";
+import { BusinessStackParamList, CustomerCard } from "../../types";
 
 interface AddStampScreenProps {
   navigation: StackNavigationProp<BusinessStackParamList, "AddStamp">;
@@ -14,12 +14,17 @@ interface AddStampScreenProps {
 }
 
 export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, route }) => {
-  const { loyaltyCardId } = route.params;
+  const { loyaltyCardId, businessId } = route.params;
   const { showAlert } = useAlert();
   const [cardCode, setCardCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const handleAddStamp = async () => {
+  const [customerCard, setCustomerCard] = useState<CustomerCard | null>(null);
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [addingStamp, setAddingStamp] = useState(false);
+
+  console.log("AddStampScreen: loyaltyCardId =", loyaltyCardId, "businessId =", businessId);
+  const handleFindCustomerCard = async () => {
     if (!cardCode.trim()) {
       setError("Por favor ingrese el código de la tarjeta");
       return;
@@ -33,33 +38,30 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
 
     setLoading(true);
     setError("");
-
     try {
-      await CustomerCardService.addStampByCardCode(cardCode.trim(), loyaltyCardId);
+      // Find customer card by card code and business ID
+      const foundCustomerCard = await CustomerCardService.getCustomerCardByCodeAndBusiness(cardCode.trim(), businessId);
 
-      showAlert({
-        title: "¡Sello Agregado!",
-        message: "El sello del cliente ha sido agregado exitosamente.",
-        buttons: [
-          {
-            text: "Agregar Otro",
-            onPress: () => setCardCode(""),
-          },
-          {
-            text: "Listo",
-            onPress: () => navigation.goBack(),
-          },
-        ],
-      });
+      if (!foundCustomerCard) {
+        setError("Código de tarjeta inválido o no pertenece a este negocio");
+        showAlert({
+          title: "Tarjeta no encontrada",
+          message: "Código de tarjeta inválido o no pertenece a este negocio. Verifica el código e intenta nuevamente.",
+        });
+        return;
+      }
+
+      // Show confirmation modal with customer card details
+      setCustomerCard(foundCustomerCard);
+      setShowConfirmationModal(true);
     } catch (err) {
-      console.log("Error adding stamp:", err);
-      let errorMessage = "Error al agregar sello";
-
+      console.log("Error finding customer card:", err);
+      let errorMessage = "Error al buscar la tarjeta";
       if (err instanceof Error) {
         if (err.message.includes("not found") || err.message.includes("no encontrada")) {
-          errorMessage = "Código de tarjeta inválido o no pertenece a este programa de fidelidad";
+          errorMessage = "Código de tarjeta inválido o no pertenece a este negocio";
         } else if (err.message.includes("permission") || err.message.includes("permisos")) {
-          errorMessage = "No tienes permisos para agregar sellos a esta tarjeta";
+          errorMessage = "No tienes permisos para acceder a esta tarjeta";
         } else if (err.message.includes("network") || err.message.includes("connection")) {
           errorMessage = "Error de conexión. Verifica tu conexión a internet e intenta nuevamente";
         } else {
@@ -75,6 +77,51 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleConfirmAddStamp = async () => {
+    if (!customerCard) return;
+
+    setAddingStamp(true);
+    try {
+      await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), businessId);
+
+      setShowConfirmationModal(false);
+      setCustomerCard(null);
+
+      showAlert({
+        title: "¡Sello Agregado!",
+        message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}.`,
+        buttons: [
+          {
+            text: "Agregar Otro",
+            onPress: () => setCardCode(""),
+          },
+          {
+            text: "Listo",
+            onPress: () => navigation.goBack(),
+          },
+        ],
+      });
+    } catch (err) {
+      console.log("Error adding stamp:", err);
+      let errorMessage = "Error al agregar sello";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      showAlert({
+        title: "Error",
+        message: errorMessage,
+      });
+    } finally {
+      setAddingStamp(false);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowConfirmationModal(false);
+    setCustomerCard(null);
   };
 
   return (
@@ -99,11 +146,11 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
             <Text style={styles.instructionsTitle}>Instrucciones:</Text>
             <Text style={styles.instructionsText}>
               1. Solicita al cliente su código de tarjeta de 3 dígitos{"\n"}
-              2. Ingrésalo arriba y presiona "Agregar Sello"{"\n"}
-              3. El cliente verá el nuevo sello en su tarjeta
+              2. Ingrésalo arriba y presiona "Buscar Tarjeta"{"\n"}
+              3. Confirma los detalles del cliente y agrega el sello
             </Text>
           </View>
-          <Button title="Agregar Sello" onPress={handleAddStamp} loading={loading} size="large" style={styles.addButton} />
+          <Button title="Buscar Tarjeta" onPress={handleFindCustomerCard} loading={loading} size="large" style={styles.addButton} />
         </View>
         {/* Quick Actions */}
         <View style={styles.quickActions}>
@@ -124,6 +171,8 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
           <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
         </View>
       </View>
+
+      <StampConfirmationModal customerCard={customerCard} isVisible={showConfirmationModal} loading={addingStamp} onClose={handleCloseModal} onConfirmStamp={handleConfirmAddStamp} />
     </SafeAreaView>
   );
 };

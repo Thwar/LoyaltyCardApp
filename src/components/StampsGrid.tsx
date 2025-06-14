@@ -118,7 +118,7 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
           key={i}
           style={[
             stampStyle,
-            isStamped ? [styles.stampFilled, { borderColor: stampColor, backgroundColor: stampColor }] : styles.stampEmpty,
+            isStamped ? [styles.stampFilled, { backgroundColor: stampColor }] : styles.stampEmpty,
             {
               transform: [
                 {
@@ -168,6 +168,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(248, 248, 248, 0.8)",
   },
   stampFilled: {
+    borderColor: COLORS.white,
+    borderWidth: 3,
     shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
