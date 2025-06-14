@@ -128,8 +128,6 @@ export type CustomerStackParamList = {
 
 export type BusinessStackParamList = {
   BusinessTabs: undefined;
-  CreateCard: undefined;
-  EditCard: { cardId: string };
   CustomerDetails: { customerId: string };
   AddStamp: { loyaltyCardId: string; businessId: string };
 };

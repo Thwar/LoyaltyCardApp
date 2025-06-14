@@ -1,49 +1,45 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { RouteProp } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, useAlert } from "../../components";
+import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
-import { LoyaltyCard, BusinessStackParamList } from "../../types";
+import { LoyaltyCard } from "../../types";
 
-interface EditLoyaltyCardScreenProps {
-  navigation: StackNavigationProp<BusinessStackParamList, "EditCard">;
-  route: RouteProp<BusinessStackParamList, "EditCard">;
+interface EditLoyaltyCardModalProps {
+  visible: boolean;
+  cardId: string;
+  onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
-  navigation,
-  route,
-}) => {
+export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visible, cardId, onClose, onSuccess }) => {
   const { user } = useAuth();
   const { showAlert } = useAlert();
-  const { cardId } = route.params;
 
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [formData, setFormData] = useState({
     businessName: "",
     totalSlots: "",
     rewardDescription: "",
+    cardColor: "#8B1538",
+    stampShape: "circle" as "circle" | "square" | "egg",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   useEffect(() => {
-    loadLoyaltyCard();
-  }, [cardId]);
-
+    if (visible && cardId) {
+      loadLoyaltyCard();
+    }
+  }, [cardId, visible]);
   const loadLoyaltyCard = async () => {
+    if (!cardId || !visible) {
+      return;
+    }
+
     try {
       setLoading(true);
       const card = await LoyaltyCardService.getLoyaltyCard(cardId);
@@ -53,6 +49,8 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
           businessName: card.businessName,
           totalSlots: card.totalSlots.toString(),
           rewardDescription: card.rewardDescription,
+          cardColor: card.cardColor || "#8B1538",
+          stampShape: card.stampShape || "circle",
         });
       }
     } catch (error) {
@@ -60,7 +58,7 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
         title: "Error",
         message: "Error al cargar los detalles de la tarjeta de lealtad",
       });
-      navigation.goBack();
+      onClose();
     } finally {
       setLoading(false);
     }
@@ -80,17 +78,11 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
     }
 
     const slotsNum = parseInt(formData.totalSlots);
-    if (
-      !formData.totalSlots ||
-      isNaN(slotsNum) ||
-      slotsNum < 1 ||
-      slotsNum > 20
-    ) {
+    if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 1 || slotsNum > 20) {
       newErrors.totalSlots = "Los sellos deben estar entre 1 y 20";
     }
     if (!formData.rewardDescription.trim()) {
-      newErrors.rewardDescription =
-        "La descripción de la recompensa es requerida";
+      newErrors.rewardDescription = "La descripción de la recompensa es requerida";
     }
 
     setErrors(newErrors);
@@ -106,6 +98,8 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
         businessName: formData.businessName.trim(),
         totalSlots: parseInt(formData.totalSlots),
         rewardDescription: formData.rewardDescription.trim(),
+        cardColor: formData.cardColor,
+        stampShape: formData.stampShape,
       };
       await LoyaltyCardService.updateLoyaltyCard(loyaltyCard.id, updates);
       showAlert({
@@ -114,17 +108,17 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
         buttons: [
           {
             text: "OK",
-            onPress: () => navigation.goBack(),
+            onPress: () => {
+              onClose();
+              onSuccess?.();
+            },
           },
         ],
       });
     } catch (error) {
       showAlert({
         title: "Error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Error al actualizar la tarjeta de lealtad",
+        message: error instanceof Error ? error.message : "Error al actualizar la tarjeta de lealtad",
       });
     } finally {
       setSaving(false);
@@ -133,8 +127,7 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
   const handleDeleteCard = () => {
     showAlert({
       title: "Eliminar Tarjeta de Lealtad",
-      message:
-        "¿Estás seguro que quieres eliminar esta tarjeta de lealtad? Esta acción no se puede deshacer y afectará a todos los clientes que tienen esta tarjeta.",
+      message: "¿Estás seguro que quieres eliminar esta tarjeta de lealtad? Esta acción no se puede deshacer y afectará a todos los clientes que tienen esta tarjeta.",
       buttons: [
         { text: "Cancelar", style: "cancel" },
         {
@@ -158,17 +151,17 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
         buttons: [
           {
             text: "OK",
-            onPress: () => navigation.navigate("BusinessTabs"),
+            onPress: () => {
+              onClose();
+              onSuccess?.();
+            },
           },
         ],
       });
     } catch (error) {
       showAlert({
         title: "Error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Error al eliminar la tarjeta de lealtad",
+        message: error instanceof Error ? error.message : "Error al eliminar la tarjeta de lealtad",
       });
     } finally {
       setSaving(false);
@@ -179,74 +172,61 @@ export const EditLoyaltyCardScreen: React.FC<EditLoyaltyCardScreenProps> = ({
   }
 
   if (!loyaltyCard) {
-    return (
-      <LoadingState
-        error="Tarjeta de lealtad no encontrada"
-        onRetry={() => navigation.goBack()}
-      />
-    );
+    return <LoadingState error="Tarjeta de lealtad no encontrada" onRetry={() => onClose()} />;
   }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <ScrollView style={styles.scrollView}>
-          <View style={styles.content}>
-            <Text style={styles.title}>Editar Tarjeta de Lealtad</Text>
-            <Text style={styles.subtitle}>
-              Actualiza los detalles de tu tarjeta de lealtad
-            </Text>
-            <View style={styles.form}>
-              <InputField
-                label="Nombre del Negocio"
-                value={formData.businessName}
-                onChangeText={(value) => updateFormData("businessName", value)}
-                placeholder="Ingresa el nombre de tu negocio"
-                error={errors.businessName}
-              />
-              <InputField
-                label="Número de Sellos Requeridos"
-                value={formData.totalSlots}
-                onChangeText={(value) => updateFormData("totalSlots", value)}
-                placeholder="ej., 10"
-                keyboardType="numeric"
-                error={errors.totalSlots}
-              />
-              <InputField
-                label="Descripción de la Recompensa"
-                value={formData.rewardDescription}
-                onChangeText={(value) =>
-                  updateFormData("rewardDescription", value)
-                }
-                placeholder="ej., Café gratis"
-                multiline
-                numberOfLines={3}
-                error={errors.rewardDescription}
-              />
-            </View>
-            <View style={styles.buttonContainer}>
-              <Button
-                title="Actualizar Tarjeta"
-                onPress={handleUpdateCard}
-                loading={saving}
-                style={styles.updateButton}
-              />
-              <Button
-                title="Eliminar Tarjeta"
-                onPress={handleDeleteCard}
-                variant="outline"
-                loading={saving}
-                style={styles.deleteButton}
-                textStyle={{ color: COLORS.error }}
-              />
-            </View>
+    <Modal animationType="slide" visible={visible} onRequestClose={onClose} presentationStyle="pageSheet">
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Editar Tarjeta de Lealtad</Text>
+            <View style={styles.closeButton} />
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+          <ScrollView style={styles.scrollView}>
+            <View style={styles.content}>
+              <Text style={styles.subtitle}>Actualiza los detalles de tu tarjeta de lealtad</Text>
+              <View style={styles.form}>
+                <InputField
+                  label="Nombre del Negocio"
+                  value={formData.businessName}
+                  onChangeText={(value) => updateFormData("businessName", value)}
+                  placeholder="Ingresa el nombre de tu negocio"
+                  error={errors.businessName}
+                />
+                <InputField
+                  label="Número de Sellos Requeridos"
+                  value={formData.totalSlots}
+                  onChangeText={(value) => updateFormData("totalSlots", value)}
+                  placeholder="ej., 10"
+                  keyboardType="numeric"
+                  error={errors.totalSlots}
+                />
+                <InputField
+                  label="Descripción de la Recompensa"
+                  value={formData.rewardDescription}
+                  onChangeText={(value) => updateFormData("rewardDescription", value)}
+                  placeholder="ej., Café gratis"
+                  multiline
+                  numberOfLines={3}
+                  error={errors.rewardDescription}
+                />
+                <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
+                <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
+              </View>
+              <View style={styles.buttonContainer}>
+                <Button title="Actualizar Tarjeta" onPress={handleUpdateCard} loading={saving} style={styles.updateButton} />
+                <Button title="Eliminar Tarjeta" onPress={handleDeleteCard} variant="outline" loading={saving} style={styles.deleteButton} textStyle={{ color: COLORS.error }} />
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
   );
 };
 
@@ -257,6 +237,27 @@ const styles = StyleSheet.create({
   },
   keyboardView: {
     flex: 1,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.inputBorder,
+  },
+  modalTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrollView: {
     flex: 1,

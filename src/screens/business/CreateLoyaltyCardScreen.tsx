@@ -1,33 +1,26 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, KeyboardAvoidingView, Modal, TouchableOpacity } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, Dropdown, useAlert } from "../../components";
+import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
-import { BusinessStackParamList } from "../../types";
 
-interface CreateLoyaltyCardScreenProps {
-  navigation: StackNavigationProp<BusinessStackParamList, "CreateCard">;
+interface CreateLoyaltyCardModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export const CreateLoyaltyCardScreen: React.FC<
-  CreateLoyaltyCardScreenProps
-> = ({ navigation }) => {
+export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ visible, onClose, onSuccess }) => {
   const { user } = useAuth();
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     totalSlots: "10",
     rewardDescription: "",
+    cardColor: "#8B1538", // Default to primary color
+    stampShape: "circle" as "circle" | "square" | "egg", // Default shape
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -37,26 +30,22 @@ export const CreateLoyaltyCardScreen: React.FC<
     label: `${i + 3} sellos`,
     value: (i + 3).toString(),
   }));
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     const slotsNum = parseInt(formData.totalSlots);
-    if (
-      !formData.totalSlots ||
-      isNaN(slotsNum) ||
-      slotsNum < 3 ||
-      slotsNum > 20
-    ) {
+    if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 3 || slotsNum > 20) {
       newErrors.totalSlots = "Los sellos deben estar entre 3 y 20";
     }
     if (!formData.rewardDescription.trim()) {
-      newErrors.rewardDescription =
-        "La descripción de la recompensa es requerida";
+      newErrors.rewardDescription = "La descripción de la recompensa es requerida";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+
   const handleCreateCard = async () => {
     if (!validateForm() || !user) return;
 
@@ -66,9 +55,7 @@ export const CreateLoyaltyCardScreen: React.FC<
       const businesses = await BusinessService.getBusinessesByOwner(user.id);
 
       if (businesses.length === 0) {
-        throw new Error(
-          "No se encontró el perfil del negocio. Por favor, contacta al soporte."
-        );
+        throw new Error("No se encontró el perfil del negocio. Por favor, contacta al soporte.");
       }
       const businessId = businesses[0].id; // Use the first business found
 
@@ -78,28 +65,29 @@ export const CreateLoyaltyCardScreen: React.FC<
         businessLogo: businesses[0].logoUrl,
         totalSlots: parseInt(formData.totalSlots),
         rewardDescription: formData.rewardDescription,
+        cardColor: formData.cardColor,
+        stampShape: formData.stampShape,
         isActive: true,
       };
 
       await LoyaltyCardService.createLoyaltyCard(cardData);
-
       showAlert({
         title: "¡Éxito!",
         message: "Tu tarjeta de lealtad ha sido creada exitosamente.",
         buttons: [
           {
             text: "OK",
-            onPress: () => navigation.goBack(),
+            onPress: () => {
+              onClose();
+              onSuccess?.();
+            },
           },
         ],
       });
     } catch (error) {
       showAlert({
         title: "Error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Error al crear la tarjeta de lealtad",
+        message: error instanceof Error ? error.message : "Error al crear la tarjeta de lealtad",
       });
     } finally {
       setLoading(false);
@@ -113,72 +101,72 @@ export const CreateLoyaltyCardScreen: React.FC<
       setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.keyboardAvoid}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          keyboardShouldPersistTaps="handled"
-        >
-          <View style={styles.header}>
-            <Text style={styles.title}>Crear Tarjeta de Lealtad</Text>
-            <Text style={styles.subtitle}>
-              Configura un nuevo programa de lealtad para tus clientes
-            </Text>
+    <Modal animationType="slide" visible={visible} onRequestClose={onClose} presentationStyle="pageSheet">
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
+          {/* Modal Header */}
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Crear Tarjeta de Lealtad</Text>
+            <View style={styles.closeButton} />
           </View>
-          <View style={styles.form}>
-            <Dropdown
-              label="Número de Sellos Requeridos"
-              value={formData.totalSlots}
-              options={stampOptions}
-              onSelect={(value) => updateFormData("totalSlots", value)}
-              placeholder="Seleccionar número de sellos"
-              error={errors.totalSlots}
-            />
 
-            <InputField
-              label="Descripción de la Recompensa"
-              value={formData.rewardDescription}
-              onChangeText={(value) =>
-                updateFormData("rewardDescription", value)
-              }
-              placeholder="ej., Café gratis o 20% de descuento en la próxima compra"
-              leftIcon="gift"
-              error={errors.rewardDescription}
-              multiline
-            />
-
-            {/* Preview Section */}
-            <View style={styles.previewContainer}>
-              <Text style={styles.previewTitle}>Vista Previa</Text>
-              <View style={styles.previewCard}>
-                <Text style={styles.previewBusinessName}>
-                  {"Nombre de Tu Negocio"}
-                </Text>
-                <Text style={styles.previewStamps}>
-                  0 / {formData.totalSlots || "10"} sellos
-                </Text>
-                <Text style={styles.previewReward}>
-                  Recompensa:
-                  {formData.rewardDescription || "Descripción de tu recompensa"}
-                </Text>
-              </View>
+          <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+            <View style={styles.header}>
+              <Text style={styles.subtitle}>Configura un nuevo programa de lealtad para tus clientes</Text>
             </View>
-            <Button
-              title="Crear Tarjeta de Lealtad"
-              onPress={handleCreateCard}
-              loading={loading}
-              size="large"
-              style={styles.createButton}
-            />
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+
+            <View style={styles.form}>
+              <Dropdown
+                label="Número de Sellos Requeridos"
+                value={formData.totalSlots}
+                options={stampOptions}
+                onSelect={(value) => updateFormData("totalSlots", value)}
+                placeholder="Seleccionar número de sellos"
+                error={errors.totalSlots}
+              />
+              <InputField
+                label="Descripción de la Recompensa"
+                value={formData.rewardDescription}
+                onChangeText={(value) => updateFormData("rewardDescription", value)}
+                placeholder="ej., Café gratis o 20% de descuento en la próxima compra"
+                leftIcon="gift"
+                error={errors.rewardDescription}
+                multiline
+              />
+              <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
+              <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
+              {/* Preview Section */}
+              <View style={styles.previewContainer}>
+                <Text style={styles.previewTitle}>Vista Previa</Text>
+                <View style={[styles.previewCard, { backgroundColor: formData.cardColor }]}>
+                  <Text style={styles.previewBusinessName}>{"Nombre de Tu Negocio"}</Text>
+                  <Text style={styles.previewStamps}>0 / {formData.totalSlots || "10"} sellos</Text>
+                  <View style={styles.previewStampsContainer}>
+                    {Array.from({ length: 5 }, (_, index) => (
+                      <View
+                        key={index}
+                        style={[
+                          styles.previewStamp,
+                          formData.stampShape === "circle" && styles.previewStampCircle,
+                          formData.stampShape === "square" && styles.previewStampSquare,
+                          formData.stampShape === "egg" && styles.previewStampEgg,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                  <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
+                </View>
+              </View>
+              <Button title="Crear Tarjeta de Lealtad" onPress={handleCreateCard} loading={loading} size="large" style={styles.createButton} />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
   );
 };
 
@@ -189,6 +177,27 @@ const styles = StyleSheet.create({
   },
   keyboardAvoid: {
     flex: 1,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.white,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.inputBorder,
+  },
+  modalTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+  },
+  closeButton: {
+    width: 32,
+    height: 32,
+    alignItems: "center",
+    justifyContent: "center",
   },
   scrollView: {
     flex: 1,
@@ -212,6 +221,8 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: SPACING.lg,
+    paddingBottom: SPACING.xl * 2,
+    minHeight: 800,
   },
   previewContainer: {
     marginVertical: SPACING.lg,
@@ -238,11 +249,28 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     marginBottom: SPACING.sm,
   },
-  previewStampDesc: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
-    opacity: 0.9,
+  previewStampsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginBottom: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  previewStamp: {
+    width: 20,
+    height: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    borderWidth: 1,
+    borderColor: COLORS.white,
+  },
+  previewStampCircle: {
+    borderRadius: 10,
+  },
+  previewStampSquare: {
+    borderRadius: 2,
+  },
+  previewStampEgg: {
+    borderRadius: 10,
+    transform: [{ scaleX: 0.8 }],
   },
   previewReward: {
     fontSize: FONT_SIZES.sm,
@@ -251,5 +279,6 @@ const styles = StyleSheet.create({
   },
   createButton: {
     marginTop: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
 });

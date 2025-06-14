@@ -4,6 +4,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState } from "../../components";
+import { CreateLoyaltyCardModal } from "../business";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { CustomerCardService, BusinessService, LoyaltyCardService } from "../../services/api";
 import { CustomerCard, LoyaltyCard } from "../../types";
@@ -19,6 +20,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
 
   useEffect(() => {
     loadCustomers();
@@ -116,7 +118,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
           title="Aún No Hay Clientes"
           message="Los clientes aparecerán aquí una vez que comiencen a usar tus tarjetas de lealtad. ¡Comparte tu negocio con los clientes para comenzar!"
           actionText="Crear Tarjeta de Lealtad"
-          onAction={() => navigation.navigate("CreateCard")}
+          onAction={() => setCreateModalVisible(true)}
         />
       ) : (
         <FlatList data={customers} renderItem={({ item }) => <CustomerCard customer={item} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.customersList} />
@@ -138,6 +140,9 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
           style={styles.actionButton}
         />
       </View>
+
+      {/* Modal */}
+      <CreateLoyaltyCardModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSuccess={() => loadCustomers()} />
     </SafeAreaView>
   );
 };

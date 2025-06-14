@@ -12,3 +12,5 @@ export { LoyaltyProgramItem } from "./LoyaltyProgramItem";
 export { BusinessDiscoveryCard } from "./BusinessDiscoveryCard";
 export { StampsGrid } from "./StampsGrid";
 export { StampConfirmationModal } from "./StampConfirmationModal";
+export { ColorPicker } from "./ColorPicker";
+export { StampShapePicker } from "./StampShapePicker";

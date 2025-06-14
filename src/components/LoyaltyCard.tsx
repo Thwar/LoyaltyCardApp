@@ -1,11 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ImageBackground,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
 import { LoyaltyCard as LoyaltyCardType } from "../types";
@@ -17,35 +11,20 @@ interface LoyaltyCardProps {
   style?: any;
 }
 
-export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
-  card,
-  currentStamps = 0,
-  onPress,
-  style,
-}) => {
+export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({ card, currentStamps = 0, onPress, style }) => {
   const progress = Math.min(currentStamps / card.totalSlots, 1);
   const isCompleted = currentStamps >= card.totalSlots;
-
   const renderStamps = () => {
     const stamps = [];
     for (let i = 0; i < card.totalSlots; i++) {
       const isStamped = i < currentStamps;
+
+      // Determine stamp shape styles
+      const shapeStyle = card.stampShape === "circle" ? styles.stampCircle : card.stampShape === "square" ? styles.stampSquare : styles.stampEgg;
+
       stamps.push(
-        <View
-          key={i}
-          style={[
-            styles.stamp,
-            isStamped ? styles.stampFilled : styles.stampEmpty,
-          ]}
-        >
-          <Text
-            style={[
-              styles.stampText,
-              isStamped ? styles.stampTextFilled : styles.stampTextEmpty,
-            ]}
-          >
-            {isStamped ? "✓" : ""}
-          </Text>
+        <View key={i} style={[styles.stamp, shapeStyle, isStamped ? styles.stampFilled : styles.stampEmpty]}>
+          <Text style={[styles.stampText, isStamped ? styles.stampTextFilled : styles.stampTextEmpty]}>{isStamped ? "✓" : ""}</Text>
         </View>
       );
     }
@@ -79,36 +58,28 @@ export const LoyaltyCard: React.FC<LoyaltyCardProps> = ({
         <View style={styles.progressBarBackground}>
           <View style={[styles.progressBar, { width: `${progress * 100}%` }]} />
         </View>
-        {isCompleted && (
-          <Text style={styles.completedText}>¡Listo para Reclamar!</Text>
-        )}
+        {isCompleted && <Text style={styles.completedText}>¡Listo para Reclamar!</Text>}
       </View>
     </View>
   );
-
   if (onPress) {
+    const cardColor = card.cardColor || COLORS.primary;
+    const darkerColor = cardColor + "CC"; // Add some transparency for darker shade
+
     return (
       <TouchableOpacity style={[styles.cardWrapper, style]} onPress={onPress}>
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.primaryDark]}
-          style={styles.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
+        <LinearGradient colors={[cardColor, darkerColor]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
           <CardContent />
         </LinearGradient>
       </TouchableOpacity>
     );
   }
+  const cardColor = card.cardColor || COLORS.primary;
+  const darkerColor = cardColor + "CC"; // Add some transparency for darker shade
 
   return (
     <View style={[styles.cardWrapper, style]}>
-      <LinearGradient
-        colors={[COLORS.primary, COLORS.primaryDark]}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+      <LinearGradient colors={[cardColor, darkerColor]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
         <CardContent />
       </LinearGradient>
     </View>
@@ -164,10 +135,19 @@ const styles = StyleSheet.create({
   stamp: {
     width: 32,
     height: 32,
-    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 2,
+  },
+  stampCircle: {
+    borderRadius: 16,
+  },
+  stampSquare: {
+    borderRadius: 4,
+  },
+  stampEgg: {
+    borderRadius: 16,
+    transform: [{ scaleX: 0.8 }],
   },
   stampEmpty: {
     borderColor: "rgba(255, 255, 255, 0.5)",

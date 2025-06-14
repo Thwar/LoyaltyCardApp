@@ -5,6 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState } from "../../components";
+import { CreateLoyaltyCardModal } from "../business";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { BusinessService, LoyaltyCardService, CustomerCardService } from "../../services/api";
 import { Business, LoyaltyCard } from "../../types";
@@ -32,6 +33,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadDashboardData = async (isRefresh = false) => {
@@ -43,24 +45,26 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
       } else {
         setLoading(true);
       }
-      setError(null); // Load business info
+      setError(null);
+
+      // Load business info
       const businesses = await BusinessService.getBusinessesByOwner(user.id);
       console.log("Found businesses:", businesses.length);
-      const userBusiness = businesses[0]; // Assuming one business per owner for now
+      const userBusiness = businesses[0];
       setBusiness(userBusiness);
       console.log("User business:", userBusiness);
       if (userBusiness) {
         // Load loyalty cards for this business
-        console.log("Loading loyalty cards for business:", userBusiness.id); // Use the actual business ID instead of user ID
+        console.log("Loading loyalty cards for business:", userBusiness.id);
         const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(userBusiness.id);
         console.log("Found loyalty cards:", loyaltyCards.length, loyaltyCards);
-        setLoyaltyCards(loyaltyCards); // Store loyalty cards in state
+        setLoyaltyCards(loyaltyCards);
 
         // Calculate stats
         let totalStamps = 0;
         let activeCustomers = 0;
         let claimedRewards = 0;
-        const uniqueCustomers = new Set<string>(); // Track unique customer IDs
+        const uniqueCustomers = new Set<string>();
 
         for (const card of loyaltyCards) {
           const customerCards = await CustomerCardService.getCustomerCardsByLoyaltyCard(card.id);
@@ -150,7 +154,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-          {loyaltyCards.length === 0 && <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => navigation.navigate("CreateCard")} size="large" style={styles.actionButton} />}
+          {loyaltyCards.length === 0 && <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => setCreateModalVisible(true)} size="large" style={styles.actionButton} />}
           <Button
             title="Agregar Sello a Cliente"
             onPress={() => {
@@ -179,6 +183,9 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
           </View>
         )}
       </ScrollView>
+
+      {/* Modal */}
+      <CreateLoyaltyCardModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSuccess={() => loadDashboardData()} />
     </SafeAreaView>
   );
 };

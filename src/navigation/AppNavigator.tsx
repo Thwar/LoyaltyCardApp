@@ -18,9 +18,7 @@ import { ClaimRewardScreen } from "../screens/customer/ClaimRewardScreen";
 import { BusinessDiscoveryScreen } from "../screens/customer/BusinessDiscoveryScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
 import { BusinessSettingsScreen } from "../screens/business/BusinessSettingsScreen";
-import { CreateLoyaltyCardScreen } from "../screens/business/CreateLoyaltyCardScreen";
 import { LoyaltyProgramScreen } from "../screens/business/LoyaltyProgramScreen";
-import { EditLoyaltyCardScreen } from "../screens/business/EditLoyaltyCardScreen";
 import { CustomerManagementScreen } from "../screens/business/CustomerManagementScreen";
 import { AddStampScreen } from "../screens/business/AddStampScreen";
 
@@ -195,22 +193,6 @@ const BusinessStackNavigator = () => {
       }}
     >
       <BusinessStack.Screen name="BusinessTabs" component={BusinessNavigator} options={{ headerShown: false }} />
-      <BusinessStack.Screen
-        name="CreateCard"
-        component={CreateLoyaltyCardScreen}
-        options={{
-          title: "Crear Tarjeta de Lealtad",
-          headerBackTitle: "Atrás",
-        }}
-      />
-      <BusinessStack.Screen
-        name="EditCard"
-        component={EditLoyaltyCardScreen}
-        options={{
-          title: "Editar Tarjeta de Lealtad",
-          headerBackTitle: "Atrás",
-        }}
-      />
       <BusinessStack.Screen
         name="AddStamp"
         component={AddStampScreen}

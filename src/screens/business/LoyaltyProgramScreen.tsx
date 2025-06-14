@@ -1,19 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  SafeAreaView,
-  RefreshControl,
-  TouchableOpacity,
-} from "react-native";
+import { View, Text, StyleSheet, FlatList, SafeAreaView, RefreshControl, TouchableOpacity } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState } from "../../components";
+import { CreateLoyaltyCardModal, EditLoyaltyCardModal } from "../business";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
 import { LoyaltyCard, BusinessTabParamList } from "../../types";
@@ -22,14 +15,17 @@ interface LoyaltyProgramScreenProps {
   navigation: StackNavigationProp<any>;
 }
 
-export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({
-  navigation,
-}) => {
+export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
   const [loyaltyCards, setLoyaltyCards] = useState<LoyaltyCard[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [selectedCardId, setSelectedCardId] = useState<string>("");
+  const [selectingCard, setSelectingCard] = useState(false);
   const loadLoyaltyCards = async (isRefresh = false) => {
     if (!user) return;
 
@@ -50,24 +46,18 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({
           businessId = businesses[0].id; // Use the first business found
         }
       } catch (businessError) {
-        console.warn(
-          "Could not fetch business, using user ID as fallback:",
-          businessError
-        );
+        console.warn("Could not fetch business, using user ID as fallback:", businessError);
         // Continue with user.id as businessId for backward compatibility
       }
 
-      const cards = await LoyaltyCardService.getLoyaltyCardsByBusiness(
-        businessId
-      );
+      const cards = await LoyaltyCardService.getLoyaltyCardsByBusiness(businessId);
       setLoyaltyCards(cards);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load loyalty cards"
-      );
+      setError(err instanceof Error ? err.message : "Failed to load loyalty cards");
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setInitialLoading(false);
     }
   };
 
@@ -80,42 +70,30 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({
   const handleRetry = () => {
     loadLoyaltyCards();
   };
-
   const handleCreateCard = () => {
-    navigation.navigate("CreateCard");
+    setCreateModalVisible(true);
+  };
+  const handleEditCard = (cardId: string) => {
+    setSelectingCard(true);
+    setSelectedCardId(cardId);
+    setEditModalVisible(true);
+    setSelectingCard(false);
   };
 
-  const handleEditCard = (cardId: string) => {
-    navigation.navigate("EditCard", { cardId });
+  const handleModalSuccess = () => {
+    loadLoyaltyCards(); // Refresh the list when modal operations are successful
   };
 
   const LoyaltyCardItem: React.FC<{ card: LoyaltyCard }> = ({ card }) => (
-    <TouchableOpacity
-      style={styles.cardItem}
-      onPress={() => handleEditCard(card.id)}
-    >
+    <TouchableOpacity style={styles.cardItem} onPress={() => handleEditCard(card.id)}>
       <View style={styles.cardHeader}>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle}>{card.businessName}</Text>
-          <Text style={styles.cardSubtitle}>
-            {card.totalSlots} sellos requeridos
-          </Text>
+          <Text style={styles.cardSubtitle}>{card.totalSlots} sellos requeridos</Text>
         </View>
         <View style={styles.cardActions}>
-          <View
-            style={[
-              styles.statusBadge,
-              card.isActive ? styles.activeBadge : styles.inactiveBadge,
-            ]}
-          >
-            <Text
-              style={[
-                styles.statusText,
-                card.isActive ? styles.activeText : styles.inactiveText,
-              ]}
-            >
-              {card.isActive ? "Activo" : "Inactivo"}
-            </Text>
+          <View style={[styles.statusBadge, card.isActive ? styles.activeBadge : styles.inactiveBadge]}>
+            <Text style={[styles.statusText, card.isActive ? styles.activeText : styles.inactiveText]}>{card.isActive ? "Activo" : "Inactivo"}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
@@ -131,7 +109,7 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({
     </TouchableOpacity>
   );
 
-  if (loading && !refreshing) {
+  if (initialLoading) {
     return <LoadingState loading={true} />;
   }
 
@@ -141,11 +119,15 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
+      {selectingCard && (
+        <View style={styles.centerLoadingOverlay}>
+          <LoadingState loading={true} />
+        </View>
+      )}
       <View style={styles.header}>
         <Text style={styles.title}>Mi Programa de Lealtad</Text>
         <Text style={styles.subtitle}>Gestiona tus tarjetas de lealtad</Text>
       </View>
-
       {loyaltyCards.length === 0 ? (
         <EmptyState
           icon="card"
@@ -161,23 +143,25 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({
             renderItem={({ item }) => <LoyaltyCardItem card={item} />}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.cardsList}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => loadLoyaltyCards(true)}
-              />
-            }
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadLoyaltyCards(true)} />}
           />
-
           <View style={styles.actionContainer}>
-            <Button
-              title="Crear Nueva Tarjeta"
-              onPress={handleCreateCard}
-              size="large"
-              style={styles.createButton}
-            />
+            <Button title="Crear Nueva Tarjeta" onPress={handleCreateCard} size="large" style={styles.createButton} />
           </View>
         </>
+      )}
+      {/* Modals */}
+      <CreateLoyaltyCardModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSuccess={handleModalSuccess} />
+      {editModalVisible && selectedCardId !== "" && (
+        <EditLoyaltyCardModal
+          visible={editModalVisible && selectedCardId !== ""}
+          cardId={selectedCardId}
+          onClose={() => {
+            setEditModalVisible(false);
+            setSelectedCardId("");
+          }}
+          onSuccess={handleModalSuccess}
+        />
       )}
     </SafeAreaView>
   );
@@ -290,6 +274,17 @@ const styles = StyleSheet.create({
   },
   createButton: {
     width: "100%",
+  },
+  centerLoadingOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1000,
   },
 });
 
