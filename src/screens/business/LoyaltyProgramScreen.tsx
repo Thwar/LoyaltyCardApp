@@ -24,8 +24,8 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
   const [error, setError] = useState<string | null>(null);
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [selectedCardId, setSelectedCardId] = useState<string>("");
-  const [selectingCard, setSelectingCard] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<LoyaltyCard | null>(null);
+  const [loadingSelectedCard, setLoadingSelectedCard] = useState(false);
   const loadLoyaltyCards = async (isRefresh = false) => {
     if (!user) return;
 
@@ -73,11 +73,19 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
   const handleCreateCard = () => {
     setCreateModalVisible(true);
   };
-  const handleEditCard = (cardId: string) => {
-    setSelectingCard(true);
-    setSelectedCardId(cardId);
-    setEditModalVisible(true);
-    setSelectingCard(false);
+  const handleEditCard = async (cardId: string) => {
+    try {
+      setLoadingSelectedCard(true);
+      const card = await LoyaltyCardService.getLoyaltyCard(cardId);
+      if (card) {
+        setSelectedCard(card);
+        setEditModalVisible(true);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load loyalty card details");
+    } finally {
+      setLoadingSelectedCard(false);
+    }
   };
 
   const handleModalSuccess = () => {
@@ -119,7 +127,7 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
 
   return (
     <SafeAreaView style={styles.container}>
-      {selectingCard && (
+      {loadingSelectedCard && (
         <View style={styles.centerLoadingOverlay}>
           <LoadingState loading={true} />
         </View>
@@ -152,13 +160,13 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
       )}
       {/* Modals */}
       <CreateLoyaltyCardModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSuccess={handleModalSuccess} />
-      {editModalVisible && selectedCardId !== "" && (
+      {editModalVisible && selectedCard && (
         <EditLoyaltyCardModal
-          visible={editModalVisible && selectedCardId !== ""}
-          cardId={selectedCardId}
+          visible={editModalVisible}
+          cardData={selectedCard}
           onClose={() => {
             setEditModalVisible(false);
-            setSelectedCardId("");
+            setSelectedCard(null);
           }}
           onSuccess={handleModalSuccess}
         />

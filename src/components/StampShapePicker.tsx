@@ -4,8 +4,8 @@ import { COLORS, FONT_SIZES, SPACING } from "../constants";
 
 interface StampShapePickerProps {
   label: string;
-  selectedShape: "circle" | "square" | "egg";
-  onShapeSelect: (shape: "circle" | "square" | "egg") => void;
+  selectedShape: "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
+  onShapeSelect: (shape: "circle" | "square" | "egg" | "triangle" | "diamond" | "star") => void;
   error?: string;
 }
 
@@ -13,7 +13,7 @@ const STAMP_SHAPES = [
   {
     value: "circle" as const,
     name: "Círculo",
-    icon: "●",
+    icon: "◯",
     description: "Clásico y elegante",
   },
   {
@@ -28,6 +28,24 @@ const STAMP_SHAPES = [
     icon: "◯",
     description: "Suave y único",
   },
+  {
+    value: "triangle" as const,
+    name: "Triángulo",
+    icon: "▲",
+    description: "Dinámico y llamativo",
+  },
+  {
+    value: "diamond" as const,
+    name: "Diamante",
+    icon: "♦",
+    description: "Elegante y premium",
+  },
+  {
+    value: "star" as const,
+    name: "Estrella",
+    icon: "★",
+    description: "Especial y festivo",
+  },
 ];
 
 export const StampShapePicker: React.FC<StampShapePickerProps> = ({ label, selectedShape, onShapeSelect, error }) => {
@@ -38,7 +56,7 @@ export const StampShapePicker: React.FC<StampShapePickerProps> = ({ label, selec
         {STAMP_SHAPES.map((shape) => (
           <TouchableOpacity key={shape.value} style={[styles.shapeItem, selectedShape === shape.value && styles.selectedShape]} onPress={() => onShapeSelect(shape.value)} activeOpacity={0.7}>
             <View style={styles.shapeIconContainer}>
-              <Text style={[styles.shapeIcon, selectedShape === shape.value && styles.selectedShapeIcon]}>{shape.icon}</Text>
+              <Text style={[styles.shapeIcon, selectedShape === shape.value && styles.selectedShapeIcon, shape.value === "egg" && styles.eggIcon]}>{shape.icon}</Text>
             </View>
             <Text style={[styles.shapeName, selectedShape === shape.value && styles.selectedShapeName]}>{shape.name}</Text>
             <Text style={[styles.shapeDescription, selectedShape === shape.value && styles.selectedShapeDescription]}>{shape.description}</Text>
@@ -62,17 +80,18 @@ const styles = StyleSheet.create({
   },
   shapesContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    flexWrap: "wrap",
     gap: SPACING.sm,
   },
   shapeItem: {
-    flex: 1,
+    width: "30%",
     backgroundColor: COLORS.surface,
     borderRadius: 12,
     padding: SPACING.md,
     alignItems: "center",
     borderWidth: 2,
     borderColor: COLORS.inputBorder,
+    marginBottom: SPACING.sm,
   },
   selectedShape: {
     backgroundColor: COLORS.primaryLight + "15",
@@ -81,23 +100,19 @@ const styles = StyleSheet.create({
   shapeIconContainer: {
     width: 60,
     height: 60,
-    borderRadius: 30,
-    backgroundColor: COLORS.white,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: SPACING.sm,
-    elevation: 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
   shapeIcon: {
-    fontSize: 30,
+    fontSize: 36,
     color: COLORS.gray,
   },
   selectedShapeIcon: {
     color: COLORS.primary,
+  },
+  eggIcon: {
+    transform: [{ scaleX: 0.8 }, { scaleY: 1.2 }],
   },
   shapeName: {
     fontSize: FONT_SIZES.md,

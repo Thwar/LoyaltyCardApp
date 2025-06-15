@@ -31,7 +31,7 @@ export interface LoyaltyCard {
   totalSlots: number;
   rewardDescription: string;
   cardColor?: string;
-  stampShape?: "circle" | "square" | "egg";
+  stampShape?: "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
   createdAt: Date;
   isActive: boolean;
 }

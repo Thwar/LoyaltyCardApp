@@ -3,67 +3,44 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, useAlert } from "../../components";
+import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, StampsGrid, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
 import { LoyaltyCard } from "../../types";
 
 interface EditLoyaltyCardModalProps {
   visible: boolean;
-  cardId: string;
+  cardData: LoyaltyCard;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visible, cardId, onClose, onSuccess }) => {
+export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visible, cardData, onClose, onSuccess }) => {
   const { user } = useAuth();
   const { showAlert } = useAlert();
-
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [formData, setFormData] = useState({
     businessName: "",
     totalSlots: "",
     rewardDescription: "",
     cardColor: "#8B1538",
-    stampShape: "circle" as "circle" | "square" | "egg",
+    stampShape: "circle" as "circle" | "square" | "egg" | "triangle" | "diamond" | "star",
   });
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
   useEffect(() => {
-    if (visible && cardId) {
-      loadLoyaltyCard();
-    }
-  }, [cardId, visible]);
-  const loadLoyaltyCard = async () => {
-    if (!cardId || !visible) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const card = await LoyaltyCardService.getLoyaltyCard(cardId);
-      if (card) {
-        setLoyaltyCard(card);
-        setFormData({
-          businessName: card.businessName,
-          totalSlots: card.totalSlots.toString(),
-          rewardDescription: card.rewardDescription,
-          cardColor: card.cardColor || "#8B1538",
-          stampShape: card.stampShape || "circle",
-        });
-      }
-    } catch (error) {
-      showAlert({
-        title: "Error",
-        message: "Error al cargar los detalles de la tarjeta de lealtad",
+    if (visible && cardData) {
+      setLoyaltyCard(cardData);
+      setFormData({
+        businessName: cardData.businessName,
+        totalSlots: cardData.totalSlots.toString(),
+        rewardDescription: cardData.rewardDescription,
+        cardColor: cardData.cardColor || "#8B1538",
+        stampShape: cardData.stampShape || "circle",
       });
-      onClose();
-    } finally {
-      setLoading(false);
     }
-  };
-
+  }, [cardData, visible]);
   const updateFormData = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -102,18 +79,15 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
         stampShape: formData.stampShape,
       };
       await LoyaltyCardService.updateLoyaltyCard(loyaltyCard.id, updates);
+
+      // Close modal immediately after successful update
+      onClose();
+      onSuccess?.();
+
+      // Show success alert after modal is closed
       showAlert({
         title: "Éxito",
         message: "¡Tarjeta de lealtad actualizada exitosamente!",
-        buttons: [
-          {
-            text: "OK",
-            onPress: () => {
-              onClose();
-              onSuccess?.();
-            },
-          },
-        ],
       });
     } catch (error) {
       showAlert({
@@ -124,21 +98,91 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       setSaving(false);
     }
   };
-  const handleDeleteCard = () => {
-    showAlert({
-      title: "Eliminar Tarjeta de Lealtad",
-      message: "¿Estás seguro que quieres eliminar esta tarjeta de lealtad? Esta acción no se puede deshacer y afectará a todos los clientes que tienen esta tarjeta.",
-      buttons: [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: confirmDeleteCard,
-        },
-      ],
-    });
+  const handleDeactivateCard = () => {
+    // Close the modal first, then show the alert
+    onClose();
+
+    // Use a small delay to ensure the modal is fully closed before showing the alert
+    setTimeout(() => {
+      showAlert({
+        title: "Desactivar Tarjeta de Lealtad",
+        message: "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando.",
+        buttons: [
+          {
+            text: "Cancelar",
+            style: "cancel",
+            onPress: () => {
+              // If user cancels, we should potentially reopen the edit modal
+              // but for now, just stay closed
+            },
+          },
+          {
+            text: "Desactivar",
+            style: "destructive",
+            onPress: confirmDeactivateCard,
+          },
+        ],
+      });
+    }, 100);
   };
 
+  const confirmDeactivateCard = async () => {
+    if (!loyaltyCard) return;
+
+    setSaving(true);
+    try {
+      await LoyaltyCardService.deactivateLoyaltyCard(loyaltyCard.id);
+      showAlert({
+        title: "Éxito",
+        message: "¡Tarjeta de lealtad desactivada exitosamente!",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              // Modal is already closed, just trigger success callback
+              onSuccess?.();
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      showAlert({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Error al desactivar la tarjeta de lealtad",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteCard = () => {
+    // Close the modal first, then show the alert
+    onClose();
+
+    // Use a small delay to ensure the modal is fully closed before showing the alert
+    setTimeout(() => {
+      showAlert({
+        title: "Eliminar Tarjeta de Lealtad",
+        message:
+          "⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE la tarjeta de lealtad y TODOS los datos relacionados, incluyendo las tarjetas de clientes, sellos y actividades. Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro?",
+        buttons: [
+          {
+            text: "Cancelar",
+            style: "cancel",
+            onPress: () => {
+              // If user cancels, we should potentially reopen the edit modal
+              // but for now, just stay closed
+            },
+          },
+          {
+            text: "ELIMINAR",
+            style: "destructive",
+            onPress: confirmDeleteCard,
+          },
+        ],
+      });
+    }, 100);
+  };
   const confirmDeleteCard = async () => {
     if (!loyaltyCard) return;
 
@@ -147,12 +191,12 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       await LoyaltyCardService.deleteLoyaltyCard(loyaltyCard.id);
       showAlert({
         title: "Éxito",
-        message: "¡Tarjeta de lealtad eliminada exitosamente!",
+        message: "¡Tarjeta de lealtad y todos los datos relacionados eliminados exitosamente!",
         buttons: [
           {
             text: "OK",
             onPress: () => {
-              onClose();
+              // Modal is already closed, just trigger success callback
               onSuccess?.();
             },
           },
@@ -167,13 +211,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       setSaving(false);
     }
   };
-  if (loading) {
-    return <LoadingState loading={true} />;
-  }
-
-  if (!loyaltyCard) {
-    return <LoadingState error="Tarjeta de lealtad no encontrada" onRetry={() => onClose()} />;
-  }
   return (
     <Modal animationType="slide" visible={visible} onRequestClose={onClose} presentationStyle="pageSheet">
       <SafeAreaView style={styles.container}>
@@ -217,10 +254,29 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                 />
                 <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
                 <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
+                {/* Preview Section */}
+                <View style={styles.previewContainer}>
+                  <Text style={styles.previewTitle}>Vista Previa</Text>
+                  <View style={[styles.previewCard, { backgroundColor: formData.cardColor }]}>
+                    <Text style={styles.previewBusinessName}>{formData.businessName || "Nombre de Tu Negocio"}</Text>
+                    <Text style={styles.previewStamps}>1 / {formData.totalSlots || "10"} sellos</Text>
+                    <StampsGrid
+                      totalSlots={parseInt(formData.totalSlots) || 10}
+                      currentStamps={1}
+                      stampShape={formData.stampShape}
+                      showAnimation={false}
+                      size="small"
+                      stampColor={formData.cardColor || COLORS.primary}
+                      containerStyle={styles.previewStampsContainer}
+                    />
+                    <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
+                  </View>
+                </View>
               </View>
               <View style={styles.buttonContainer}>
                 <Button title="Actualizar Tarjeta" onPress={handleUpdateCard} loading={saving} style={styles.updateButton} />
-                <Button title="Eliminar Tarjeta" onPress={handleDeleteCard} variant="outline" loading={saving} style={styles.deleteButton} textStyle={{ color: COLORS.error }} />
+                <Button title="Desactivar Tarjeta" onPress={handleDeactivateCard} variant="outline" loading={saving} style={styles.deactivateButton} textStyle={{ color: COLORS.warning }} />
+                <Button title="Eliminar Permanentemente" onPress={handleDeleteCard} variant="outline" loading={saving} style={styles.deleteButton} textStyle={{ color: COLORS.error }} />
               </View>
             </View>
           </ScrollView>
@@ -287,8 +343,46 @@ const styles = StyleSheet.create({
   updateButton: {
     marginBottom: SPACING.md,
   },
+  deactivateButton: {
+    borderWidth: 1,
+    borderColor: COLORS.warning,
+    marginBottom: SPACING.md,
+  },
   deleteButton: {
     borderWidth: 1,
     borderColor: COLORS.error,
+  },
+  previewContainer: {
+    marginVertical: SPACING.lg,
+  },
+  previewTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
+  },
+  previewCard: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    padding: SPACING.lg,
+  },
+  previewBusinessName: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.white,
+    marginBottom: SPACING.sm,
+  },
+  previewStamps: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.white,
+    marginBottom: SPACING.sm,
+  },
+  previewStampsContainer: {
+    marginBottom: SPACING.sm,
+  },
+  previewReward: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.white,
+    opacity: 0.9,
   },
 });

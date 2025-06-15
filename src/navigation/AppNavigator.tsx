@@ -14,7 +14,6 @@ import { RegisterScreen } from "../screens/RegisterScreen";
 import { CustomerHomeScreen } from "../screens/customer/CustomerHomeScreen";
 import { CustomerCardDetailsScreen } from "../screens/customer/CustomerCardDetailsScreen";
 import { CustomerProfileScreen } from "../screens/customer/CustomerProfileScreen";
-import { ClaimRewardScreen } from "../screens/customer/ClaimRewardScreen";
 import { BusinessDiscoveryScreen } from "../screens/customer/BusinessDiscoveryScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
 import { BusinessSettingsScreen } from "../screens/business/BusinessSettingsScreen";
@@ -155,14 +154,6 @@ const CustomerStackNavigator = () => {
         component={CustomerProfileScreen}
         options={{
           title: "Perfil del Negocio",
-          headerBackTitle: "Atrás",
-        }}
-      />
-      <CustomerStack.Screen
-        name="ClaimReward"
-        component={ClaimRewardScreen}
-        options={{
-          title: "Reclamar Recompensa",
           headerBackTitle: "Atrás",
         }}
       />

@@ -15,7 +15,7 @@ interface AddStampScreenProps {
 
 export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, route }) => {
   const { loyaltyCardId, businessId } = route.params;
-  const { showAlert } = useAlert();
+  const { showAlert, hideAlert } = useAlert();
   const [cardCode, setCardCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -94,13 +94,13 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
         message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}.`,
         buttons: [
           {
-            text: "Agregar Otro",
+            text: "Ok",
             onPress: () => setCardCode(""),
           },
-          {
-            text: "Listo",
-            onPress: () => navigation.goBack(),
-          },
+          // {
+          //   text: "Listo",
+          //   onPress: () => hideAlert(),
+          // },
         ],
       });
     } catch (err) {

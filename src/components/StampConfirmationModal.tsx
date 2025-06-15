@@ -71,6 +71,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                     showAnimation={false}
                     size="medium"
                     containerStyle={styles.stampsGrid}
+                    specialStampColor="darkgray"
                     stampColor={loyaltyCard.cardColor || COLORS.primary}
                   />
 
@@ -86,6 +87,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                       size="small"
                       containerStyle={styles.previewGrid}
                       stampColor={loyaltyCard.cardColor || COLORS.primary}
+                      specialStampColor={"darkgray"}
                     />
                   </View>
                 </View>

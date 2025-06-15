@@ -57,11 +57,19 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   };
   const renderCard = ({ item, index }: { item: CustomerCard; index: number }) => {
     // Cycle through different stamp shapes for visual variety
-    const stampShapes: ("circle" | "square" | "egg")[] = ["circle", "square", "egg"];
+    const stampShapes: ("circle" | "square" | "egg" | "triangle" | "diamond" | "star")[] = ["circle", "square", "egg", "triangle", "diamond", "star"];
     const stampShape = stampShapes[index % stampShapes.length];
 
     return (
-      <AnimatedLoyaltyCard card={item.loyaltyCard!} currentStamps={item.currentStamps} onPress={() => handleCardPress(item)} cardCode={item.cardCode} showAnimation={true} stampShape={stampShape} />
+      <AnimatedLoyaltyCard
+        card={item.loyaltyCard!}
+        currentStamps={item.currentStamps}
+        onPress={() => handleCardPress(item)}
+        cardCode={item.cardCode}
+        showAnimation={true}
+        stampShape={stampShape}
+        customerCard={item}
+      />
     );
   };
 

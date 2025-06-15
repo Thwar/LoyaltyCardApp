@@ -6,7 +6,7 @@ import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
 import { LoyaltyCard as LoyaltyCardType } from "../types";
 import { StampsGrid } from "./StampsGrid";
 
-type StampShape = "circle" | "square" | "egg";
+type StampShape = "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
 
 interface AnimatedLoyaltyCardProps {
   card: LoyaltyCardType;
@@ -16,11 +16,12 @@ interface AnimatedLoyaltyCardProps {
   showAnimation?: boolean;
   cardCode?: string;
   stampShape?: StampShape;
+  customerCard?: { createdAt: Date };
 }
 
 const { width } = Dimensions.get("window");
 
-export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, currentStamps = 0, onPress, style, showAnimation = true, cardCode, stampShape = "circle" }) => {
+export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, currentStamps = 0, onPress, style, showAnimation = true, cardCode, stampShape = "circle", customerCard }) => {
   const progress = Math.min(currentStamps / card.totalSlots, 1);
   const isCompleted = currentStamps >= card.totalSlots;
 
@@ -32,25 +33,23 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
   const pulseValue = useRef(new Animated.Value(1)).current;
   const shinePosition = useRef(new Animated.Value(-width)).current;
   useEffect(() => {
-    if (showAnimation) {
+    if (showAnimation && isCompleted) {
       // Pulse animation for completed cards
-      if (isCompleted) {
-        const pulseAnimation = Animated.sequence([
-          Animated.timing(pulseValue, {
-            toValue: 1.05,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseValue, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]);
-        Animated.loop(pulseAnimation).start();
-      }
+      const pulseAnimation = Animated.sequence([
+        Animated.timing(pulseValue, {
+          toValue: 1.05,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseValue, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+      ]);
+      Animated.loop(pulseAnimation).start();
 
-      // Shine effect
+      // Shine effect for completed cards only
       const shineAnimation = Animated.timing(shinePosition, {
         toValue: width,
         duration: 2000,
@@ -82,7 +81,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
   const CardContent = () => (
     <View style={styles.container}>
       {/* Shine Effect Overlay */}
-      {showAnimation && (
+      {showAnimation && isCompleted && (
         <Animated.View
           style={[
             styles.shineOverlay,
@@ -101,10 +100,20 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
               {card.businessName}
             </Text>
           </View>
+          {customerCard && (
+            <Text style={styles.createdDate} numberOfLines={1}>
+              Acumulando desde:{" "}
+              {new Date(customerCard.createdAt).toLocaleDateString("es-ES", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </Text>
+          )}
         </View>
         <View style={styles.progressContainer}>
           <Text style={styles.progress}>#{cardCode}</Text>
-          {isCompleted && <Ionicons name="gift" size={16} color={COLORS.white} style={styles.giftIcon} />}
+          {isCompleted && <Ionicons name="gift" size={24} color={COLORS.white} style={styles.giftIcon} />}
         </View>
       </View>
       {/* Stamps Grid */}
@@ -116,6 +125,12 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
         size="medium"
         stampColor={card.cardColor || COLORS.primary}
       />
+      {/* Stamp Counter */}
+      <View style={styles.stampCounterContainer}>
+        <Text style={styles.stampCounter}>
+          {currentStamps}/{card.totalSlots}
+        </Text>
+      </View>
       {/* Reward Description */}
       <View style={styles.rewardContainer}>
         {/* <Text style={styles.rewardLabel}>🎁</Text> */}
@@ -125,13 +140,13 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
       </View>
     </View>
   );
-
   const cardStyle = [
     styles.cardWrapper,
     style,
-    showAnimation && {
-      transform: [{ scale: scaleValue }],
-    },
+    showAnimation &&
+      isCompleted && {
+        transform: [{ scale: pulseValue }],
+      },
   ];
 
   if (onPress) {
@@ -211,6 +226,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     flex: 1,
   },
+  createdDate: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.white,
+    opacity: 0.8,
+    fontStyle: "italic",
+    marginTop: 2,
+  },
   cardCodeContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -243,6 +265,22 @@ const styles = StyleSheet.create({
   },
   giftIcon: {
     marginTop: 4,
+  },
+
+  stampCounterContainer: {
+    alignItems: "center",
+    marginVertical: SPACING.sm,
+  },
+  stampCounter: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: "600",
+    color: COLORS.white,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: 20,
+    textAlign: "center",
+    minWidth: 60,
   },
 
   rewardContainer: {

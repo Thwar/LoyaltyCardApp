@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, KeyboardAvo
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, useAlert } from "../../components";
+import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, StampsGrid, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
 
@@ -20,7 +20,7 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
     totalSlots: "10",
     rewardDescription: "",
     cardColor: "#8B1538", // Default to primary color
-    stampShape: "circle" as "circle" | "square" | "egg", // Default shape
+    stampShape: "circle" as "circle" | "square" | "egg" | "triangle" | "diamond" | "star",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -57,7 +57,7 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
       if (businesses.length === 0) {
         throw new Error("No se encontró el perfil del negocio. Por favor, contacta al soporte.");
       }
-      const businessId = businesses[0].id; // Use the first business found
+      const businessId = businesses[0].id;
 
       const cardData = {
         businessId: businessId,
@@ -69,20 +69,16 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
         stampShape: formData.stampShape,
         isActive: true,
       };
-
       await LoyaltyCardService.createLoyaltyCard(cardData);
+
+      // Close modal immediately after successful creation
+      onClose();
+      onSuccess?.();
+
+      // Show success alert after modal is closed
       showAlert({
         title: "¡Éxito!",
         message: "Tu tarjeta de lealtad ha sido creada exitosamente.",
-        buttons: [
-          {
-            text: "OK",
-            onPress: () => {
-              onClose();
-              onSuccess?.();
-            },
-          },
-        ],
       });
     } catch (error) {
       showAlert({
@@ -143,21 +139,16 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
               <View style={styles.previewContainer}>
                 <Text style={styles.previewTitle}>Vista Previa</Text>
                 <View style={[styles.previewCard, { backgroundColor: formData.cardColor }]}>
-                  <Text style={styles.previewBusinessName}>{"Nombre de Tu Negocio"}</Text>
-                  <Text style={styles.previewStamps}>0 / {formData.totalSlots || "10"} sellos</Text>
-                  <View style={styles.previewStampsContainer}>
-                    {Array.from({ length: 5 }, (_, index) => (
-                      <View
-                        key={index}
-                        style={[
-                          styles.previewStamp,
-                          formData.stampShape === "circle" && styles.previewStampCircle,
-                          formData.stampShape === "square" && styles.previewStampSquare,
-                          formData.stampShape === "egg" && styles.previewStampEgg,
-                        ]}
-                      />
-                    ))}
-                  </View>
+                  <Text style={styles.previewBusinessName}>{"Nombre de Tu Negocio"}</Text> <Text style={styles.previewStamps}>1 / {formData.totalSlots || "10"} sellos</Text>
+                  <StampsGrid
+                    totalSlots={parseInt(formData.totalSlots) || 10}
+                    currentStamps={1}
+                    stampShape={formData.stampShape}
+                    showAnimation={false}
+                    size="small"
+                    stampColor={formData.cardColor || COLORS.primary}
+                    containerStyle={styles.previewStampsContainer}
+                  />
                   <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
                 </View>
               </View>
@@ -250,27 +241,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   previewStampsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
     marginBottom: SPACING.sm,
-    gap: SPACING.xs,
-  },
-  previewStamp: {
-    width: 20,
-    height: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
-    borderWidth: 1,
-    borderColor: COLORS.white,
-  },
-  previewStampCircle: {
-    borderRadius: 10,
-  },
-  previewStampSquare: {
-    borderRadius: 2,
-  },
-  previewStampEgg: {
-    borderRadius: 10,
-    transform: [{ scaleX: 0.8 }],
   },
   previewReward: {
     fontSize: FONT_SIZES.sm,

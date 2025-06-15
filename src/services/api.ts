@@ -485,14 +485,19 @@ export class LoyaltyCardService {
       if (querySnapshot.empty) return null;
       const doc = querySnapshot.docs[0];
       const data = doc.data();
+
+      // Get business information from Business collection
+      const business = await this.getBusiness(businessId);
+
       return {
         id: doc.id,
         businessId: data.businessId,
-        businessName: data.businessName,
-        businessLogo: data.businessLogo,
+        businessName: business?.name || "",
+        businessLogo: business?.logoUrl,
         totalSlots: data.totalSlots,
         rewardDescription: data.rewardDescription,
         cardColor: data.cardColor,
+        stampShape: data.stampShape,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -500,21 +505,29 @@ export class LoyaltyCardService {
       throw new Error(error.message || "Error al obtener la tarjeta de fidelidad");
     }
   }
+
+  private static async getBusiness(businessId: string): Promise<Business | null> {
+    return await BusinessService.getBusiness(businessId);
+  }
   static async getLoyaltyCardsByBusinessId(businessId: string): Promise<LoyaltyCard[]> {
     try {
       const q = query(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), where("businessId", "==", businessId), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
+
+      // Get business information once for all cards
+      const business = await this.getBusiness(businessId);
 
       return querySnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
           businessId: data.businessId,
-          businessName: data.businessName,
-          businessLogo: data.businessLogo,
+          businessName: business?.name || "",
+          businessLogo: business?.logoUrl,
           totalSlots: data.totalSlots,
           rewardDescription: data.rewardDescription,
           cardColor: data.cardColor,
+          stampShape: data.stampShape,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -525,19 +538,32 @@ export class LoyaltyCardService {
   }
   static async getAllActiveLoyaltyCards(): Promise<LoyaltyCard[]> {
     try {
-      const q = query(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), where("isActive", "==", true), orderBy("businessName"));
+      const q = query(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), where("isActive", "==", true), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
+
+      // Get all business IDs and fetch business information
+      const businessIds = [...new Set(querySnapshot.docs.map((doc) => doc.data().businessId))];
+      const businessesMap = new Map<string, Business>();
+
+      for (const businessId of businessIds) {
+        const business = await this.getBusiness(businessId);
+        if (business) {
+          businessesMap.set(businessId, business);
+        }
+      }
 
       return querySnapshot.docs.map((doc) => {
         const data = doc.data();
+        const business = businessesMap.get(data.businessId);
         return {
           id: doc.id,
           businessId: data.businessId,
-          businessName: data.businessName,
-          businessLogo: data.businessLogo,
+          businessName: business?.name || "",
+          businessLogo: business?.logoUrl,
           totalSlots: data.totalSlots,
           rewardDescription: data.rewardDescription,
           cardColor: data.cardColor,
+          stampShape: data.stampShape,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -554,13 +580,75 @@ export class LoyaltyCardService {
       throw new Error(error.message || "Error al actualizar la tarjeta de fidelidad");
     }
   }
-
-  static async deleteLoyaltyCard(cardId: string): Promise<void> {
+  static async deactivateLoyaltyCard(cardId: string): Promise<void> {
     try {
       await updateDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId), {
         isActive: false,
       });
     } catch (error: any) {
+      throw new Error(error.message || "Error al desactivar la tarjeta de fidelidad");
+    }
+  }
+
+  static async deleteLoyaltyCard(cardId: string): Promise<void> {
+    try {
+      console.log("Starting deletion process for loyalty card:", cardId);
+
+      // 1. Get all customer cards associated with this loyalty card
+      const customerCardsQuery = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("loyaltyCardId", "==", cardId));
+      const customerCardsSnapshot = await getDocs(customerCardsQuery);
+
+      console.log("Found", customerCardsSnapshot.docs.length, "customer cards to delete");
+
+      // 2. Delete all stamp activities for these customer cards
+      const deletePromises: Promise<any>[] = [];
+
+      for (const customerCardDoc of customerCardsSnapshot.docs) {
+        const customerCardId = customerCardDoc.id;
+
+        // Get stamp activities for this customer card
+        const stampActivitiesQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY), where("customerCardId", "==", customerCardId));
+        const stampActivitiesSnapshot = await getDocs(stampActivitiesQuery);
+
+        console.log("Found", stampActivitiesSnapshot.docs.length, "stamp activities for customer card", customerCardId);
+
+        // Add stamp activity deletions to promises
+        stampActivitiesSnapshot.docs.forEach((stampActivityDoc) => {
+          deletePromises.push(deleteDoc(doc(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY, stampActivityDoc.id)));
+        });
+      }
+
+      // 3. Delete all stamps for these customer cards
+      for (const customerCardDoc of customerCardsSnapshot.docs) {
+        const customerCardId = customerCardDoc.id;
+
+        // Get stamps for this customer card
+        const stampsQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMPS), where("customerCardId", "==", customerCardId));
+        const stampsSnapshot = await getDocs(stampsQuery);
+
+        console.log("Found", stampsSnapshot.docs.length, "stamps for customer card", customerCardId);
+
+        // Add stamp deletions to promises
+        stampsSnapshot.docs.forEach((stampDoc) => {
+          deletePromises.push(deleteDoc(doc(db, FIREBASE_COLLECTIONS.STAMPS, stampDoc.id)));
+        });
+      }
+
+      // 4. Delete all customer cards
+      customerCardsSnapshot.docs.forEach((customerCardDoc) => {
+        deletePromises.push(deleteDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardDoc.id)));
+      });
+
+      // 5. Execute all deletions in parallel
+      console.log("Executing", deletePromises.length, "deletion operations");
+      await Promise.all(deletePromises);
+
+      // 6. Finally, delete the loyalty card itself
+      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId));
+
+      console.log("Loyalty card deletion completed successfully");
+    } catch (error: any) {
+      console.error("Error during loyalty card deletion:", error);
       throw new Error(error.message || "Error al eliminar la tarjeta de fidelidad");
     }
   }
@@ -574,14 +662,19 @@ export class LoyaltyCardService {
       }
 
       const data = docSnap.data();
+
+      // Get business information from Business collection
+      const business = await this.getBusiness(data.businessId);
+
       return {
         id: docSnap.id,
         businessId: data.businessId,
-        businessName: data.businessName,
-        businessLogo: data.businessLogo,
+        businessName: business?.name || "",
+        businessLogo: business?.logoUrl,
         totalSlots: data.totalSlots,
         rewardDescription: data.rewardDescription,
         cardColor: data.cardColor,
+        stampShape: data.stampShape,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -663,20 +756,23 @@ export class CustomerCardService {
             lastStampDate: data.lastStampDate?.toDate(),
             cardCode: data.cardCode,
             customerName: data.customerName, // Get stored customer name
-          };
-
-          // Get loyalty card details
+          }; // Get loyalty card details
           const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
           if (loyaltyCardDoc.exists()) {
             const loyaltyCardData = loyaltyCardDoc.data();
+
+            // Get business information from Business collection
+            const business = await BusinessService.getBusiness(loyaltyCardData.businessId);
+
             customerCard.loyaltyCard = {
               id: loyaltyCardDoc.id,
               businessId: loyaltyCardData.businessId,
-              businessName: loyaltyCardData.businessName,
-              businessLogo: loyaltyCardData.businessLogo,
+              businessName: business?.name || "",
+              businessLogo: business?.logoUrl,
               totalSlots: loyaltyCardData.totalSlots,
               rewardDescription: loyaltyCardData.rewardDescription,
               cardColor: loyaltyCardData.cardColor,
+              stampShape: loyaltyCardData.stampShape,
               createdAt: loyaltyCardData.createdAt.toDate(),
               isActive: loyaltyCardData.isActive,
             };
@@ -732,30 +828,6 @@ export class CustomerCardService {
     }
   }
 
-  static async claimReward(customerCardId: string): Promise<void> {
-    try {
-      await updateDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId), {
-        isRewardClaimed: true,
-        currentStamps: 0, // Reset stamps after claiming reward
-      });
-
-      // Add reward record
-      const customerCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId));
-      if (customerCardDoc.exists()) {
-        const data = customerCardDoc.data();
-        await addDoc(collection(db, FIREBASE_COLLECTIONS.REWARDS), {
-          customerCardId,
-          customerId: data.customerId,
-          businessId: data.businessId,
-          loyaltyCardId: data.loyaltyCardId,
-          claimedAt: Timestamp.now(),
-          isRedeemed: false,
-        });
-      }
-    } catch (error: any) {
-      throw new Error(error.message || "Error al reclamar recompensa");
-    }
-  }
   static async getCustomerCard(customerCardId: string): Promise<CustomerCard | null> {
     try {
       const docRef = doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId);
@@ -775,20 +847,23 @@ export class CustomerCardService {
         lastStampDate: data.lastStampDate?.toDate(),
         cardCode: data.cardCode,
         customerName: data.customerName, // Get stored customer name
-      };
-
-      // Get loyalty card details
+      }; // Get loyalty card details
       const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
       if (loyaltyCardDoc.exists()) {
         const loyaltyCardData = loyaltyCardDoc.data();
+
+        // Get business information from Business collection
+        const business = await BusinessService.getBusiness(loyaltyCardData.businessId);
+
         customerCard.loyaltyCard = {
           id: loyaltyCardDoc.id,
           businessId: loyaltyCardData.businessId,
-          businessName: loyaltyCardData.businessName,
-          businessLogo: loyaltyCardData.businessLogo,
+          businessName: business?.name || "",
+          businessLogo: business?.logoUrl,
           totalSlots: loyaltyCardData.totalSlots,
           rewardDescription: loyaltyCardData.rewardDescription,
           cardColor: loyaltyCardData.cardColor,
+          stampShape: loyaltyCardData.stampShape,
           createdAt: loyaltyCardData.createdAt.toDate(),
           isActive: loyaltyCardData.isActive,
         };
@@ -856,14 +931,19 @@ export class CustomerCardService {
       const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
       if (loyaltyCardDoc.exists()) {
         const loyaltyCardData = loyaltyCardDoc.data();
+
+        // Get business information from Business collection
+        const business = await BusinessService.getBusiness(loyaltyCardData.businessId);
+
         customerCard.loyaltyCard = {
           id: loyaltyCardDoc.id,
           businessId: loyaltyCardData.businessId,
-          businessName: loyaltyCardData.businessName,
-          businessLogo: loyaltyCardData.businessLogo,
+          businessName: business?.name || "",
+          businessLogo: business?.logoUrl,
           totalSlots: loyaltyCardData.totalSlots,
           rewardDescription: loyaltyCardData.rewardDescription,
           cardColor: loyaltyCardData.cardColor,
+          stampShape: loyaltyCardData.stampShape,
           createdAt: loyaltyCardData.createdAt.toDate(),
           isActive: loyaltyCardData.isActive,
         };
@@ -908,20 +988,23 @@ export class CustomerCardService {
         lastStampDate: data.lastStampDate?.toDate(),
         cardCode: data.cardCode,
         customerName: data.customerName,
-      };
-
-      // Get loyalty card details
+      }; // Get loyalty card details
       const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
       if (loyaltyCardDoc.exists()) {
         const loyaltyCardData = loyaltyCardDoc.data();
+
+        // Get business information from Business collection
+        const business = await BusinessService.getBusiness(loyaltyCardData.businessId);
+
         customerCard.loyaltyCard = {
           id: loyaltyCardDoc.id,
           businessId: loyaltyCardData.businessId,
-          businessName: loyaltyCardData.businessName,
-          businessLogo: loyaltyCardData.businessLogo,
+          businessName: business?.name || "",
+          businessLogo: business?.logoUrl,
           totalSlots: loyaltyCardData.totalSlots,
           rewardDescription: loyaltyCardData.rewardDescription,
           cardColor: loyaltyCardData.cardColor,
+          stampShape: loyaltyCardData.stampShape,
           createdAt: loyaltyCardData.createdAt.toDate(),
           isActive: loyaltyCardData.isActive,
         };

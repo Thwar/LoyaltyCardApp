@@ -47,9 +47,8 @@ export const Alert: React.FC<AlertProps> = ({ visible, title, message, buttons =
         return [styles.buttonText, styles.defaultButtonText];
     }
   };
-
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={onDismiss}>
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={onDismiss} statusBarTranslucent={true} presentationStyle="overFullScreen">
       <View style={styles.overlay}>
         <View style={styles.alertContainer}>
           {title && <Text style={styles.title}>{title}</Text>}
@@ -75,6 +74,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: SPACING.lg,
+    zIndex: 9999,
+    elevation: 9999,
   },
   alertContainer: {
     backgroundColor: COLORS.white,
@@ -83,6 +84,8 @@ const styles = StyleSheet.create({
     minWidth: Platform.OS === "web" ? 300 : undefined,
     maxWidth: Platform.OS === "web" ? 500 : undefined,
     width: Platform.OS === "web" ? "auto" : "100%",
+    zIndex: 10000,
+    elevation: 10000,
     ...Platform.select({
       ios: {
         shadowColor: COLORS.black,
@@ -91,10 +94,11 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 8,
+        elevation: 10000,
       },
       web: {
         boxShadow: "0 4px 16px rgba(0, 0, 0, 0.15)",
+        zIndex: 10000,
       },
     }),
   },
