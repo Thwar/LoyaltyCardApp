@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, SafeAreaView, RefreshControl, Touchab
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState, StampsGrid } from "../../components";
@@ -128,22 +129,24 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
-      </View>
+      </View>{" "}
       {/* Preview Section */}
       <View style={styles.previewContainer}>
         <Text style={styles.previewTitle}>Vista Previa</Text>
-        <View style={[styles.previewCard, { backgroundColor: card.cardColor || COLORS.primary }]}>
-          <Text style={styles.previewBusinessName}>{card.businessName || "Nombre de Tu Negocio"}</Text>
-          <Text style={styles.previewStamps}>1 / {card.totalSlots || "10"} sellos</Text>
-          <StampsGrid
-            totalSlots={card.totalSlots}
-            currentStamps={1}
-            stampShape={card.stampShape || "circle"}
-            showAnimation={false}
-            stampColor={card.cardColor || COLORS.primary}
-            containerStyle={styles.previewStampsContainer}
-          />
-          <Text style={styles.previewReward}>🎯 Recompensa: {card.rewardDescription || "Descripción de tu recompensa"}</Text>
+        <View style={styles.previewCard}>
+          <LinearGradient colors={[card.cardColor || COLORS.primary, card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
+            <Text style={styles.previewBusinessName}>{card.businessName || "Nombre de Tu Negocio"}</Text>
+            <Text style={styles.previewStamps}>1 / {card.totalSlots || "10"} sellos</Text>
+            <StampsGrid
+              totalSlots={card.totalSlots}
+              currentStamps={1}
+              stampShape={card.stampShape || "circle"}
+              showAnimation={false}
+              stampColor={card.cardColor || COLORS.primary}
+              containerStyle={styles.previewStampsContainer}
+            />
+            <Text style={styles.previewReward}>🎯 Recompensa: {card.rewardDescription || "Descripción de tu recompensa"}</Text>
+          </LinearGradient>
         </View>
       </View>
     </TouchableOpacity>
@@ -340,12 +343,16 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     borderRadius: 12,
-    padding: SPACING.lg,
     elevation: 3,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    overflow: "hidden",
+  },
+  gradient: {
+    borderRadius: 12,
+    padding: SPACING.lg,
   },
   previewBusinessName: {
     fontSize: FONT_SIZES.lg,

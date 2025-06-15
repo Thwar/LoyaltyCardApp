@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, StampsGrid, Dropdown, useAlert } from "../../components";
@@ -20,7 +21,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
   const { showAlert } = useAlert();
   const [loyaltyCard, setLoyaltyCard] = useState<LoyaltyCard | null>(null);
   const [formData, setFormData] = useState({
-    businessName: "",
     totalSlots: "",
     rewardDescription: "",
     cardColor: "#8B1538",
@@ -39,7 +39,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     if (visible && cardData) {
       setLoyaltyCard(cardData);
       setFormData({
-        businessName: cardData.businessName,
         totalSlots: cardData.totalSlots.toString(),
         rewardDescription: cardData.rewardDescription,
         cardColor: cardData.cardColor || "#8B1538",
@@ -56,9 +55,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.businessName.trim()) {
-      newErrors.businessName = "El nombre del negocio es requerido";
-    }
+
     const slotsNum = parseInt(formData.totalSlots);
     if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 3 || slotsNum > 20) {
       newErrors.totalSlots = "Los sellos deben estar entre 3 y 20";
@@ -77,7 +74,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     setSaving(true);
     try {
       const updates = {
-        businessName: formData.businessName.trim(),
         totalSlots: parseInt(formData.totalSlots),
         rewardDescription: formData.rewardDescription.trim(),
         cardColor: formData.cardColor,
@@ -233,13 +229,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
             <View style={styles.content}>
               <Text style={styles.subtitle}>Actualiza los detalles de tu tarjeta de lealtad</Text>
               <View style={styles.form}>
-                <InputField
-                  label="Nombre del Negocio"
-                  value={formData.businessName}
-                  onChangeText={(value) => updateFormData("businessName", value)}
-                  placeholder="Ingresa el nombre de tu negocio"
-                  error={errors.businessName}
-                />
                 <Dropdown
                   label="Número de Sellos Requeridos"
                   value={formData.totalSlots}
@@ -256,24 +245,32 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                   multiline
                   numberOfLines={3}
                   error={errors.rewardDescription}
+                  labelStyle={{ fontSize: 16 }}
                 />
                 <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
-                <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
+                <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />{" "}
                 {/* Preview Section */}
                 <View style={styles.previewContainer}>
                   <Text style={styles.previewTitle}>Vista Previa</Text>
-                  <View style={[styles.previewCard, { backgroundColor: formData.cardColor }]}>
-                    <Text style={styles.previewBusinessName}>{formData.businessName || "Nombre de Tu Negocio"}</Text>
-                    <Text style={styles.previewStamps}>1 / {formData.totalSlots || "10"} sellos</Text>
-                    <StampsGrid
-                      totalSlots={parseInt(formData.totalSlots) || 10}
-                      currentStamps={1}
-                      stampShape={formData.stampShape}
-                      showAnimation={false}
-                      stampColor={formData.cardColor || COLORS.primary}
-                      containerStyle={styles.previewStampsContainer}
-                    />
-                    <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
+                  <View style={styles.previewCard}>
+                    <LinearGradient
+                      colors={[formData.cardColor || COLORS.primary, formData.cardColor ? `${formData.cardColor}CC` : COLORS.primaryDark]}
+                      style={styles.gradient}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Text style={styles.previewBusinessName}>{"Nombre de Tu Negocio"}</Text>
+                      <Text style={styles.previewStamps}>1 / {formData.totalSlots || "10"} sellos</Text>
+                      <StampsGrid
+                        totalSlots={parseInt(formData.totalSlots) || 10}
+                        currentStamps={1}
+                        stampShape={formData.stampShape}
+                        showAnimation={false}
+                        stampColor={formData.cardColor || COLORS.primary}
+                        containerStyle={styles.previewStampsContainer}
+                      />
+                      <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
+                    </LinearGradient>
                   </View>
                 </View>
               </View>
@@ -366,7 +363,15 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
   previewCard: {
-    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    overflow: "hidden",
+  },
+  gradient: {
     borderRadius: 12,
     padding: SPACING.lg,
   },

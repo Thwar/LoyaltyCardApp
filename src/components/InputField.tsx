@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  TextInputProps,
-} from "react-native";
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, TextInputProps } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 
@@ -17,18 +10,10 @@ interface InputFieldProps extends TextInputProps {
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
   isPassword?: boolean;
+  labelStyle?: object;
 }
 
-export const InputField: React.FC<InputFieldProps> = ({
-  label,
-  error,
-  leftIcon,
-  rightIcon,
-  onRightIconPress,
-  isPassword = false,
-  style,
-  ...props
-}) => {
+export const InputField: React.FC<InputFieldProps> = ({ label, error, leftIcon, rightIcon, onRightIconPress, isPassword = false, labelStyle, style, ...props }) => {
   const [isSecureTextEntry, setIsSecureTextEntry] = useState(isPassword);
   const [isFocused, setIsFocused] = useState(false);
   const toggleSecureTextEntry = () => {
@@ -36,22 +21,9 @@ export const InputField: React.FC<InputFieldProps> = ({
   };
   return (
     <View style={[styles.container, style]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
-      <View
-        style={[
-          styles.inputContainer,
-          isFocused && styles.inputContainerFocused,
-          error && styles.inputContainerError,
-        ]}
-      >
-        {leftIcon ? (
-          <Ionicons
-            name={leftIcon}
-            size={20}
-            color={isFocused ? COLORS.primary : COLORS.gray}
-            style={styles.leftIcon}
-          />
-        ) : null}
+      {label ? <Text style={[styles.label, labelStyle]}>{label}</Text> : null}
+      <View style={[styles.inputContainer, isFocused && styles.inputContainerFocused, error && styles.inputContainerError]}>
+        {leftIcon ? <Ionicons name={leftIcon} size={20} color={isFocused ? COLORS.primary : COLORS.gray} style={styles.leftIcon} /> : null}
         <TextInput
           {...props}
           style={[styles.input, leftIcon && styles.inputWithLeftIcon]}
@@ -61,24 +33,13 @@ export const InputField: React.FC<InputFieldProps> = ({
           placeholderTextColor={COLORS.textLight}
         />
         {isPassword ? (
-          <TouchableOpacity
-            onPress={toggleSecureTextEntry}
-            style={styles.rightIcon}
-          >
-            <Ionicons
-              name={isSecureTextEntry ? "eye-off" : "eye"}
-              size={20}
-              color={COLORS.gray}
-            />
+          <TouchableOpacity onPress={toggleSecureTextEntry} style={styles.rightIcon}>
+            <Ionicons name={isSecureTextEntry ? "eye-off" : "eye"} size={20} color={COLORS.gray} />
           </TouchableOpacity>
         ) : null}
         {rightIcon && !isPassword ? (
           <TouchableOpacity onPress={onRightIconPress} style={styles.rightIcon}>
-            <Ionicons
-              name={rightIcon}
-              size={20}
-              color={isFocused ? COLORS.primary : COLORS.gray}
-            />
+            <Ionicons name={rightIcon} size={20} color={isFocused ? COLORS.primary : COLORS.gray} />
           </TouchableOpacity>
         ) : null}
       </View>
