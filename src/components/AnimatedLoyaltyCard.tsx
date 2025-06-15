@@ -122,20 +122,20 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
         currentStamps={currentStamps}
         stampShape={selectedStampShape}
         showAnimation={showAnimation}
-        size="medium"
+        size={card.totalSlots >= 7 ? "medium" : "large"}
         stampColor={card.cardColor || COLORS.primary}
       />
       {/* Stamp Counter */}
       <View style={styles.stampCounterContainer}>
         <Text style={styles.stampCounter}>
-          {currentStamps}/{card.totalSlots}
+          {currentStamps}/{card.totalSlots} sellos
         </Text>
       </View>
       {/* Reward Description */}
       <View style={styles.rewardContainer}>
         {/* <Text style={styles.rewardLabel}>🎁</Text> */}
         <Text style={styles.rewardDescription} numberOfLines={2}>
-          🎁 {card.rewardDescription}
+          🎁 Recompensa: {card.rewardDescription}
         </Text>
       </View>
     </View>

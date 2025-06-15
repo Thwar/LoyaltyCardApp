@@ -16,12 +16,12 @@ const COLOR_TEMPLATES = [
   { name: "Verde Esmeralda", value: "#27AE60" },
   { name: "Naranja Vibrante", value: "#E67E22" },
   { name: "Púrpura Real", value: "#8E44AD" },
-  { name: "Rosa Suave", value: "#E91E63" },
+  { name: "Rosa Suave", value: "#D81B60" },
   { name: "Teal Moderno", value: "#1ABC9C" },
   { name: "Índigo Profundo", value: "#3F51B5" },
-  { name: "Ámbar Cálido", value: "#FF9800" },
+  { name: "Ámbar Cálido", value: "#FB8C00" },
   { name: "Verde Lima", value: "#8BC34A" },
-  { name: "Cian Brillante", value: "#00BCD4" },
+  { name: "Cian Brillante", value: "#26C6DA" },
   { name: "Marrón Tierra", value: "#795548" },
 ];
 

@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, initializeAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableNetwork, disableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
 
@@ -32,7 +32,26 @@ if (Platform.OS === "web") {
   });
 }
 
+// Initialize Firestore
+const db = getFirestore(app);
+
+// Enable offline persistence for better caching
+// Note: In React Native, offline persistence is enabled by default
+// But we can optimize cache settings
+if (Platform.OS === "web") {
+  // For web, we need to explicitly enable persistence
+  import("firebase/firestore").then(({ enableIndexedDbPersistence }) => {
+    enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code === "failed-precondition") {
+        console.warn("Multiple tabs open, persistence can only be enabled in one tab at a time.");
+      } else if (err.code === "unimplemented") {
+        console.warn("The current browser does not support all of the features required to enable persistence");
+      }
+    });
+  });
+}
+
 export { auth };
-export const db = getFirestore(app);
+export { db };
 export const storage = getStorage(app);
 export default app;

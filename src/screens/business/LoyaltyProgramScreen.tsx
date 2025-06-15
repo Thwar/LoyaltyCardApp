@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, LoadingState, EmptyState } from "../../components";
+import { Button, LoadingState, EmptyState, StampsGrid } from "../../components";
 import { CreateLoyaltyCardModal, EditLoyaltyCardModal } from "../business";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
@@ -26,6 +26,30 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [selectedCard, setSelectedCard] = useState<LoyaltyCard | null>(null);
   const [loadingSelectedCard, setLoadingSelectedCard] = useState(false);
+  const formatCreatedDate = (date: any): string => {
+    try {
+      let dateObj: Date;
+      if (date instanceof Date) {
+        dateObj = date;
+      } else if (date && typeof date === "object" && date.seconds) {
+        // Firestore Timestamp
+        dateObj = new Date(date.seconds * 1000);
+      } else if (typeof date === "string" || typeof date === "number") {
+        dateObj = new Date(date);
+      } else {
+        return "";
+      }
+
+      return dateObj.toLocaleDateString("es-ES", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+    } catch (error) {
+      console.warn("Error formatting date:", error);
+      return "";
+    }
+  };
   const loadLoyaltyCards = async (isRefresh = false) => {
     if (!user) return;
 
@@ -91,13 +115,12 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
   const handleModalSuccess = () => {
     loadLoyaltyCards(); // Refresh the list when modal operations are successful
   };
-
   const LoyaltyCardItem: React.FC<{ card: LoyaltyCard }> = ({ card }) => (
     <TouchableOpacity style={styles.cardItem} onPress={() => handleEditCard(card.id)}>
       <View style={styles.cardHeader}>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle}>{card.businessName}</Text>
-          <Text style={styles.cardSubtitle}>{card.totalSlots} sellos requeridos</Text>
+          <Text style={styles.cardSubtitle}>Programa activo desde {formatCreatedDate(card.createdAt)}</Text>
         </View>
         <View style={styles.cardActions}>
           <View style={[styles.statusBadge, card.isActive ? styles.activeBadge : styles.inactiveBadge]}>
@@ -106,12 +129,21 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
       </View>
-      <View style={styles.cardDetails}>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>🎯 Recompensa:</Text>
-          <Text style={styles.detailText} numberOfLines={2}>
-            {card.rewardDescription}
-          </Text>
+      {/* Preview Section */}
+      <View style={styles.previewContainer}>
+        <Text style={styles.previewTitle}>Vista Previa</Text>
+        <View style={[styles.previewCard, { backgroundColor: card.cardColor || COLORS.primary }]}>
+          <Text style={styles.previewBusinessName}>{card.businessName || "Nombre de Tu Negocio"}</Text>
+          <Text style={styles.previewStamps}>1 / {card.totalSlots || "10"} sellos</Text>
+          <StampsGrid
+            totalSlots={card.totalSlots}
+            currentStamps={1}
+            stampShape={card.stampShape || "circle"}
+            showAnimation={false}
+            stampColor={card.cardColor || COLORS.primary}
+            containerStyle={styles.previewStampsContainer}
+          />
+          <Text style={styles.previewReward}>🎯 Recompensa: {card.rewardDescription || "Descripción de tu recompensa"}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -211,7 +243,7 @@ const styles = StyleSheet.create({
   },
   cardHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     marginBottom: SPACING.md,
   },
@@ -293,6 +325,50 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     zIndex: 1000,
+  },
+  previewContainer: {
+    marginBottom: SPACING.md,
+    paddingTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.inputBorder,
+  },
+  previewTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
+  },
+  previewCard: {
+    borderRadius: 12,
+    padding: SPACING.lg,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  previewBusinessName: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.white,
+    textAlign: "left",
+    marginBottom: SPACING.sm,
+  },
+  previewStamps: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.white,
+    marginBottom: SPACING.sm,
+  },
+  previewStampsContainer: {
+    margin: 0,
+    marginVertical: SPACING.sm,
+  },
+  previewReward: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.white,
+    textAlign: "center",
+    marginTop: SPACING.sm,
+    fontStyle: "italic",
   },
 });
 

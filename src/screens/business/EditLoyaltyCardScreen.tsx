@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, StampsGrid, useAlert } from "../../components";
+import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, StampsGrid, Dropdown, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
 import { LoyaltyCard } from "../../types";
@@ -29,6 +29,12 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Create dropdown options for stamps from 3 to 20
+  const stampOptions = Array.from({ length: 18 }, (_, i) => ({
+    label: `${i + 3} sellos`,
+    value: (i + 3).toString(),
+  }));
+
   useEffect(() => {
     if (visible && cardData) {
       setLoyaltyCard(cardData);
@@ -53,10 +59,9 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     if (!formData.businessName.trim()) {
       newErrors.businessName = "El nombre del negocio es requerido";
     }
-
     const slotsNum = parseInt(formData.totalSlots);
-    if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 1 || slotsNum > 20) {
-      newErrors.totalSlots = "Los sellos deben estar entre 1 y 20";
+    if (!formData.totalSlots || isNaN(slotsNum) || slotsNum < 3 || slotsNum > 20) {
+      newErrors.totalSlots = "Los sellos deben estar entre 3 y 20";
     }
     if (!formData.rewardDescription.trim()) {
       newErrors.rewardDescription = "La descripción de la recompensa es requerida";
@@ -235,12 +240,12 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                   placeholder="Ingresa el nombre de tu negocio"
                   error={errors.businessName}
                 />
-                <InputField
+                <Dropdown
                   label="Número de Sellos Requeridos"
                   value={formData.totalSlots}
-                  onChangeText={(value) => updateFormData("totalSlots", value)}
-                  placeholder="ej., 10"
-                  keyboardType="numeric"
+                  options={stampOptions}
+                  onSelect={(value) => updateFormData("totalSlots", value)}
+                  placeholder="Seleccionar número de sellos"
                   error={errors.totalSlots}
                 />
                 <InputField
@@ -265,7 +270,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                       currentStamps={1}
                       stampShape={formData.stampShape}
                       showAnimation={false}
-                      size="small"
                       stampColor={formData.cardColor || COLORS.primary}
                       containerStyle={styles.previewStampsContainer}
                     />

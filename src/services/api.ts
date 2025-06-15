@@ -539,10 +539,8 @@ export class LoyaltyCardService {
   static async getAllActiveLoyaltyCards(): Promise<LoyaltyCard[]> {
     try {
       const q = query(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), where("isActive", "==", true), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-
-      // Get all business IDs and fetch business information
-      const businessIds = [...new Set(querySnapshot.docs.map((doc) => doc.data().businessId))];
+      const querySnapshot = await getDocs(q); // Get all business IDs and fetch business information
+      const businessIds = Array.from(new Set(querySnapshot.docs.map((doc) => doc.data().businessId)));
       const businessesMap = new Map<string, Business>();
 
       for (const businessId of businessIds) {
@@ -1039,7 +1037,6 @@ export class CustomerCardService {
       throw new Error(error.message || "Error al agregar sello por código de tarjeta");
     }
   }
-
   static async addStampByCardCodeAndBusiness(cardCode: string, businessId: string): Promise<void> {
     try {
       // Find customer card by card code and business ID
@@ -1052,6 +1049,77 @@ export class CustomerCardService {
       await this.addStamp(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId);
     } catch (error: any) {
       throw new Error(error.message || "Error al agregar sello por código de tarjeta y negocio");
+    }
+  }
+
+  // Optimized method to get customer cards for a specific business
+  static async getCustomerCardsByBusiness(customerId: string, businessId: string): Promise<CustomerCard[]> {
+    try {
+      console.log("getCustomerCardsByBusiness: Fetching cards for customer:", customerId, "business:", businessId);
+
+      // First, get all loyalty cards for this business
+      const loyaltyCardsQuery = query(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), where("businessId", "==", businessId), where("isActive", "==", true));
+      const loyaltyCardsSnapshot = await getDocs(loyaltyCardsQuery);
+      const loyaltyCardIds = loyaltyCardsSnapshot.docs.map((doc) => doc.id);
+
+      if (loyaltyCardIds.length === 0) {
+        return [];
+      }
+
+      // Then get customer cards for these loyalty cards
+      const customerCardsQuery = query(
+        collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS),
+        where("customerId", "==", customerId),
+        where("loyaltyCardId", "in", loyaltyCardIds),
+        orderBy("createdAt", "desc")
+      );
+      const customerCardsSnapshot = await getDocs(customerCardsQuery);
+
+      // Get business info once
+      const business = await BusinessService.getBusiness(businessId);
+
+      const customerCards = await Promise.all(
+        customerCardsSnapshot.docs.map(async (docSnapshot) => {
+          const data = docSnapshot.data();
+          const customerCard: CustomerCard = {
+            id: docSnapshot.id,
+            customerId: data.customerId,
+            loyaltyCardId: data.loyaltyCardId,
+            currentStamps: data.currentStamps,
+            isRewardClaimed: data.isRewardClaimed,
+            createdAt: data.createdAt.toDate(),
+            lastStampDate: data.lastStampDate?.toDate(),
+            cardCode: data.cardCode,
+            customerName: data.customerName,
+          };
+
+          // Get loyalty card details (already have it from the first query)
+          const loyaltyCardDoc = loyaltyCardsSnapshot.docs.find((doc) => doc.id === data.loyaltyCardId);
+          if (loyaltyCardDoc) {
+            const loyaltyCardData = loyaltyCardDoc.data();
+            customerCard.loyaltyCard = {
+              id: loyaltyCardDoc.id,
+              businessId: loyaltyCardData.businessId,
+              businessName: business?.name || "",
+              businessLogo: business?.logoUrl,
+              totalSlots: loyaltyCardData.totalSlots,
+              rewardDescription: loyaltyCardData.rewardDescription,
+              cardColor: loyaltyCardData.cardColor,
+              stampShape: loyaltyCardData.stampShape,
+              createdAt: loyaltyCardData.createdAt.toDate(),
+              isActive: loyaltyCardData.isActive,
+            };
+          }
+
+          return customerCard;
+        })
+      );
+
+      console.log(`getCustomerCardsByBusiness: Found ${customerCards.length} cards`);
+      return customerCards;
+    } catch (error: any) {
+      console.error("getCustomerCardsByBusiness error:", error);
+      throw new Error(error.message || "Error al obtener las tarjetas del cliente para el negocio");
     }
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, FlatList, RefreshControl, SafeAreaView, TouchableOpacity, Image } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -20,6 +20,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasLoadedInitially = useRef(false);
 
   const loadCards = async (isRefresh = false) => {
     if (!user) return;
@@ -41,10 +42,13 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
       setRefreshing(false);
     }
   };
-
   useFocusEffect(
     useCallback(() => {
-      loadCards();
+      // Only load cards on initial focus or if we haven't loaded initially
+      if (!hasLoadedInitially.current) {
+        loadCards();
+        hasLoadedInitially.current = true;
+      }
     }, [user])
   );
 

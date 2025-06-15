@@ -15,15 +15,9 @@ interface BusinessDiscoveryCardProps {
   onPress: (business: BusinessWithCards) => void;
 }
 
-export const BusinessDiscoveryCard: React.FC<BusinessDiscoveryCardProps> = ({
-  business,
-  onPress,
-}) => {
+export const BusinessDiscoveryCard: React.FC<BusinessDiscoveryCardProps> = ({ business, onPress }) => {
   return (
-    <TouchableOpacity
-      style={styles.businessCard}
-      onPress={() => onPress(business)}
-    >
+    <TouchableOpacity style={styles.businessCard} onPress={() => onPress(business)}>
       <View style={styles.businessHeader}>
         <View style={styles.businessInfo}>
           <View style={styles.logoContainer}>
@@ -39,11 +33,7 @@ export const BusinessDiscoveryCard: React.FC<BusinessDiscoveryCardProps> = ({
             <Text style={styles.businessName}>{business.name}</Text>
             {business.city && (
               <Text style={styles.businessCity}>
-                <Ionicons
-                  name="location"
-                  size={14}
-                  color={COLORS.textSecondary}
-                />
+                <Ionicons name="location" size={14} color={COLORS.textSecondary} />
                 {business.city}
               </Text>
             )}
@@ -54,12 +44,8 @@ export const BusinessDiscoveryCard: React.FC<BusinessDiscoveryCardProps> = ({
         </View>
         <View style={styles.businessActions}>
           <View style={styles.loyaltyCardCount}>
-            <Text style={styles.cardCountNumber}>
-              {business.loyaltyCards.length}
-            </Text>
-            <Text style={styles.cardCountLabel}>
-              {business.loyaltyCards.length === 1 ? "Programa" : "Programas"}
-            </Text>
+            <Text style={styles.cardCountNumber}>{business.loyaltyCards.length}</Text>
+            <Text style={styles.cardCountLabel}>{business.loyaltyCards.length === 1 ? "Programa" : "Programas"}</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
@@ -102,8 +88,8 @@ const styles = StyleSheet.create({
     marginRight: SPACING.md,
   },
   logo: {
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
     borderRadius: 8,
   },
   logoPlaceholder: {

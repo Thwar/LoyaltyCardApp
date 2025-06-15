@@ -24,10 +24,17 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Modal, TouchableOpaci
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
-import { Button, AnimatedLoyaltyCard, LoadingState, useAlert } from "../../components";
+import { Button, AnimatedLoyaltyCard, LoadingState, useAlert, LoyaltyProgramListModal } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
-import { CustomerCardService } from "../../services/api";
-import { CustomerCard, CustomerStackParamList } from "../../types";
+import { CustomerCardService, BusinessService, LoyaltyCardService } from "../../services/api";
+import { CustomerCard, CustomerStackParamList, Business, LoyaltyCard } from "../../types";
+import { useAuth } from "../../context/AuthContext";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
+
+interface BusinessWithCards extends Business {
+  loyaltyCards: LoyaltyCard[];
+  customerCards: CustomerCard[];
+}
 
 interface CustomerCardDetailsModalProps {
   visible: boolean;
@@ -38,19 +45,141 @@ interface CustomerCardDetailsModalProps {
 
 const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ visible, customerCard: initialCard, onClose, navigation }) => {
   const { showAlert } = useAlert();
+  const { user } = useAuth();
   const [card, setCard] = useState<CustomerCard>(initialCard);
   const [loading, setLoading] = useState(false);
+  const [businessLoading, setBusinessLoading] = useState(false);
+  const [selectedBusiness, setSelectedBusiness] = useState<BusinessWithCards | null>(null);
+  const [joiningCard, setJoiningCard] = useState<string | null>(null);
+
+  // Simple cache for business data to avoid repeated fetches
+  const [businessCache, setBusinessCache] = useState<Record<string, BusinessWithCards>>({});
 
   const isCardComplete = card.currentStamps >= (card.loyaltyCard?.totalSlots || 0);
   const canClaimReward = isCardComplete && !card.isRewardClaimed;
+  const handleViewBusiness = async () => {
+    if (!card.loyaltyCard?.businessId || !user) return;
 
-  const handleViewBusiness = () => {
-    if (card.loyaltyCard && navigation) {
-      navigation.navigate("BusinessProfile", {
-        businessId: card.loyaltyCard.businessId,
-      });
-      onClose();
+    const businessId = card.loyaltyCard.businessId;
+
+    // Check if we have cached data for this business
+    if (businessCache[businessId]) {
+      console.log("Using cached business data for:", businessId);
+      setSelectedBusiness(businessCache[businessId]);
+      return;
     }
+
+    try {
+      setBusinessLoading(true);
+      console.log("Fetching fresh business data for:", businessId);
+      const startTime = performance.now();
+
+      // Execute all fetches in parallel for maximum efficiency
+      console.log("Starting parallel fetch...");
+      const [business, loyaltyCards, customerCards] = await Promise.all([
+        BusinessService.getBusiness(businessId),
+        LoyaltyCardService.getLoyaltyCardsByBusinessId(businessId),
+        CustomerCardService.getCustomerCardsByBusiness(user.id, businessId),
+      ]);
+
+      const totalTime = performance.now();
+      console.log(`All data fetched in parallel in ${totalTime - startTime}ms`);
+      console.log(`Found ${loyaltyCards.length} loyalty cards and ${customerCards.length} customer cards`);
+
+      if (!business) {
+        showAlert({
+          title: "Error",
+          message: "No se pudo cargar la información del negocio",
+        });
+        return;
+      }
+
+      const businessWithCards: BusinessWithCards = {
+        ...business,
+        loyaltyCards,
+        customerCards,
+      };
+
+      // Cache the result
+      setBusinessCache((prev) => ({
+        ...prev,
+        [businessId]: businessWithCards,
+      }));
+
+      setSelectedBusiness(businessWithCards);
+
+      console.log(`Total operation completed in ${totalTime - startTime}ms`);
+    } catch (error) {
+      console.error("Error fetching business data:", error);
+      showAlert({
+        title: "Error",
+        message: "Error al cargar la información del negocio",
+      });
+    } finally {
+      setBusinessLoading(false);
+    }
+  };
+
+  const handleCloseBusinessModal = () => {
+    setSelectedBusiness(null);
+  };
+  const handleJoinProgram = async (loyaltyCard: LoyaltyCard) => {
+    if (!user) return;
+
+    setJoiningCard(loyaltyCard.id);
+    try {
+      await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id);
+
+      showAlert({
+        title: "¡Éxito!",
+        message: `Te has unido al programa de lealtad "${loyaltyCard.rewardDescription}"`,
+      });
+
+      // Invalidate cache for this business since customer cards changed
+      if (selectedBusiness) {
+        setBusinessCache((prev) => {
+          const updated = { ...prev };
+          delete updated[selectedBusiness.id];
+          return updated;
+        });
+
+        // Refresh the business data to show the new customer card
+        const allCustomerCards = await CustomerCardService.getCustomerCards(user.id);
+        const customerCards = allCustomerCards.filter((customerCard) => customerCard.loyaltyCard?.businessId === selectedBusiness.id);
+
+        const updatedBusiness = {
+          ...selectedBusiness,
+          customerCards,
+        };
+
+        // Update both the selected business and cache
+        setSelectedBusiness(updatedBusiness);
+        setBusinessCache((prev) => ({
+          ...prev,
+          [selectedBusiness.id]: updatedBusiness,
+        }));
+      }
+    } catch (error: any) {
+      showAlert({
+        title: "Error",
+        message: error.message || "Error al unirse al programa de lealtad",
+      });
+    } finally {
+      setJoiningCard(null);
+    }
+  };
+  const handleViewCard = (customerCard: CustomerCard) => {
+    // Close business modal and show the selected card details
+    setSelectedBusiness(null);
+
+    // If it's a different card than the current one, update the current card
+    if (customerCard.id !== card.id) {
+      setCard(customerCard);
+    }
+
+    // If navigation is available and we want to navigate to a separate card details screen
+    // we can use navigation.navigate here, but since we're already in a card details modal,
+    // we just update the current card being displayed
   };
 
   const refreshCard = async () => {
@@ -87,14 +216,16 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
   }
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" transparent={false} onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
+        {" "}
         {/* Header with close button */}
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Detalles de Tarjeta</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
+          <TouchableOpacity onPress={onClose} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
+          <Text style={styles.modalTitle}>Detalles de Tarjeta</Text>
+          <View style={styles.headerSpacer} />
         </View>
         <ScrollView style={styles.scrollView}>
           {/* Card Display */}
@@ -144,9 +275,11 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
           </View>
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
-            <Button title="Ver Perfil del Negocio" onPress={handleViewBusiness} variant="outline" size="large" style={styles.businessButton} />
+            <Button title="Ver Perfil del Negocio" onPress={handleViewBusiness} variant="outline" size="large" loading={businessLoading} style={styles.businessButton} />
           </View>
         </ScrollView>
+        {/* Loyalty Program List Modal */}
+        <LoyaltyProgramListModal selectedBusiness={selectedBusiness} joiningCard={joiningCard} onClose={handleCloseBusinessModal} onJoinProgram={handleJoinProgram} onViewCard={handleViewCard} />
       </SafeAreaView>
     </Modal>
   );
@@ -157,12 +290,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  backButton: {
+    padding: SPACING.xs,
+  },
+  headerSpacer: {
+    width: 40, // Match the approximate width of the back button
+  },
   modalHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.inputBorder,
     backgroundColor: COLORS.white,

@@ -219,10 +219,9 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
     }
     return stamps;
   };
-
   return (
     <View style={[styles.stampsContainer, containerStyle]}>
-      <View style={styles.stampsGrid}>{renderStamps()}</View>
+      <View style={[styles.stampsGrid, { gap: stampShape === "diamond" ? SPACING.md : SPACING.sm }]}>{renderStamps()}</View>
     </View>
   );
 };
@@ -242,7 +241,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: "100%",
-    gap: SPACING.sm,
   },
   stampEmpty: {
     borderColor: "rgba(128, 128, 128, 0.3)",

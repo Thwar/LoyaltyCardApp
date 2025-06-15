@@ -147,6 +147,8 @@ const CustomerStackNavigator = () => {
         options={{
           title: "Detalles de Tarjeta",
           headerBackTitle: "Atrás",
+          presentation: "modal",
+          headerShown: false,
         }}
       />
       <CustomerStack.Screen

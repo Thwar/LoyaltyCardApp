@@ -1,31 +1,12 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  SafeAreaView,
-  Modal,
-  Alert,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, SafeAreaView, Modal, Alert, ActivityIndicator } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import {
-  LoadingState,
-  BusinessDiscoveryCard,
-  LoyaltyProgramListModal,
-} from "../../components";
+import { LoadingState, BusinessDiscoveryCard, LoyaltyProgramListModal } from "../../components";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
-import {
-  BusinessService,
-  LoyaltyCardService,
-  CustomerCardService,
-} from "../../services/api";
+import { BusinessService, LoyaltyCardService, CustomerCardService } from "../../services/api";
 import { Business, LoyaltyCard, CustomerCard } from "../../types";
 
 interface BusinessDiscoveryScreenProps {
@@ -37,15 +18,12 @@ interface BusinessWithCards extends Business {
   customerCards: CustomerCard[];
 }
 
-export const BusinessDiscoveryScreen: React.FC<
-  BusinessDiscoveryScreenProps
-> = ({ navigation }) => {
+export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
   const [businesses, setBusinesses] = useState<BusinessWithCards[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedBusiness, setSelectedBusiness] =
-    useState<BusinessWithCards | null>(null);
+  const [selectedBusiness, setSelectedBusiness] = useState<BusinessWithCards | null>(null);
   const [joiningCard, setJoiningCard] = useState<string | null>(null);
   const [newCardCode, setNewCardCode] = useState<string>("");
 
@@ -54,10 +32,7 @@ export const BusinessDiscoveryScreen: React.FC<
     loadBusinessesWithCards();
   }, [user]);
 
-  const generateUniqueCardCode = async (
-    businessId: string,
-    customerId: string
-  ): Promise<string> => {
+  const generateUniqueCardCode = async (businessId: string, customerId: string): Promise<string> => {
     // Generate a random 3-digit code
     let code = "";
     let attempts = 0;
@@ -67,13 +42,8 @@ export const BusinessDiscoveryScreen: React.FC<
       code = Math.floor(100 + Math.random() * 900).toString();
       attempts++;
       // Check if this code already exists for this business-customer combination
-      const existingCards = await CustomerCardService.getCustomerCards(
-        customerId
-      );
-      const hasExistingCode = existingCards.some(
-        (card) =>
-          card.loyaltyCard?.businessId === businessId && card.cardCode === code
-      );
+      const existingCards = await CustomerCardService.getCustomerCards(customerId);
+      const hasExistingCode = existingCards.some((card) => card.loyaltyCard?.businessId === businessId && card.cardCode === code);
 
       if (!hasExistingCode) {
         break;
@@ -95,57 +65,30 @@ export const BusinessDiscoveryScreen: React.FC<
 
     try {
       setLoading(true);
-      console.log(
-        "📱 loadBusinessesWithCards: Starting to load businesses for user:",
-        user.id
-      );
+      console.log("📱 loadBusinessesWithCards: Starting to load businesses for user:", user.id);
 
       // Get all businesses
       const allBusinesses = await BusinessService.getAllBusinesses();
-      console.log(
-        "🏢 loadBusinessesWithCards: Found",
-        allBusinesses.length,
-        "total businesses"
-      );
+      console.log("🏢 loadBusinessesWithCards: Found", allBusinesses.length, "total businesses");
 
       // Get customer's existing cards
       const customerCards = await CustomerCardService.getCustomerCards(user.id);
-      console.log(
-        "🎫 loadBusinessesWithCards: Found",
-        customerCards.length,
-        "customer cards for user"
-      );
+      console.log("🎫 loadBusinessesWithCards: Found", customerCards.length, "customer cards for user");
 
       const businessesWithCards = await Promise.all(
         allBusinesses.map(async (business) => {
           try {
-            console.log(
-              "🔍 Processing business:",
-              business.name,
-              "(ID:",
-              business.id,
-              ")"
-            );
+            console.log("🔍 Processing business:", business.name, "(ID:", business.id, ")");
 
             // Get all loyalty cards for this business
-            const loyaltyCards =
-              await LoyaltyCardService.getLoyaltyCardsByBusinessId(business.id);
-            console.log(
-              "💳 Found",
-              loyaltyCards.length,
-              "loyalty cards for business:",
-              business.name
-            );
+            const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessId(business.id);
+            console.log("💳 Found", loyaltyCards.length, "loyalty cards for business:", business.name);
 
             // Filter only active loyalty cards
-            const activeLoyaltyCards = loyaltyCards.filter(
-              (card) => card.isActive
-            );
+            const activeLoyaltyCards = loyaltyCards.filter((card) => card.isActive);
 
             // Get customer cards for this business
-            const businessCustomerCards = customerCards.filter(
-              (card) => card.loyaltyCard?.businessId === business.id
-            );
+            const businessCustomerCards = customerCards.filter((card) => card.loyaltyCard?.businessId === business.id);
 
             const result = {
               ...business,
@@ -153,20 +96,10 @@ export const BusinessDiscoveryScreen: React.FC<
               customerCards: businessCustomerCards,
             };
 
-            console.log(
-              "📋 Final business object for",
-              business.name,
-              ":",
-              result
-            );
+            console.log("📋 Final business object for", business.name, ":", result);
             return result;
           } catch (error) {
-            console.error(
-              "❌ Error processing business",
-              business.name,
-              ":",
-              error
-            );
+            console.error("❌ Error processing business", business.name, ":", error);
             return {
               ...business,
               loyaltyCards: [],
@@ -177,14 +110,9 @@ export const BusinessDiscoveryScreen: React.FC<
       );
 
       // Filter to only show businesses that have active loyalty cards
-      const activeBusinesses = businessesWithCards.filter(
-        (business) => business.loyaltyCards.length > 0
-      );
+      const activeBusinesses = businessesWithCards.filter((business) => business.loyaltyCards.length > 0);
 
-      console.log(
-        "🟢 Active businesses after filtering:",
-        activeBusinesses.length
-      );
+      console.log("🟢 Active businesses after filtering:", activeBusinesses.length);
 
       setBusinesses(activeBusinesses);
       console.log("✅ Final businesses set in state:", activeBusinesses.length);
@@ -203,17 +131,10 @@ export const BusinessDiscoveryScreen: React.FC<
 
     try {
       // Generate unique 3-digit code
-      const cardCode = await generateUniqueCardCode(
-        loyaltyCard.businessId,
-        user.id
-      );
+      const cardCode = await generateUniqueCardCode(loyaltyCard.businessId, user.id);
 
       // Create the customer card
-      await CustomerCardService.joinLoyaltyProgram(
-        user.id,
-        loyaltyCard.id,
-        cardCode
-      );
+      await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
 
       setNewCardCode(cardCode);
       setModalVisible(true);
@@ -244,12 +165,7 @@ export const BusinessDiscoveryScreen: React.FC<
       );
     } catch (error) {
       console.error("Error joining loyalty program:", error);
-      Alert.alert(
-        "Error",
-        error instanceof Error
-          ? error.message
-          : "Failed to join loyalty program"
-      );
+      Alert.alert("Error", error instanceof Error ? error.message : "Failed to join loyalty program");
     } finally {
       setJoiningCard(null);
     }
@@ -263,9 +179,7 @@ export const BusinessDiscoveryScreen: React.FC<
   const handleBusinessPress = (business: BusinessWithCards) => {
     setSelectedBusiness(business);
   };
-  const renderBusinessItem = ({ item }: { item: BusinessWithCards }) => (
-    <BusinessDiscoveryCard business={item} onPress={handleBusinessPress} />
-  );
+  const renderBusinessItem = ({ item }: { item: BusinessWithCards }) => <BusinessDiscoveryCard business={item} onPress={handleBusinessPress} />;
   const handleJoinLoyaltyProgramFromModal = (loyaltyCard: LoyaltyCard) => {
     // Set loading state immediately for instant feedback
     setJoiningCard(loyaltyCard.id);
@@ -285,27 +199,15 @@ export const BusinessDiscoveryScreen: React.FC<
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.subtitle}>
-          Descubre negocios increíbles y únete a sus programas de lealtad para
-          ganar recompensas exclusivas
-        </Text>
+        <Text style={styles.subtitle}>Descubre negocios increíbles y únete a sus programas de lealtad para ganar recompensas exclusivas</Text>
         {businesses.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="storefront-outline" size={64} color={COLORS.gray} />
             <Text style={styles.emptyTitle}>No hay programas disponibles</Text>
-            <Text style={styles.emptyMessage}>
-              En este momento no hay negocios con programas de lealtad activos.
-              ¡Vuelve pronto para descubrir nuevas oportunidades de recompensas!
-            </Text>
+            <Text style={styles.emptyMessage}>En este momento no hay negocios con programas de lealtad activos. ¡Vuelve pronto para descubrir nuevas oportunidades de recompensas!</Text>
           </View>
         ) : (
-          <FlatList
-            data={businesses}
-            renderItem={renderBusinessItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.businessList}
-            showsVerticalScrollIndicator={false}
-          />
+          <FlatList data={businesses} renderItem={renderBusinessItem} keyExtractor={(item) => item.id} contentContainerStyle={styles.businessList} showsVerticalScrollIndicator={false} />
         )}
       </View>
       <LoyaltyProgramListModal
@@ -322,56 +224,32 @@ export const BusinessDiscoveryScreen: React.FC<
           visible={!!joiningCard}
           onRequestClose={() => {
             // Prevent closing while loading
-            Alert.alert(
-              "Procesando",
-              "Por favor espera mientras procesamos tu solicitud..."
-            );
+            Alert.alert("Procesando", "Por favor espera mientras procesamos tu solicitud...");
           }}
         >
           <View style={styles.loadingOverlay}>
             <View style={styles.fullScreenLoadingContainer}>
               <ActivityIndicator size="large" color={COLORS.primary} />
               <Text style={styles.fullScreenLoadingText}>Cargando...</Text>
-              <Text style={styles.loadingSubtext}>
-                Uniéndose al programa de lealtad...
-              </Text>
+              <Text style={styles.loadingSubtext}>Uniéndose al programa de lealtad...</Text>
             </View>
           </View>
         </Modal>
       )}
       {/* Success Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.successModalContent}>
             <View style={styles.successIcon}>
-              <Ionicons
-                name="checkmark-circle"
-                size={48}
-                color={COLORS.success}
-              />
+              <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
             </View>
-            <Text style={styles.successModalTitle}>
-              ¡Bienvenido al Programa!
-            </Text>
-            <Text style={styles.modalMessage}>
-              ¡Te has unido exitosamente al programa de lealtad! Ahora puedes
-              empezar a ganar sellos y recompensas.
-            </Text>
+            <Text style={styles.successModalTitle}>¡Bienvenido al Programa!</Text>
+            <Text style={styles.modalMessage}>¡Te has unido exitosamente al programa de lealtad! Ahora puedes empezar a ganar sellos y recompensas.</Text>
             <View style={styles.cardCodeContainer}>
-              <Text style={styles.cardCodeLabel}>
-                Tu código de identificación:
-              </Text>
+              <Text style={styles.cardCodeLabel}>Tu código de identificación:</Text>
               <Text style={styles.cardCode}>{newCardCode}</Text>
             </View>
-            <Text style={styles.cardCodeDescription}>
-              Presenta este código al negocio cuando hagas una compra para
-              recibir sellos en tu tarjeta de lealtad.
-            </Text>
+            <Text style={styles.cardCodeDescription}>Presenta este código al negocio cuando hagas una compra para recibir sellos en tu tarjeta de lealtad.</Text>
             <TouchableOpacity
               style={styles.modalButton}
               onPress={() => {
@@ -382,10 +260,7 @@ export const BusinessDiscoveryScreen: React.FC<
             >
               <Text style={styles.modalButtonText}>Ver Mis Tarjetas</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setModalVisible(false)}
-            >
+            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
               <Text style={styles.modalCloseText}>Cerrar</Text>
             </TouchableOpacity>
           </View>
@@ -412,11 +287,6 @@ const styles = StyleSheet.create({
   },
   businessList: {
     paddingBottom: SPACING.xl,
-  },
-  logoLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
   },
   logoPlaceholder: {
     backgroundColor: COLORS.lightGray,
