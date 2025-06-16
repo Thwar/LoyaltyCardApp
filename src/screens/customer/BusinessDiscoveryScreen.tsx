@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, SafeAreaView, Modal, Alert, ActivityIndicator } from "react-native";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, SafeAreaView, Modal, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -19,19 +19,198 @@ interface BusinessWithCards extends Business {
   claimedRewardsCount: { [loyaltyCardId: string]: number }; // Count of claimed rewards per loyalty card
 }
 
+// Cache for business data to avoid redundant API calls
+const businessCache = new Map<string, BusinessWithCards>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const BUSINESSES_PER_PAGE = 10;
+
 export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
   const [businesses, setBusinesses] = useState<BusinessWithCards[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreData, setHasMoreData] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessWithCards | null>(null);
   const [joiningCard, setJoiningCard] = useState<string | null>(null);
   const [newCardCode, setNewCardCode] = useState<string>("");
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number>(0);
 
+  // Memoized customer cards to avoid redundant calculations
+  const [customerCardsCache, setCustomerCardsCache] = useState<{
+    allCards: CustomerCard[];
+    unclaimedCards: CustomerCard[];
+    timestamp: number;
+  } | null>(null);
   useEffect(() => {
     console.log("🔄 useEffect triggered - user:", user?.id || "No user");
-    loadBusinessesWithCards();
+    loadInitialData();
   }, [user]);
+
+  // Memoized customer cards data to avoid redundant API calls
+  const getCustomerCardsData = useCallback(
+    async (forceRefresh = false) => {
+      if (!user) return { allCards: [], unclaimedCards: [] };
+
+      const now = Date.now();
+
+      // Use cached data if available and not expired (unless force refresh)
+      if (!forceRefresh && customerCardsCache && now - customerCardsCache.timestamp < CACHE_DURATION) {
+        console.log("🚀 Using cached customer cards data");
+        return {
+          allCards: customerCardsCache.allCards,
+          unclaimedCards: customerCardsCache.unclaimedCards,
+        };
+      }
+
+      console.log("📱 Fetching fresh customer cards data");
+
+      // Fetch both in parallel for better performance
+      const [allCards, unclaimedCards] = await Promise.all([CustomerCardService.getAllCustomerCards(user.id), CustomerCardService.getUnclaimedRewardCustomerCards(user.id)]);
+
+      // Cache the results
+      setCustomerCardsCache({
+        allCards,
+        unclaimedCards,
+        timestamp: now,
+      });
+
+      return { allCards, unclaimedCards };
+    },
+    [user, customerCardsCache]
+  );
+
+  const loadInitialData = useCallback(async () => {
+    if (!user) {
+      console.log("🚫 loadInitialData: No user found");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      businessCache.clear(); // Clear cache on initial load
+
+      await loadBusinessesWithCards(true);
+    } catch (error) {
+      console.error("💥 Error loading initial data:", error);
+      Alert.alert("Error", "Failed to load businesses. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const loadBusinessesWithCards = useCallback(
+    async (isInitialLoad = false, currentPage = 0) => {
+      if (!user) {
+        console.log("🚫 loadBusinessesWithCards: No user found");
+        return;
+      }
+
+      try {
+        if (!isInitialLoad) {
+          setLoadingMore(true);
+        }
+
+        console.log("📱 loadBusinessesWithCards: Starting to load businesses for user:", user.id, "page:", currentPage);
+
+        // Get customer cards data (cached if available)
+        const { allCards: allCustomerCards, unclaimedCards: unclaimedCustomerCards } = await getCustomerCardsData();
+
+        console.log("🎫 Found", allCustomerCards.length, "total customer cards and", unclaimedCustomerCards.length, "unclaimed cards");
+
+        // Get businesses with pagination
+        const allBusinesses = await BusinessService.getPaginatedBusinesses(currentPage, BUSINESSES_PER_PAGE);
+        console.log("🏢 Found", allBusinesses.length, "businesses on page", currentPage);
+
+        if (allBusinesses.length < BUSINESSES_PER_PAGE) {
+          setHasMoreData(false);
+        }
+
+        // Process businesses in batches for better performance
+        const businessesWithCards = await procesBusinessesBatch(allBusinesses, allCustomerCards, unclaimedCustomerCards);
+
+        // Filter to only show businesses that have active loyalty cards
+        const activeBusinesses = businessesWithCards.filter((business) => business.loyaltyCards.length > 0);
+
+        console.log("🟢 Active businesses after filtering:", activeBusinesses.length);
+        if (isInitialLoad) {
+          setBusinesses(activeBusinesses);
+        } else {
+          setBusinesses((prev) => [...prev, ...activeBusinesses]);
+        }
+
+        console.log("✅ Businesses loaded successfully");
+      } catch (error) {
+        console.error("💥 Error loading businesses:", error);
+        Alert.alert("Error", "Failed to load businesses. Please try again.");
+      } finally {
+        if (!isInitialLoad) {
+          setLoadingMore(false);
+        }
+      }
+    },
+    [user, getCustomerCardsData]
+  );
+
+  // Process businesses in batches to improve performance
+  const procesBusinessesBatch = useCallback(async (businessesToProcess: Business[], allCustomerCards: CustomerCard[], unclaimedCustomerCards: CustomerCard[]): Promise<BusinessWithCards[]> => {
+    // Get all loyalty cards for all businesses in a single batch query
+    const businessIds = businessesToProcess.map((b) => b.id);
+    const allLoyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessIds(businessIds);
+
+    // Group loyalty cards by business ID
+    const loyaltyCardsByBusiness = allLoyaltyCards.reduce((acc, card) => {
+      if (!acc[card.businessId]) {
+        acc[card.businessId] = [];
+      }
+      acc[card.businessId].push(card);
+      return acc;
+    }, {} as { [businessId: string]: LoyaltyCard[] });
+
+    return businessesToProcess.map((business) => {
+      try {
+        console.log("🔍 Processing business:", business.name, "(ID:", business.id, ")");
+
+        // Get loyalty cards for this business from our batched results
+        const loyaltyCards = loyaltyCardsByBusiness[business.id] || [];
+        console.log("💳 Found", loyaltyCards.length, "loyalty cards for business:", business.name);
+
+        // Filter only active loyalty cards
+        const activeLoyaltyCards = loyaltyCards.filter((card) => card.isActive);
+
+        // Get unclaimed customer cards for this business
+        const businessUnclaimedCards = unclaimedCustomerCards.filter((card) => card.loyaltyCard?.businessId === business.id);
+
+        // Calculate claimed rewards count per loyalty card for this business
+        const claimedRewardsCount: { [loyaltyCardId: string]: number } = {};
+        allCustomerCards
+          .filter((card) => card.loyaltyCard?.businessId === business.id && card.isRewardClaimed)
+          .forEach((card) => {
+            claimedRewardsCount[card.loyaltyCardId] = (claimedRewardsCount[card.loyaltyCardId] || 0) + 1;
+          });
+
+        const result = {
+          ...business,
+          loyaltyCards: activeLoyaltyCards,
+          customerCards: businessUnclaimedCards,
+          claimedRewardsCount,
+        };
+
+        console.log("📋 Final business object for", business.name, ":", result);
+        return result;
+      } catch (error) {
+        console.error("❌ Error processing business", business.name, ":", error);
+        return {
+          ...business,
+          loyaltyCards: [],
+          customerCards: [],
+          claimedRewardsCount: {},
+        };
+      }
+    });
+  }, []);
+
   const generateUniqueCardCode = async (businessId: string, customerId: string): Promise<string> => {
     // Generate a random 3-digit code
     let code = "";
@@ -58,83 +237,6 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     return code;
   };
 
-  const loadBusinessesWithCards = async () => {
-    if (!user) {
-      console.log("🚫 loadBusinessesWithCards: No user found");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log("📱 loadBusinessesWithCards: Starting to load businesses for user:", user.id);
-
-      // Get all businesses
-      const allBusinesses = await BusinessService.getAllBusinesses();
-      console.log("🏢 loadBusinessesWithCards: Found", allBusinesses.length, "total businesses"); // Get customer's existing cards (all cards including claimed)
-      const allCustomerCards = await CustomerCardService.getAllCustomerCards(user.id);
-      console.log("🎫 loadBusinessesWithCards: Found", allCustomerCards.length, "total customer cards for user");
-
-      // Get only unclaimed customer cards for active display
-      const unclaimedCustomerCards = await CustomerCardService.getUnclaimedRewardCustomerCards(user.id);
-      console.log("🎫 loadBusinessesWithCards: Found", unclaimedCustomerCards.length, "unclaimed customer cards for user");
-
-      const businessesWithCards = await Promise.all(
-        allBusinesses.map(async (business) => {
-          try {
-            console.log("🔍 Processing business:", business.name, "(ID:", business.id, ")");
-
-            // Get all loyalty cards for this business
-            const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessId(business.id);
-            console.log("💳 Found", loyaltyCards.length, "loyalty cards for business:", business.name); // Filter only active loyalty cards
-            const activeLoyaltyCards = loyaltyCards.filter((card) => card.isActive);
-
-            // Get unclaimed customer cards for this business (for display)
-            const businessUnclaimedCards = unclaimedCustomerCards.filter((card) => card.loyaltyCard?.businessId === business.id);
-
-            // Calculate claimed rewards count per loyalty card for this business
-            const claimedRewardsCount: { [loyaltyCardId: string]: number } = {};
-            allCustomerCards
-              .filter((card) => card.loyaltyCard?.businessId === business.id && card.isRewardClaimed)
-              .forEach((card) => {
-                claimedRewardsCount[card.loyaltyCardId] = (claimedRewardsCount[card.loyaltyCardId] || 0) + 1;
-              });
-
-            const result = {
-              ...business,
-              loyaltyCards: activeLoyaltyCards,
-              customerCards: businessUnclaimedCards,
-              claimedRewardsCount,
-            };
-
-            console.log("📋 Final business object for", business.name, ":", result);
-            return result;
-          } catch (error) {
-            console.error("❌ Error processing business", business.name, ":", error);
-            return {
-              ...business,
-              loyaltyCards: [],
-              customerCards: [],
-              claimedRewardsCount: {},
-            };
-          }
-        })
-      );
-
-      // Filter to only show businesses that have active loyalty cards
-      const activeBusinesses = businessesWithCards.filter((business) => business.loyaltyCards.length > 0);
-
-      console.log("🟢 Active businesses after filtering:", activeBusinesses.length);
-
-      setBusinesses(activeBusinesses);
-      console.log("✅ Final businesses set in state:", activeBusinesses.length);
-    } catch (error) {
-      console.error("💥 Error loading businesses:", error);
-      Alert.alert("Error", "Failed to load businesses. Please try again.");
-    } finally {
-      setLoading(false);
-      console.log("🏁 loadBusinessesWithCards completed");
-    }
-  };
   const handleJoinLoyaltyProgram = async (loyaltyCard: LoyaltyCard) => {
     if (!user) return;
 
@@ -186,11 +288,42 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       customerCard: customerCard,
     });
   };
-
   const handleBusinessPress = (business: BusinessWithCards) => {
     setSelectedBusiness(business);
   };
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    businessCache.clear();
+    setCustomerCardsCache(null); // Clear customer cards cache
+    setHasMoreData(true);
+    try {
+      await loadBusinessesWithCards(true, 0);
+    } catch (error) {
+      console.error("Error refreshing:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadBusinessesWithCards]);
+
+  const loadMoreBusinesses = useCallback(async () => {
+    if (loadingMore || !hasMoreData) return;
+
+    const currentPage = Math.floor(businesses.length / BUSINESSES_PER_PAGE);
+    await loadBusinessesWithCards(false, currentPage);
+  }, [businesses.length, loadingMore, hasMoreData, loadBusinessesWithCards]);
+
   const renderBusinessItem = ({ item }: { item: BusinessWithCards }) => <BusinessDiscoveryCard business={item} onPress={handleBusinessPress} />;
+
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={styles.loadingFooter}>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+        <Text style={styles.loadingFooterText}>Cargando más negocios...</Text>
+      </View>
+    );
+  };
   const handleJoinLoyaltyProgramFromModal = (loyaltyCard: LoyaltyCard) => {
     // Set loading state immediately for instant feedback
     setJoiningCard(loyaltyCard.id);
@@ -218,7 +351,17 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
             <Text style={styles.emptyMessage}>En este momento no hay negocios con programas de lealtad activos. ¡Vuelve pronto para descubrir nuevas oportunidades de recompensas!</Text>
           </View>
         ) : (
-          <FlatList data={businesses} renderItem={renderBusinessItem} keyExtractor={(item) => item.id} contentContainerStyle={styles.businessList} showsVerticalScrollIndicator={false} />
+          <FlatList
+            data={businesses}
+            renderItem={renderBusinessItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.businessList}
+            showsVerticalScrollIndicator={false}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
+            onEndReached={loadMoreBusinesses}
+            onEndReachedThreshold={0.3}
+            ListFooterComponent={renderFooter}
+          />
         )}
       </View>
       <LoyaltyProgramListModal
@@ -265,8 +408,12 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
               style={styles.modalButton}
               onPress={() => {
                 setModalVisible(false);
-                // Navigate to customer home or cards list
-                navigation.navigate("CustomerTabs", { screen: "Home" });
+                console.log("📱 Navigating to CustomerTabs with refresh parameter");
+                // Navigate to customer home with refresh parameter
+                navigation.navigate("CustomerTabs", {
+                  screen: "Home",
+                  params: { refresh: true, timestamp: Date.now() },
+                });
               }}
             >
               <Text style={styles.modalButtonText}>Ver Mis Tarjetas</Text>
@@ -467,5 +614,17 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     textAlign: "center",
     marginTop: SPACING.sm,
+  },
+  // Pagination loading styles
+  loadingFooter: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: SPACING.lg,
+  },
+  loadingFooterText: {
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.sm,
+    marginLeft: SPACING.sm,
   },
 });

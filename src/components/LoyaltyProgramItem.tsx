@@ -20,15 +20,9 @@ interface LoyaltyProgramItemProps {
 export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({ loyaltyCard, hasCard, customerCard, claimedRewardsCount, joiningCard, onJoinProgram, onViewCard }) => {
   return (
     <View style={styles.loyaltyCardItem}>
-      {" "}
       <View style={styles.loyaltyCardHeader}>
         <View style={styles.loyaltyCardInfo}>
-          <Text style={styles.totalSlots}>🎫 {loyaltyCard.totalSlots} sellos para completar</Text>
-          {claimedRewardsCount > 0 && (
-            <Text style={styles.claimedRewards}>
-              🏆 {claimedRewardsCount} recompensa{claimedRewardsCount !== 1 ? "s" : ""} obtenida{claimedRewardsCount !== 1 ? "s" : ""}
-            </Text>
-          )}
+          <Text style={styles.cardReward}>🎁 {loyaltyCard.rewardDescription}</Text>
         </View>
         {hasCard && (
           <View style={styles.joinedBadge}>
@@ -45,9 +39,6 @@ export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({ loyaltyC
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <View style={styles.cardHeader}>
-            <Text style={styles.cardReward}>🎯 Recompensa: {loyaltyCard.rewardDescription}</Text>
-          </View>
           <StampsGrid
             totalSlots={loyaltyCard.totalSlots}
             currentStamps={hasCard && customerCard ? customerCard.currentStamps : 0}
@@ -58,8 +49,16 @@ export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({ loyaltyC
             specialStampColor="white"
             containerStyle={styles.stampsContainer}
           />
+          <View style={styles.cardHeader}>
+            <Text style={styles.totalSlots}>🎫 {loyaltyCard.totalSlots} sellos para completar</Text>
+          </View>
         </LinearGradient>
       </View>
+      {claimedRewardsCount > 0 && (
+        <Text style={styles.claimedRewards}>
+          🏆 {claimedRewardsCount} recompensa{claimedRewardsCount !== 1 ? "s" : ""} obtenida{claimedRewardsCount !== 1 ? "s" : ""}
+        </Text>
+      )}
       <View style={styles.loyaltyCardActions}>
         {hasCard ? (
           <TouchableOpacity
@@ -101,11 +100,11 @@ const styles = StyleSheet.create({
   loyaltyCardItem: {
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: COLORS.inputBorder,
-    borderRadius: 12,
-    padding: SPACING.md,
+    borderColor: "#E3E8EF",
+    borderRadius: 20,
+    padding: SPACING.lg,
     marginBottom: SPACING.md,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   loyaltyCardHeader: {
     flexDirection: "row",
@@ -129,15 +128,19 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   totalSlots: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textPrimary,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.white,
     fontWeight: "500",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+    textAlign: "center",
   },
   claimedRewards: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.success,
     fontWeight: "500",
-    marginTop: SPACING.xs,
+    marginBottom: SPACING.md,
   },
   joinedBadge: {
     flexDirection: "row",
@@ -160,11 +163,12 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: 8,
-    minWidth: 120,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+    minWidth: 140,
     justifyContent: "center",
+    ...SHADOWS.small,
   },
   viewCardButton: {
     backgroundColor: COLORS.primary,
@@ -192,11 +196,14 @@ const styles = StyleSheet.create({
     marginLeft: SPACING.xs,
   },
   cardPreview: {
-    marginBottom: SPACING.md,
+    borderRadius: 14,
+    overflow: "hidden",
+    marginBottom: SPACING.sm,
+    ...SHADOWS.small,
   },
   cardGradient: {
-    borderRadius: 12,
-    padding: SPACING.md,
+    borderRadius: 14,
+    padding: SPACING.lg,
     minHeight: 120,
   },
   cardHeader: {
@@ -212,12 +219,9 @@ const styles = StyleSheet.create({
     textShadowRadius: 2,
   },
   cardReward: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textPrimary,
     fontWeight: "500",
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
   stampsContainer: {
     flex: 1,

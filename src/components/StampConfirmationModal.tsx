@@ -30,7 +30,6 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
           <Text style={styles.modalTitle}>{isCardComplete ? "Canjear Recompensa" : "Confirmar Sello"}</Text>
           <View style={{ width: 24 }}>{loading && <ActivityIndicator size="small" color={COLORS.primary} />}</View>
         </View>
-
         <ScrollView style={styles.modalContent}>
           <View style={styles.confirmationSection}>
             <View style={styles.iconContainer}>
@@ -39,7 +38,6 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
             <Text style={styles.confirmationTitle}>{isCardComplete ? "¡Tarjeta Lista para Canjear!" : "¡Tarjeta de Cliente Encontrada!"}</Text>
             <Text style={styles.confirmationSubtitle}>{isCardComplete ? "Esta tarjeta está lista para canjear la recompensa" : "Revisa los detalles antes de agregar el sello"}</Text>
           </View>
-
           <View style={styles.customerInfoSection}>
             <Text style={styles.sectionTitle}>Información del Cliente</Text>
             <View style={styles.infoRow}>
@@ -51,10 +49,8 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
               <Text style={styles.infoValue}>{customerCard.cardCode}</Text>
             </View>
           </View>
-
           {loyaltyCard && (
             <View style={styles.loyaltyCardSection}>
-              {/* <Text style={styles.sectionTitle}>Programa de Lealtad</Text> */}
               <View style={styles.cardContainer}>
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardTitle}>{loyaltyCard.businessName}</Text>
@@ -94,7 +90,6 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
               </View>
             </View>
           )}
-
           <View style={styles.actionSection}>
             <TouchableOpacity style={[styles.actionButton, styles.confirmButton]} onPress={onConfirmStamp} disabled={loading}>
               {loading ? (

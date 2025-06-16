@@ -281,6 +281,12 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>🎁 Recompensa:</Text>
               <Text style={styles.detailText}>{card.loyaltyCard.rewardDescription}</Text>
+            </View>{" "}
+            <View style={styles.detailRow}>
+              <Text style={styles.detailLabel}>📱 Para obtener un sello:</Text>
+              <Text style={styles.detailText}>
+                Presenta tu número de cliente <Text style={[styles.detailText, { fontWeight: "bold" }]}>#{card.cardCode}</Text> al negocio para recibir un sello
+              </Text>
             </View>
           </View>
           {/* Action Buttons */}
@@ -344,6 +350,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     margin: SPACING.sm,
     padding: SPACING.lg,
+    paddingBottom: SPACING.xs,
     borderRadius: 12,
   },
   statusTitle: {

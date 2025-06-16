@@ -371,6 +371,44 @@ export class BusinessService {
       throw new Error(error.message || "Error al obtener los negocios");
     }
   }
+  // Paginated businesses for better performance
+  static async getPaginatedBusinesses(page: number = 0, pageSize: number = 10): Promise<Business[]> {
+    try {
+      const offset = page * pageSize;
+      const q = query(
+        collection(db, FIREBASE_COLLECTIONS.BUSINESSES),
+        where("isActive", "==", true),
+        orderBy("name"),
+        limit(pageSize + offset) // Get all items up to the current page
+      );
+      const querySnapshot = await getDocs(q);
+
+      // Skip the items before the current page
+      const allResults = querySnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name,
+          description: data.description,
+          ownerId: data.ownerId,
+          logoUrl: data.logoUrl,
+          address: data.address,
+          phone: data.phone,
+          city: data.city,
+          instagram: data.instagram,
+          facebook: data.facebook,
+          tiktok: data.tiktok,
+          createdAt: data.createdAt.toDate(),
+          isActive: data.isActive,
+        };
+      });
+
+      // Return only the current page results
+      return allResults.slice(offset, offset + pageSize);
+    } catch (error: any) {
+      throw new Error(error.message || "Error al obtener los negocios");
+    }
+  }
   static async getBusiness(businessId: string): Promise<Business | null> {
     try {
       const docRef = doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId);
@@ -656,6 +694,63 @@ export class LoyaltyCardService {
 
   static async getLoyaltyCardsByBusiness(businessId: string): Promise<LoyaltyCard[]> {
     return this.getLoyaltyCardsByBusinessId(businessId);
+  }
+
+  // Batch fetch loyalty cards for multiple businesses
+  static async getLoyaltyCardsByBusinessIds(businessIds: string[]): Promise<LoyaltyCard[]> {
+    if (businessIds.length === 0) return [];
+
+    try {
+      // Firestore 'in' queries are limited to 10 items, so we need to batch
+      const batchSize = 10;
+      const batches: Promise<LoyaltyCard[]>[] = [];
+
+      for (let i = 0; i < businessIds.length; i += batchSize) {
+        const batchIds = businessIds.slice(i, i + batchSize);
+        const batchPromise = this.getLoyaltyCardsBatch(batchIds);
+        batches.push(batchPromise);
+      }
+
+      const batchResults = await Promise.all(batches);
+      return batchResults.flat();
+    } catch (error: any) {
+      throw new Error(error.message || "Error al obtener las tarjetas de fidelidad");
+    }
+  }
+
+  private static async getLoyaltyCardsBatch(businessIds: string[]): Promise<LoyaltyCard[]> {
+    const q = query(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), where("businessId", "in", businessIds), orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+
+    // Get business information for all businesses in batch
+    const businessesMap = new Map<string, Business>();
+    const uniqueBusinessIds = Array.from(new Set(businessIds));
+
+    await Promise.all(
+      uniqueBusinessIds.map(async (businessId) => {
+        const business = await BusinessService.getBusiness(businessId);
+        if (business) {
+          businessesMap.set(businessId, business);
+        }
+      })
+    );
+
+    return querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      const business = businessesMap.get(data.businessId);
+      return {
+        id: doc.id,
+        businessId: data.businessId,
+        businessName: business?.name || "",
+        businessLogo: business?.logoUrl,
+        totalSlots: data.totalSlots,
+        rewardDescription: data.rewardDescription,
+        cardColor: data.cardColor,
+        stampShape: data.stampShape,
+        createdAt: data.createdAt.toDate(),
+        isActive: data.isActive,
+      };
+    });
   }
 }
 
@@ -1206,7 +1301,6 @@ export class StampActivityService {
         ...(note && { note }),
       };
 
-      console.log("createStampActivity: Adding document with data:", stampActivityData);
       console.log("createStampActivity: Adding document with data:", stampActivityData);
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY), stampActivityData);
       console.log("createStampActivity: Document added successfully with ID:", docRef.id);

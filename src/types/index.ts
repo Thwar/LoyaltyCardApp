@@ -107,7 +107,7 @@ export type AuthStackParamList = {
 };
 
 export type CustomerTabParamList = {
-  Home: undefined;
+  Home: { refresh?: boolean; timestamp?: number } | undefined;
   Discovery: undefined;
   Profile: undefined;
 };

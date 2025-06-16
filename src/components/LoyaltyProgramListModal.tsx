@@ -48,16 +48,57 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
               </View>
               <View style={styles.businessDetailsModal}>
                 <Text style={styles.businessNameLarge}>{selectedBusiness.name}</Text>
-                {selectedBusiness.city && (
-                  <Text style={styles.businessCityLarge}>
-                    <Ionicons name="location" size={16} />
-                    {selectedBusiness.city}
-                  </Text>
+                {/* Address */}
+                {selectedBusiness.address && (
+                  <View style={styles.addressContainer}>
+                    <Ionicons name="location" size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.addressText}>{selectedBusiness.address}</Text>
+                  </View>
                 )}
-                <Text style={styles.businessDescriptionLarge}>{selectedBusiness.description}</Text>
+                {/* City Badge */}
+                {selectedBusiness.city && (
+                  <View style={styles.cityBadge}>
+                    <Text style={styles.cityBadgeText}>{selectedBusiness.city}</Text>
+                  </View>
+                )}
+                {/* Phone */}
+                {selectedBusiness.phone && (
+                  <View style={styles.contactItem}>
+                    <Ionicons name="call" size={16} color={COLORS.textSecondary} />
+                    <Text style={styles.contactText}>{selectedBusiness.phone}</Text>
+                  </View>
+                )}
               </View>
             </View>
-          </View>{" "}
+            {/* Description and Social Media in new line below */}
+            <View style={styles.descriptionSocialContainer}>
+              <Text style={styles.businessDescriptionLarge}>{selectedBusiness.description}</Text>
+
+              {/* Social Media Card */}
+              {(selectedBusiness.facebook || selectedBusiness.instagram || selectedBusiness.tiktok) && (
+                <View style={styles.socialMediaTextContainer}>
+                  {selectedBusiness.facebook && (
+                    <View style={styles.socialMediaRow}>
+                      <Ionicons name="logo-facebook" size={18} color="#1877F2" />
+                      <Text style={styles.socialMediaText}>Facebook: {selectedBusiness.facebook}</Text>
+                    </View>
+                  )}
+                  {selectedBusiness.instagram && (
+                    <View style={styles.socialMediaRow}>
+                      <Ionicons name="logo-instagram" size={18} color="#E4405F" />
+                      <Text style={styles.socialMediaText}>Instagram: {selectedBusiness.instagram}</Text>
+                    </View>
+                  )}
+                  {selectedBusiness.tiktok && (
+                    <View style={styles.socialMediaRow}>
+                      <Ionicons name="logo-tiktok" size={18} color="#000000" />
+                      <Text style={styles.socialMediaText}>TikTok: {selectedBusiness.tiktok}</Text>
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          </View>
           <View style={styles.loyaltyCardsSection}>
             <Text style={styles.sectionTitle}>Programas de Lealtad ({selectedBusiness.loyaltyCards.length})</Text>
             {selectedBusiness.loyaltyCards.map((loyaltyCard) => {
@@ -115,13 +156,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   businessInfoSection: {
-    backgroundColor: COLORS.white,
-    padding: SPACING.lg,
     marginBottom: SPACING.sm,
+    backgroundColor: COLORS.surface,
+    padding: SPACING.lg,
+    marginTop: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+    ...SHADOWS.small,
   },
   businessHeaderModal: {
     flexDirection: "row",
     alignItems: "flex-start",
+  },
+  descriptionSocialContainer: {
+    marginTop: SPACING.md,
   },
   logoContainer: {
     marginRight: SPACING.md,
@@ -136,6 +184,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  socialMediaTextContainer: {
+    marginTop: SPACING.md,
+  },
+
+  socialMediaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  socialMediaText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.xs,
+  },
   businessDetailsModal: {
     flex: 1,
   },
@@ -144,6 +206,40 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.textPrimary,
     marginBottom: SPACING.xs,
+  },
+  addressContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  addressText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.xs,
+    flex: 1,
+  },
+  cityBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: 12,
+    marginBottom: SPACING.xs,
+  },
+  cityBadgeText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.white,
+    fontWeight: "600",
+  },
+  contactItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: SPACING.xs,
+  },
+  contactText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.xs,
   },
   businessCityLarge: {
     fontSize: FONT_SIZES.md,

@@ -2,19 +2,21 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, FlatList, RefreshControl, SafeAreaView, TouchableOpacity, Image } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
 import { AnimatedLoyaltyCard, LoadingState, EmptyState } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
-import { CustomerCard, LoyaltyCard as LoyaltyCardType } from "../../types";
+import { CustomerCard, LoyaltyCard as LoyaltyCardType, CustomerTabParamList } from "../../types";
 
 interface CustomerHomeScreenProps {
   navigation: StackNavigationProp<any>;
+  route: RouteProp<CustomerTabParamList, "Home">;
 }
 
-export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigation }) => {
+export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigation, route }) => {
   const { user } = useAuth();
   const [cards, setCards] = useState<CustomerCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,12 +46,11 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   };
   useFocusEffect(
     useCallback(() => {
-      // Only load cards on initial focus or if we haven't loaded initially
-      if (!hasLoadedInitially.current) {
-        loadCards();
-        hasLoadedInitially.current = true;
-      }
-    }, [user])
+      console.log("🏠 CustomerHomeScreen focused - refreshing cards, timestamp:", route?.params?.timestamp);
+      // Always load cards when screen comes into focus to ensure fresh data
+      loadCards();
+      hasLoadedInitially.current = true;
+    }, [user, route?.params?.timestamp]) // Include timestamp to trigger refresh when new card is added
   );
 
   const handleCardPress = (card: CustomerCard) => {

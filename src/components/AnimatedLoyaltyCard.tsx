@@ -135,7 +135,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({ card, 
       <View style={styles.rewardContainer}>
         {/* <Text style={styles.rewardLabel}>🎁</Text> */}
         <Text style={styles.rewardDescription} numberOfLines={2}>
-          🎁 Recompensa: {card.rewardDescription}
+          🎁 {card.rewardDescription}
         </Text>
       </View>
     </View>
