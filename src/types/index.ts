@@ -40,6 +40,7 @@ export interface CustomerCard {
   id: string;
   customerId: string;
   loyaltyCardId: string;
+  businessId: string; // Direct reference to business for efficient querying
   currentStamps: number;
   isRewardClaimed: boolean;
   createdAt: Date;

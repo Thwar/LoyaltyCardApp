@@ -8,6 +8,7 @@ import { Business, LoyaltyCard, CustomerCard } from "../types";
 interface BusinessWithCards extends Business {
   loyaltyCards: LoyaltyCard[];
   customerCards: CustomerCard[];
+  claimedRewardsCount: { [loyaltyCardId: string]: number };
 }
 
 interface BusinessDiscoveryCardProps {

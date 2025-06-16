@@ -112,7 +112,7 @@ export const StampShapePicker: React.FC<StampShapePickerProps> = ({ label, selec
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>{" "}
+      <Text style={styles.label}>{label}</Text>
       <View style={styles.carouselContainer}>
         <Carousel
           ref={carouselRef}

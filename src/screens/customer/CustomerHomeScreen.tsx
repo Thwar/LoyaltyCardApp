@@ -33,7 +33,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
       }
       setError(null);
 
-      const customerCards = await CustomerCardService.getCustomerCards(user.id);
+      const customerCards = await CustomerCardService.getUnclaimedRewardCustomerCards(user.id);
       setCards(customerCards);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load cards");

@@ -1,57 +1,65 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
 import { LoyaltyCard, CustomerCard } from "../types";
+import { StampsGrid } from "./StampsGrid";
 
 interface LoyaltyProgramItemProps {
   loyaltyCard: LoyaltyCard;
   hasCard: boolean;
   customerCard: CustomerCard | undefined;
+  claimedRewardsCount: number;
   joiningCard: string | null;
   onJoinProgram: (loyaltyCard: LoyaltyCard) => void;
   onViewCard: (customerCard: CustomerCard) => void;
 }
 
-export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({
-  loyaltyCard,
-  hasCard,
-  customerCard,
-  joiningCard,
-  onJoinProgram,
-  onViewCard,
-}) => {
+export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({ loyaltyCard, hasCard, customerCard, claimedRewardsCount, joiningCard, onJoinProgram, onViewCard }) => {
   return (
     <View style={styles.loyaltyCardItem}>
+      {" "}
       <View style={styles.loyaltyCardHeader}>
         <View style={styles.loyaltyCardInfo}>
-          <Text style={styles.loyaltyCardTitle}>Programa de Lealtad</Text>
-          <Text style={styles.rewardDescription}>
-            🎯 {loyaltyCard.rewardDescription}
-          </Text>
-          <Text style={styles.totalSlots}>
-            🎫 {loyaltyCard.totalSlots} sellos para completar
-          </Text>
+          <Text style={styles.totalSlots}>🎫 {loyaltyCard.totalSlots} sellos para completar</Text>
+          {claimedRewardsCount > 0 && (
+            <Text style={styles.claimedRewards}>
+              🏆 {claimedRewardsCount} recompensa{claimedRewardsCount !== 1 ? "s" : ""} obtenida{claimedRewardsCount !== 1 ? "s" : ""}
+            </Text>
+          )}
         </View>
         {hasCard && (
           <View style={styles.joinedBadge}>
-            <Ionicons
-              name="checkmark-circle"
-              size={16}
-              color={COLORS.success}
-            />
+            <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
             <Text style={styles.joinedText}>Unido</Text>
           </View>
         )}
       </View>
-
+      {/* Card Preview */}
+      <View style={styles.cardPreview}>
+        <LinearGradient
+          colors={[loyaltyCard.cardColor || COLORS.primary, loyaltyCard.cardColor ? `${loyaltyCard.cardColor}CC` : COLORS.primaryDark]}
+          style={styles.cardGradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardReward}>🎯 Recompensa: {loyaltyCard.rewardDescription}</Text>
+          </View>
+          <StampsGrid
+            totalSlots={loyaltyCard.totalSlots}
+            currentStamps={hasCard && customerCard ? customerCard.currentStamps : 0}
+            stampShape={loyaltyCard.stampShape || "circle"}
+            showAnimation={false}
+            size={loyaltyCard.totalSlots >= 7 ? "medium" : "large"}
+            stampColor={loyaltyCard.cardColor || COLORS.primary}
+            specialStampColor="white"
+            containerStyle={styles.stampsContainer}
+          />
+        </LinearGradient>
+      </View>
       <View style={styles.loyaltyCardActions}>
         {hasCard ? (
           <TouchableOpacity
@@ -67,11 +75,7 @@ export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({
           </TouchableOpacity>
         ) : (
           <TouchableOpacity
-            style={[
-              styles.actionButton,
-              styles.joinButton,
-              joiningCard === loyaltyCard.id && styles.disabledButton,
-            ]}
+            style={[styles.actionButton, styles.joinButton, joiningCard === loyaltyCard.id && styles.disabledButton]}
             onPress={() => onJoinProgram(loyaltyCard)}
             disabled={joiningCard === loyaltyCard.id}
           >
@@ -125,8 +129,15 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   totalSlots: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textPrimary,
+    fontWeight: "500",
+  },
+  claimedRewards: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
+    color: COLORS.success,
+    fontWeight: "500",
+    marginTop: SPACING.xs,
   },
   joinedBadge: {
     flexDirection: "row",
@@ -179,5 +190,37 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     marginLeft: SPACING.xs,
+  },
+  cardPreview: {
+    marginBottom: SPACING.md,
+  },
+  cardGradient: {
+    borderRadius: 12,
+    padding: SPACING.md,
+    minHeight: 120,
+  },
+  cardHeader: {
+    marginBottom: SPACING.sm,
+  },
+  cardBusinessName: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "700",
+    color: COLORS.white,
+    marginBottom: SPACING.xs,
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  cardReward: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.white,
+    fontWeight: "500",
+    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  stampsContainer: {
+    flex: 1,
+    marginTop: SPACING.xs,
   },
 });

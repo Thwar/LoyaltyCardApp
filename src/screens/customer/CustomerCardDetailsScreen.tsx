@@ -34,6 +34,7 @@ import Ionicons from "@expo/vector-icons/build/Ionicons";
 interface BusinessWithCards extends Business {
   loyaltyCards: LoyaltyCard[];
   customerCards: CustomerCard[];
+  claimedRewardsCount: { [loyaltyCardId: string]: number };
 }
 
 interface CustomerCardDetailsModalProps {
@@ -72,11 +73,9 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
     try {
       setBusinessLoading(true);
       console.log("Fetching fresh business data for:", businessId);
-      const startTime = performance.now();
-
-      // Execute all fetches in parallel for maximum efficiency
+      const startTime = performance.now(); // Execute all fetches in parallel for maximum efficiency
       console.log("Starting parallel fetch...");
-      const [business, loyaltyCards, customerCards] = await Promise.all([
+      const [business, loyaltyCards, allCustomerCards] = await Promise.all([
         BusinessService.getBusiness(businessId),
         LoyaltyCardService.getLoyaltyCardsByBusinessId(businessId),
         CustomerCardService.getCustomerCardsByBusiness(user.id, businessId),
@@ -84,7 +83,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
 
       const totalTime = performance.now();
       console.log(`All data fetched in parallel in ${totalTime - startTime}ms`);
-      console.log(`Found ${loyaltyCards.length} loyalty cards and ${customerCards.length} customer cards`);
+      console.log(`Found ${loyaltyCards.length} loyalty cards and ${allCustomerCards.length} customer cards`);
 
       if (!business) {
         showAlert({
@@ -94,10 +93,22 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
         return;
       }
 
+      // Filter unclaimed customer cards for display
+      const unclaimedCustomerCards = allCustomerCards.filter((card) => !card.isRewardClaimed);
+
+      // Calculate claimed rewards count per loyalty card
+      const claimedRewardsCount: { [loyaltyCardId: string]: number } = {};
+      allCustomerCards
+        .filter((card) => card.isRewardClaimed)
+        .forEach((card) => {
+          claimedRewardsCount[card.loyaltyCardId] = (claimedRewardsCount[card.loyaltyCardId] || 0) + 1;
+        });
+
       const businessWithCards: BusinessWithCards = {
         ...business,
         loyaltyCards,
-        customerCards,
+        customerCards: unclaimedCustomerCards,
+        claimedRewardsCount,
       };
 
       // Cache the result
@@ -144,7 +155,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
         });
 
         // Refresh the business data to show the new customer card
-        const allCustomerCards = await CustomerCardService.getCustomerCards(user.id);
+        const allCustomerCards = await CustomerCardService.getUnclaimedRewardCustomerCards(user.id);
         const customerCards = allCustomerCards.filter((customerCard) => customerCard.loyaltyCard?.businessId === selectedBusiness.id);
 
         const updatedBusiness = {
@@ -218,7 +229,6 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" transparent={false} onRequestClose={onClose}>
       <SafeAreaView style={styles.container}>
-        {" "}
         {/* Header with close button */}
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.backButton}>

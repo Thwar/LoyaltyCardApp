@@ -15,7 +15,8 @@ interface BusinessDiscoveryScreenProps {
 
 interface BusinessWithCards extends Business {
   loyaltyCards: LoyaltyCard[];
-  customerCards: CustomerCard[];
+  customerCards: CustomerCard[]; // Only unclaimed cards
+  claimedRewardsCount: { [loyaltyCardId: string]: number }; // Count of claimed rewards per loyalty card
 }
 
 export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = ({ navigation }) => {
@@ -31,7 +32,6 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     console.log("🔄 useEffect triggered - user:", user?.id || "No user");
     loadBusinessesWithCards();
   }, [user]);
-
   const generateUniqueCardCode = async (businessId: string, customerId: string): Promise<string> => {
     // Generate a random 3-digit code
     let code = "";
@@ -41,11 +41,12 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     do {
       code = Math.floor(100 + Math.random() * 900).toString();
       attempts++;
-      // Check if this code already exists for this business-customer combination
-      const existingCards = await CustomerCardService.getCustomerCards(customerId);
-      const hasExistingCode = existingCards.some((card) => card.loyaltyCard?.businessId === businessId && card.cardCode === code);
 
-      if (!hasExistingCode) {
+      // Check if this code already exists for this business where reward is not claimed
+      // This checks ALL customer cards for the business, not just the current customer's cards
+      const existingCard = await CustomerCardService.getUnclaimedCustomerCardByCodeAndBusiness(code, businessId);
+
+      if (!existingCard) {
         break;
       }
     } while (attempts < maxAttempts);
@@ -69,11 +70,13 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
 
       // Get all businesses
       const allBusinesses = await BusinessService.getAllBusinesses();
-      console.log("🏢 loadBusinessesWithCards: Found", allBusinesses.length, "total businesses");
+      console.log("🏢 loadBusinessesWithCards: Found", allBusinesses.length, "total businesses"); // Get customer's existing cards (all cards including claimed)
+      const allCustomerCards = await CustomerCardService.getAllCustomerCards(user.id);
+      console.log("🎫 loadBusinessesWithCards: Found", allCustomerCards.length, "total customer cards for user");
 
-      // Get customer's existing cards
-      const customerCards = await CustomerCardService.getCustomerCards(user.id);
-      console.log("🎫 loadBusinessesWithCards: Found", customerCards.length, "customer cards for user");
+      // Get only unclaimed customer cards for active display
+      const unclaimedCustomerCards = await CustomerCardService.getUnclaimedRewardCustomerCards(user.id);
+      console.log("🎫 loadBusinessesWithCards: Found", unclaimedCustomerCards.length, "unclaimed customer cards for user");
 
       const businessesWithCards = await Promise.all(
         allBusinesses.map(async (business) => {
@@ -82,18 +85,25 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
 
             // Get all loyalty cards for this business
             const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessId(business.id);
-            console.log("💳 Found", loyaltyCards.length, "loyalty cards for business:", business.name);
-
-            // Filter only active loyalty cards
+            console.log("💳 Found", loyaltyCards.length, "loyalty cards for business:", business.name); // Filter only active loyalty cards
             const activeLoyaltyCards = loyaltyCards.filter((card) => card.isActive);
 
-            // Get customer cards for this business
-            const businessCustomerCards = customerCards.filter((card) => card.loyaltyCard?.businessId === business.id);
+            // Get unclaimed customer cards for this business (for display)
+            const businessUnclaimedCards = unclaimedCustomerCards.filter((card) => card.loyaltyCard?.businessId === business.id);
+
+            // Calculate claimed rewards count per loyalty card for this business
+            const claimedRewardsCount: { [loyaltyCardId: string]: number } = {};
+            allCustomerCards
+              .filter((card) => card.loyaltyCard?.businessId === business.id && card.isRewardClaimed)
+              .forEach((card) => {
+                claimedRewardsCount[card.loyaltyCardId] = (claimedRewardsCount[card.loyaltyCardId] || 0) + 1;
+              });
 
             const result = {
               ...business,
               loyaltyCards: activeLoyaltyCards,
-              customerCards: businessCustomerCards,
+              customerCards: businessUnclaimedCards,
+              claimedRewardsCount,
             };
 
             console.log("📋 Final business object for", business.name, ":", result);
@@ -104,6 +114,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
               ...business,
               loyaltyCards: [],
               customerCards: [],
+              claimedRewardsCount: {},
             };
           }
         })
@@ -137,9 +148,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
 
       setNewCardCode(cardCode);
-      setModalVisible(true);
-
-      // Update only the specific business in state instead of reloading everything
+      setModalVisible(true); // Update only the specific business in state instead of reloading everything
       setBusinesses((prevBusinesses) =>
         prevBusinesses.map((business) => {
           if (business.id === loyaltyCard.businessId) {
@@ -151,6 +160,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
                   id: `temp-${Date.now()}`, // Temporary ID until next full refresh
                   customerId: user.id,
                   loyaltyCardId: loyaltyCard.id,
+                  businessId: loyaltyCard.businessId,
                   currentStamps: 0,
                   isRewardClaimed: false,
                   createdAt: new Date(),
@@ -158,6 +168,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
                   loyaltyCard: loyaltyCard,
                 },
               ],
+              claimedRewardsCount: business.claimedRewardsCount, // Preserve existing claimed rewards count
             };
           }
           return business;

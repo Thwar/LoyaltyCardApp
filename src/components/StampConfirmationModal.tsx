@@ -18,6 +18,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
   if (!customerCard) return null;
 
   const { loyaltyCard } = customerCard;
+  const isCardComplete = loyaltyCard && customerCard.currentStamps + 1 >= loyaltyCard.totalSlots;
 
   return (
     <Modal animationType="slide" transparent={false} visible={isVisible} onRequestClose={onClose}>
@@ -26,17 +27,17 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Confirmar Sello</Text>
+          <Text style={styles.modalTitle}>{isCardComplete ? "Canjear Recompensa" : "Confirmar Sello"}</Text>
           <View style={{ width: 24 }}>{loading && <ActivityIndicator size="small" color={COLORS.primary} />}</View>
         </View>
 
         <ScrollView style={styles.modalContent}>
           <View style={styles.confirmationSection}>
             <View style={styles.iconContainer}>
-              <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
+              <Ionicons name={isCardComplete ? "gift" : "checkmark-circle"} size={64} color={isCardComplete ? COLORS.warning : COLORS.success} />
             </View>
-            <Text style={styles.confirmationTitle}>¡Tarjeta de Cliente Encontrada!</Text>
-            <Text style={styles.confirmationSubtitle}>Revisa los detalles antes de agregar el sello</Text>
+            <Text style={styles.confirmationTitle}>{isCardComplete ? "¡Tarjeta Lista para Canjear!" : "¡Tarjeta de Cliente Encontrada!"}</Text>
+            <Text style={styles.confirmationSubtitle}>{isCardComplete ? "Esta tarjeta está lista para canjear la recompensa" : "Revisa los detalles antes de agregar el sello"}</Text>
           </View>
 
           <View style={styles.customerInfoSection}>
@@ -74,10 +75,9 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                     specialStampColor="darkgray"
                     stampColor={loyaltyCard.cardColor || COLORS.primary}
                   />
-
-                  <View style={styles.nextStampPreview}>
-                    <Text style={styles.previewLabel}>
-                      Después del sello: {customerCard.currentStamps + 1} de {loyaltyCard.totalSlots}
+                  <View style={[styles.nextStampPreview, isCardComplete && styles.completeCardPreview]}>
+                    <Text style={[styles.previewLabel, isCardComplete && styles.completeCardLabel]}>
+                      {isCardComplete ? "¡Listo para canjear!" : `Después del sello: ${customerCard.currentStamps + 1} de ${loyaltyCard.totalSlots}`}
                     </Text>
                     <StampsGrid
                       totalSlots={loyaltyCard.totalSlots}
@@ -101,12 +101,11 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                 <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
                 <>
-                  <Ionicons name="add-circle" size={20} color={COLORS.white} />
-                  <Text style={styles.confirmButtonText}>Agregar Sello</Text>
+                  <Ionicons name={isCardComplete ? "gift" : "add-circle"} size={20} color={COLORS.white} />
+                  <Text style={styles.confirmButtonText}>{isCardComplete ? "Canjear Recompensa" : "Agregar Sello"}</Text>
                 </>
               )}
             </TouchableOpacity>
-
             <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={onClose} disabled={loading}>
               <Text style={styles.cancelButtonText}>Cancelar</Text>
             </TouchableOpacity>
@@ -252,6 +251,14 @@ const styles = StyleSheet.create({
   },
   previewGrid: {
     marginBottom: 0,
+  },
+  completeCardPreview: {
+    backgroundColor: COLORS.success,
+    borderColor: COLORS.success,
+  },
+  completeCardLabel: {
+    color: COLORS.white,
+    fontWeight: "bold",
   },
   actionSection: {
     backgroundColor: COLORS.white,

@@ -121,7 +121,7 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
       <View style={styles.cardHeader}>
         <View style={styles.cardInfo}>
           <Text style={styles.cardTitle}>{card.businessName}</Text>
-          <Text style={styles.cardSubtitle}>Programa activo desde {formatCreatedDate(card.createdAt)}</Text>
+          <Text style={styles.cardSubtitle}>Activo desde {formatCreatedDate(card.createdAt)}</Text>
         </View>
         <View style={styles.cardActions}>
           <View style={[styles.statusBadge, card.isActive ? styles.activeBadge : styles.inactiveBadge]}>
@@ -129,7 +129,7 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
           </View>
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
-      </View>{" "}
+      </View>
       {/* Preview Section */}
       <View style={styles.previewContainer}>
         <Text style={styles.previewTitle}>Vista Previa</Text>

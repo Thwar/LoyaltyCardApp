@@ -248,7 +248,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                   labelStyle={{ fontSize: 16 }}
                 />
                 <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
-                <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />{" "}
+                <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
                 {/* Preview Section */}
                 <View style={styles.previewContainer}>
                   <Text style={styles.previewTitle}>Vista Previa</Text>

@@ -1,15 +1,5 @@
 import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  SafeAreaView,
-  Modal,
-  ActivityIndicator,
-  ScrollView,
-} from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
@@ -18,7 +8,8 @@ import { LoyaltyProgramItem } from "./LoyaltyProgramItem";
 
 interface BusinessWithCards extends Business {
   loyaltyCards: LoyaltyCard[];
-  customerCards: CustomerCard[];
+  customerCards: CustomerCard[]; // Only unclaimed cards
+  claimedRewardsCount: { [loyaltyCardId: string]: number }; // Count of claimed rewards per loyalty card
 }
 
 interface LoyaltyCardModalProps {
@@ -29,33 +20,18 @@ interface LoyaltyCardModalProps {
   onViewCard: (customerCard: CustomerCard) => void;
 }
 
-export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({
-  selectedBusiness,
-  joiningCard,
-  onClose,
-  onJoinProgram,
-  onViewCard,
-}) => {
+export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selectedBusiness, joiningCard, onClose, onJoinProgram, onViewCard }) => {
   if (!selectedBusiness) return null;
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={false}
-      visible={!!selectedBusiness}
-      onRequestClose={onClose}
-    >
+    <Modal animationType="slide" transparent={false} visible={!!selectedBusiness} onRequestClose={onClose}>
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>{selectedBusiness.name}</Text>
-          <View style={{ width: 24 }}>
-            {joiningCard && (
-              <ActivityIndicator size="small" color={COLORS.primary} />
-            )}
-          </View>
+          <View style={{ width: 24 }}>{joiningCard && <ActivityIndicator size="small" color={COLORS.primary} />}</View>
         </View>
 
         <ScrollView style={styles.modalContent}>
@@ -63,10 +39,7 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({
             <View style={styles.businessHeaderModal}>
               <View style={styles.logoContainer}>
                 {selectedBusiness.logoUrl ? (
-                  <Image
-                    source={{ uri: selectedBusiness.logoUrl }}
-                    style={styles.logoLarge}
-                  />
+                  <Image source={{ uri: selectedBusiness.logoUrl }} style={styles.logoLarge} />
                 ) : (
                   <View style={[styles.logoLarge, styles.logoPlaceholder]}>
                     <Ionicons name="business" size={40} color={COLORS.gray} />
@@ -74,37 +47,23 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({
                 )}
               </View>
               <View style={styles.businessDetailsModal}>
-                <Text style={styles.businessNameLarge}>
-                  {selectedBusiness.name}
-                </Text>
+                <Text style={styles.businessNameLarge}>{selectedBusiness.name}</Text>
                 {selectedBusiness.city && (
                   <Text style={styles.businessCityLarge}>
-                    <Ionicons
-                      name="location"
-                      size={16}
-                      color={COLORS.textSecondary}
-                    />
+                    <Ionicons name="location" size={16} />
                     {selectedBusiness.city}
                   </Text>
                 )}
-                <Text style={styles.businessDescriptionLarge}>
-                  {selectedBusiness.description}
-                </Text>
+                <Text style={styles.businessDescriptionLarge}>{selectedBusiness.description}</Text>
               </View>
             </View>
-          </View>
-
+          </View>{" "}
           <View style={styles.loyaltyCardsSection}>
-            <Text style={styles.sectionTitle}>
-              Programas de Lealtad ({selectedBusiness.loyaltyCards.length})
-            </Text>
+            <Text style={styles.sectionTitle}>Programas de Lealtad ({selectedBusiness.loyaltyCards.length})</Text>
             {selectedBusiness.loyaltyCards.map((loyaltyCard) => {
-              const hasCard = selectedBusiness.customerCards.some(
-                (card) => card.loyaltyCardId === loyaltyCard.id
-              );
-              const customerCard = selectedBusiness.customerCards.find(
-                (card) => card.loyaltyCardId === loyaltyCard.id
-              );
+              const hasCard = selectedBusiness.customerCards.some((card) => card.loyaltyCardId === loyaltyCard.id);
+              const customerCard = selectedBusiness.customerCards.find((card) => card.loyaltyCardId === loyaltyCard.id);
+              const claimedRewardsCount = selectedBusiness.claimedRewardsCount[loyaltyCard.id] || 0;
 
               return (
                 <LoyaltyProgramItem
@@ -112,6 +71,7 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({
                   loyaltyCard={loyaltyCard}
                   hasCard={hasCard}
                   customerCard={customerCard}
+                  claimedRewardsCount={claimedRewardsCount}
                   joiningCard={joiningCard}
                   onJoinProgram={onJoinProgram}
                   onViewCard={onViewCard}

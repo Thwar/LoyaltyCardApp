@@ -55,7 +55,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
 
       for (const loyaltyCard of loyaltyCards) {
         console.log("Getting customer cards for loyalty card:", loyaltyCard.id);
-        const customerCards = await CustomerCardService.getCustomerCardsByLoyaltyCard(loyaltyCard.id);
+        const customerCards = await CustomerCardService.getActiveCustomerCardsWithUnclaimedRewards(loyaltyCard.id);
         console.log("Found customer cards:", customerCards.length);
         allCustomerCards.push(...customerCards);
       }

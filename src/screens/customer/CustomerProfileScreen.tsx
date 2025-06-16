@@ -42,12 +42,11 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
       loadStats();
     }
   }, [user]);
-
   const loadStats = async () => {
     if (!user) return;
 
     try {
-      const customerCards = await CustomerCardService.getCustomerCards(user.id);
+      const customerCards = await CustomerCardService.getAllCustomerCards(user.id);
       const totalCards = customerCards.length;
       const totalStamps = customerCards.reduce((sum, card) => sum + card.currentStamps, 0);
       const totalRewards = customerCards.filter((card) => card.isRewardClaimed).length;

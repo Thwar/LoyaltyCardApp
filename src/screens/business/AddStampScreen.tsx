@@ -40,7 +40,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
     setError("");
     try {
       // Find customer card by card code and business ID
-      const foundCustomerCard = await CustomerCardService.getCustomerCardByCodeAndBusiness(cardCode.trim(), businessId);
+      const foundCustomerCard = await CustomerCardService.getUnclaimedCustomerCardByCodeAndBusiness(cardCode.trim(), businessId);
 
       if (!foundCustomerCard) {
         setError("Código de tarjeta inválido o no pertenece a este negocio");
@@ -78,34 +78,51 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
       setLoading(false);
     }
   };
-
   const handleConfirmAddStamp = async () => {
     if (!customerCard) return;
 
     setAddingStamp(true);
     try {
-      await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), businessId);
+      const isCardComplete = customerCard.loyaltyCard && customerCard.currentStamps + 1 >= customerCard.loyaltyCard.totalSlots;
 
-      setShowConfirmationModal(false);
-      setCustomerCard(null);
+      if (isCardComplete) {
+        // Claim reward (which will add final stamp if needed and mark as claimed)
+        await CustomerCardService.claimRewardByCardCodeAndBusiness(cardCode.trim(), businessId);
 
-      showAlert({
-        title: "¡Sello Agregado!",
-        message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}.`,
-        buttons: [
-          {
-            text: "Ok",
-            onPress: () => setCardCode(""),
-          },
-          // {
-          //   text: "Listo",
-          //   onPress: () => hideAlert(),
-          // },
-        ],
-      });
+        setShowConfirmationModal(false);
+        setCustomerCard(null);
+
+        showAlert({
+          title: "¡Recompensa Canjeada!",
+          message: `Recompensa canjeada exitosamente para ${customerCard.customerName || "el cliente"}. La tarjeta está completa.`,
+          buttons: [
+            {
+              text: "Ok",
+              onPress: () => setCardCode(""),
+            },
+          ],
+        });
+      } else {
+        // Add regular stamp
+        await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), businessId);
+
+        setShowConfirmationModal(false);
+        setCustomerCard(null);
+
+        showAlert({
+          title: "¡Sello Agregado!",
+          message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}.`,
+          buttons: [
+            {
+              text: "Ok",
+              onPress: () => setCardCode(""),
+            },
+          ],
+        });
+      }
     } catch (err) {
-      console.log("Error adding stamp:", err);
-      let errorMessage = "Error al agregar sello";
+      console.log("Error adding stamp or claiming reward:", err);
+      let errorMessage = "Error al procesar la tarjeta";
       if (err instanceof Error) {
         errorMessage = err.message;
       }

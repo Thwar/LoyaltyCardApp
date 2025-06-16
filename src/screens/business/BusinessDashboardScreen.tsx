@@ -67,18 +67,22 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         const uniqueCustomers = new Set<string>();
 
         for (const card of loyaltyCards) {
-          const customerCards = await CustomerCardService.getCustomerCardsByLoyaltyCard(card.id);
+          const customerCards = await CustomerCardService.getAllCustomerCardsByLoyaltyCard(card.id);
           console.log(`Customer cards for loyalty card ${card.id}:`, customerCards.length, customerCards);
 
           customerCards.forEach((customerCard) => {
             totalStamps += customerCard.currentStamps;
             // Count each unique customer who has joined the loyalty program
-            uniqueCustomers.add(customerCard.customerId);
-            if (customerCard.isRewardClaimed) claimedRewards++;
+
+            if (customerCard.isRewardClaimed) {
+              claimedRewards++;
+            } else {
+              uniqueCustomers.add(customerCard.customerId);
+            }
           });
         }
 
-        // Active customers = total unique customers who have joined any loyalty program
+        // Active customers = total unique customers who have joined any loyalty program and not claimed rewards
         activeCustomers = uniqueCustomers.size;
 
         console.log("Final stats:", {
