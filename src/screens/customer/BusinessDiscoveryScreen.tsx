@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, SafeAreaView, Modal, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import { RouteProp } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
@@ -11,6 +13,7 @@ import { Business, LoyaltyCard, CustomerCard } from "../../types";
 
 interface BusinessDiscoveryScreenProps {
   navigation: StackNavigationProp<any>;
+  route?: RouteProp<any>;
 }
 
 interface BusinessWithCards extends Business {
@@ -26,7 +29,7 @@ const MAX_CODE_GENERATION_ATTEMPTS = 1000;
 // Helper function for generating card codes
 const generateRandomCode = (): string => Math.floor(100 + Math.random() * 900).toString();
 
-export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = ({ navigation }) => {
+export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = ({ navigation, route }) => {
   const { user } = useAuth();
   const [businesses, setBusinesses] = useState<BusinessWithCards[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,10 +47,33 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     unclaimedCards: CustomerCard[];
     timestamp: number;
   } | null>(null);
+
+  // Function to clear customer cards cache
+  const clearCustomerCardsCache = useCallback(() => {
+    console.log("🗑️ Clearing customer cards cache");
+    setCustomerCardsCache(null);
+  }, []);
+
   useEffect(() => {
     console.log("🔄 useEffect triggered - user:", user?.id || "No user");
     loadInitialData();
   }, [user]);
+
+  // Clear cache when screen comes into focus to ensure fresh data after stamps/rewards
+  useFocusEffect(
+    useCallback(() => {
+      console.log("🔄 BusinessDiscoveryScreen focused - clearing cache for fresh data");
+
+      // Check if we have route params indicating a refresh is needed
+      const shouldRefresh = route?.params?.refresh || route?.params?.timestamp;
+      if (shouldRefresh) {
+        console.log("📱 BusinessDiscoveryScreen refresh requested via navigation params");
+      }
+
+      // Always clear cache on focus to ensure fresh data
+      clearCustomerCardsCache();
+    }, [clearCustomerCardsCache, route?.params])
+  );
 
   // Memoized customer cards data to avoid redundant API calls
   const getCustomerCardsData = useCallback(
@@ -295,47 +321,8 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     });
   };
 
-  const refreshBusinessData = useCallback(
-    async (business: BusinessWithCards): Promise<BusinessWithCards> => {
-      if (!user) return business;
-
-      try {
-        console.log("🔄 Refreshing business data for:", business.name);
-
-        // Get fresh customer cards data
-        const { allCards: allCustomerCards, unclaimedCards: unclaimedCustomerCards } = await getCustomerCardsData(true);
-
-        // Get fresh loyalty cards for this business
-        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessIds([business.id]);
-
-        // Use the unified processing function
-        const refreshedBusiness = processBusinessWithCards(business, loyaltyCards, allCustomerCards, unclaimedCustomerCards);
-
-        console.log("✅ Business data refreshed for:", business.name);
-        return refreshedBusiness;
-      } catch (error) {
-        console.error("❌ Error refreshing business data:", error);
-        return business; // Return original business on error
-      }
-    },
-    [user, getCustomerCardsData, processBusinessWithCards]
-  );
-
   const handleBusinessPress = async (business: BusinessWithCards) => {
-    console.log("🔄 Business pressed, refreshing data for:", business.name);
-
-    try {
-      // Refresh the business data before setting it as selected
-      const refreshedBusiness = await refreshBusinessData(business);
-      setSelectedBusiness(refreshedBusiness);
-
-      // Also update the business in the main list to keep everything in sync
-      setBusinesses((prevBusinesses) => prevBusinesses.map((b) => (b.id === business.id ? refreshedBusiness : b)));
-    } catch (error) {
-      console.error("❌ Error refreshing business data on press:", error);
-      // Still open the modal with existing data if refresh fails
-      setSelectedBusiness(business);
-    }
+    setSelectedBusiness(business);
   };
 
   const onRefresh = useCallback(async () => {
@@ -519,20 +506,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: COLORS.textPrimary,
     marginBottom: 8,
-  },
-  businessCity: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-    marginBottom: 4,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  businessCityLarge: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-    flexDirection: "row",
-    alignItems: "center",
   },
   businessDescription: {
     fontSize: FONT_SIZES.sm,

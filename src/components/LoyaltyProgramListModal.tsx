@@ -25,55 +25,61 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
 
   return (
     <Modal animationType="slide" transparent={false} visible={!!selectedBusiness} onRequestClose={onClose}>
-      <SafeAreaView style={styles.modalContainer}>
-        <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.modalTitle}>{selectedBusiness.name}</Text>
-          <View style={{ width: 24 }}>{joiningCard && <ActivityIndicator size="small" color={COLORS.primary} />}</View>
-        </View>
-
+      <View style={styles.modalContainer}>
         <ScrollView style={styles.modalContent}>
-          <View style={styles.businessInfoSection}>
-            <View style={styles.businessHeaderModal}>
-              <View style={styles.logoContainer}>
-                {selectedBusiness.logoUrl ? (
-                  <Image source={{ uri: selectedBusiness.logoUrl }} style={styles.logoLarge} />
-                ) : (
-                  <View style={[styles.logoLarge, styles.logoPlaceholder]}>
-                    <Ionicons name="business" size={40} color={COLORS.gray} />
-                  </View>
-                )}
+          <View style={styles.logoContainer}>
+            {selectedBusiness.logoUrl ? (
+              <Image source={{ uri: selectedBusiness.logoUrl }} style={styles.logoLarge} />
+            ) : (
+              <View style={[styles.logoLarge, styles.logoPlaceholder]}>
+                <Ionicons name="business" size={40} color={COLORS.gray} />
               </View>
-              <View style={styles.businessDetailsModal}>
-                <Text style={styles.businessNameLarge}>{selectedBusiness.name}</Text>
-                {/* Address */}
-                {selectedBusiness.address && (
-                  <View style={styles.addressContainer}>
-                    <Ionicons name="location" size={16} color={COLORS.textSecondary} />
-                    <Text style={styles.addressText}>{selectedBusiness.address}</Text>
-                  </View>
-                )}
+            )}
+
+            {/* Overlay elements */}
+            <SafeAreaView style={styles.overlayContainer}>
+              <View style={styles.overlayHeader}>
+                <TouchableOpacity onPress={onClose} style={styles.overlayBackButton}>
+                  <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+                </TouchableOpacity>
+                <View style={styles.overlayTitleContainer}>{joiningCard && <ActivityIndicator size="small" color={COLORS.white} />}</View>
+              </View>
+              <View style={styles.overlayTitleSection}>
+                <Text style={styles.overlayTitle}>{selectedBusiness.name}</Text>
                 {/* City Badge */}
                 {selectedBusiness.city && (
                   <View style={styles.cityBadge}>
                     <Text style={styles.cityBadgeText}>{selectedBusiness.city}</Text>
                   </View>
                 )}
-                {/* Phone */}
-                {selectedBusiness.phone && (
-                  <View style={styles.contactItem}>
-                    <Ionicons name="call" size={16} color={COLORS.textSecondary} />
-                    <Text style={styles.contactText}>{selectedBusiness.phone}</Text>
-                  </View>
-                )}
               </View>
-            </View>
+            </SafeAreaView>
+          </View>
+
+          <View style={styles.businessInfoSection}>
             {/* Description and Social Media in new line below */}
-            <View style={styles.descriptionSocialContainer}>
+            <View>
               <Text style={styles.businessDescriptionLarge}>{selectedBusiness.description}</Text>
 
+              <View style={styles.businessHeaderModal}>
+                <View style={styles.businessDetailsModal}>
+                  {/* Address */}
+                  {selectedBusiness.address && (
+                    <View style={styles.addressContainer}>
+                      <Ionicons name="location" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.addressText}>{selectedBusiness.address}</Text>
+                    </View>
+                  )}
+
+                  {/* Phone */}
+                  {selectedBusiness.phone && (
+                    <View style={styles.contactItem}>
+                      <Ionicons name="call" size={16} color={COLORS.textSecondary} />
+                      <Text style={styles.contactText}>{selectedBusiness.phone}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
               {/* Social Media Card */}
               {(selectedBusiness.facebook || selectedBusiness.instagram || selectedBusiness.tiktok) && (
                 <View style={styles.socialMediaTextContainer}>
@@ -121,7 +127,7 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
             })}
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 };
@@ -131,27 +137,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.inputBorder,
-    backgroundColor: COLORS.white,
-  },
-  backButton: {
-    padding: SPACING.xs,
-  },
-  modalTitle: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "bold",
-    color: COLORS.textPrimary,
-    flex: 1,
-    textAlign: "center",
-    marginHorizontal: SPACING.md,
-  },
   modalContent: {
     flex: 1,
   },
@@ -159,30 +144,66 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
     backgroundColor: COLORS.surface,
     padding: SPACING.lg,
-    marginTop: SPACING.md,
+
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
     ...SHADOWS.small,
   },
   businessHeaderModal: {
-    flexDirection: "row",
+    marginTop: SPACING.sm,
     alignItems: "flex-start",
   },
-  descriptionSocialContainer: {
-    marginTop: SPACING.md,
-  },
+
   logoContainer: {
-    marginRight: SPACING.md,
+    position: "relative",
   },
   logoLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 12,
+    width: "100%",
+    height: 200,
+    resizeMode: "cover",
   },
   logoPlaceholder: {
     backgroundColor: COLORS.lightGray,
     justifyContent: "center",
     alignItems: "center",
+  },
+  overlayContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+    justifyContent: "space-between",
+  },
+  overlayHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  overlayBackButton: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 20,
+    padding: SPACING.sm,
+    ...SHADOWS.small,
+  },
+  overlayTitleContainer: {
+    width: 24,
+    alignItems: "center",
+  },
+  overlayTitleSection: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.lg,
+    alignItems: "flex-start",
+  },
+  overlayTitle: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: "bold",
+    color: COLORS.white,
+    textShadowColor: "rgba(0, 0, 0, 0.7)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   socialMediaTextContainer: {
     marginTop: SPACING.md,
@@ -200,6 +221,7 @@ const styles = StyleSheet.create({
   },
   businessDetailsModal: {
     flex: 1,
+    width: "100%",
   },
   businessNameLarge: {
     fontSize: FONT_SIZES.xl,
@@ -224,7 +246,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs / 2,
     borderRadius: 12,
-    marginBottom: SPACING.xs,
+    marginTop: SPACING.xs,
   },
   cityBadgeText: {
     fontSize: FONT_SIZES.xs,

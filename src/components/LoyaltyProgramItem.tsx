@@ -98,7 +98,7 @@ export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({ loyaltyC
 
 const styles = StyleSheet.create({
   loyaltyCardItem: {
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: "#E3E8EF",
     borderRadius: 20,

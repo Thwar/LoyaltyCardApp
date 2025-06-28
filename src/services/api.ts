@@ -1262,6 +1262,18 @@ export class CustomerCardService {
       throw new Error(error.message || "Error al obtener todas las tarjetas del cliente por tarjeta de fidelidad");
     }
   }
+
+  // Get redemption count for a specific customer and loyalty card
+  static async getRedemptionCount(customerId: string, loyaltyCardId: string): Promise<number> {
+    try {
+      const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("customerId", "==", customerId), where("loyaltyCardId", "==", loyaltyCardId), where("isRewardClaimed", "==", true));
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.size;
+    } catch (error: any) {
+      console.error("Error getting redemption count:", error);
+      return 0; // Return 0 if there's an error
+    }
+  }
 }
 
 // Stamp Activity Service

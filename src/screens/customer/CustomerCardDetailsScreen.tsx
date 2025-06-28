@@ -25,7 +25,7 @@ import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { Button, AnimatedLoyaltyCard, LoadingState, useAlert, LoyaltyProgramListModal } from "../../components";
-import { COLORS, FONT_SIZES, SPACING } from "../../constants";
+import { COLORS, FONT_SIZES, SHADOWS, SPACING } from "../../constants";
 import { CustomerCardService, BusinessService, LoyaltyCardService } from "../../services/api";
 import { CustomerCard, CustomerStackParamList, Business, LoyaltyCard } from "../../types";
 import { useAuth } from "../../context/AuthContext";
@@ -52,6 +52,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
   const [businessLoading, setBusinessLoading] = useState(false);
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessWithCards | null>(null);
   const [joiningCard, setJoiningCard] = useState<string | null>(null);
+  const [redemptionCount, setRedemptionCount] = useState<number>(0);
 
   // Simple cache for business data to avoid repeated fetches
   const [businessCache, setBusinessCache] = useState<Record<string, BusinessWithCards>>({});
@@ -210,9 +211,22 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
     }
   };
 
+  const fetchRedemptionCount = async () => {
+    if (!user || !card.loyaltyCard) return;
+
+    try {
+      const count = await CustomerCardService.getRedemptionCount(user.id, card.loyaltyCard.id);
+      setRedemptionCount(count);
+    } catch (error) {
+      console.error("Error fetching redemption count:", error);
+      // Don't show error to user as this is supplementary information
+    }
+  };
+
   useEffect(() => {
     if (visible) {
       refreshCard();
+      fetchRedemptionCount();
     }
   }, [visible]);
 
@@ -270,6 +284,10 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
                 <Text style={styles.statusValue}>{new Date(card.lastStampDate).toLocaleDateString()}</Text>
               </View>
             )}
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Recompensas Canjeadas:</Text>
+              <Text style={styles.statusValue}>{redemptionCount} veces</Text>
+            </View>
           </View>
           {/* Card Details */}
           <View style={styles.detailsContainer}>
@@ -347,9 +365,11 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   statusContainer: {
-    backgroundColor: COLORS.white,
-    margin: SPACING.sm,
-    padding: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    ...SHADOWS.small,
+    margin: SPACING.md,
+    marginBottom: SPACING.sm,
+    padding: SPACING.md,
     paddingBottom: SPACING.xs,
     borderRadius: 12,
   },
@@ -378,10 +398,12 @@ const styles = StyleSheet.create({
     color: COLORS.success,
   },
   detailsContainer: {
-    backgroundColor: COLORS.white,
-    margin: SPACING.sm,
-    padding: SPACING.lg,
+    backgroundColor: COLORS.surface,
+    ...SHADOWS.small,
+    margin: SPACING.md,
+    padding: SPACING.md,
     borderRadius: 12,
+    marginBottom: SPACING.xs,
   },
   detailsTitle: {
     fontSize: FONT_SIZES.lg,
