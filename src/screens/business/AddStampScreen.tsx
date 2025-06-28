@@ -23,7 +23,6 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [addingStamp, setAddingStamp] = useState(false);
 
-  console.log("AddStampScreen: loyaltyCardId =", loyaltyCardId, "businessId =", businessId);
   const handleFindCustomerCard = async () => {
     if (!cardCode.trim()) {
       setError("Por favor ingrese el código de la tarjeta");
@@ -83,18 +82,18 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
 
     setAddingStamp(true);
     try {
-      const isCardComplete = customerCard.loyaltyCard && customerCard.currentStamps + 1 >= customerCard.loyaltyCard.totalSlots;
+      const willCompleteCard = customerCard.loyaltyCard && customerCard.currentStamps + 1 >= customerCard.loyaltyCard.totalSlots;
 
-      if (isCardComplete) {
-        // Claim reward (which will add final stamp if needed and mark as claimed)
-        await CustomerCardService.claimRewardByCardCodeAndBusiness(cardCode.trim(), businessId);
+      // Always just add a stamp - never auto-claim rewards
+      await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), businessId);
 
-        setShowConfirmationModal(false);
-        setCustomerCard(null);
+      setShowConfirmationModal(false);
+      setCustomerCard(null);
 
+      if (willCompleteCard) {
         showAlert({
-          title: "¡Recompensa Canjeada!",
-          message: `Recompensa canjeada exitosamente para ${customerCard.customerName || "el cliente"}. La tarjeta está completa.`,
+          title: "¡Tarjeta Completada!",
+          message: `Tarjeta completada exitosamente para ${customerCard.customerName || "el cliente"}. Ahora puede canjear su recompensa en la próxima visita.`,
           buttons: [
             {
               text: "Ok",
@@ -103,12 +102,6 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
           ],
         });
       } else {
-        // Add regular stamp
-        await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), businessId);
-
-        setShowConfirmationModal(false);
-        setCustomerCard(null);
-
         showAlert({
           title: "¡Sello Agregado!",
           message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}.`,
@@ -121,8 +114,45 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
         });
       }
     } catch (err) {
-      console.log("Error adding stamp or claiming reward:", err);
+      console.log("Error adding stamp:", err);
       let errorMessage = "Error al procesar la tarjeta";
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      showAlert({
+        title: "Error",
+        message: errorMessage,
+      });
+    } finally {
+      setAddingStamp(false);
+    }
+  };
+
+  const handleRedeemReward = async () => {
+    if (!customerCard) return;
+
+    setAddingStamp(true);
+    try {
+      // Call the redeem reward API
+      await CustomerCardService.claimRewardByCardCodeAndBusiness(cardCode.trim(), businessId);
+
+      setShowConfirmationModal(false);
+      setCustomerCard(null);
+
+      showAlert({
+        title: "¡Recompensa Canjeada!",
+        message: `Recompensa canjeada exitosamente para ${customerCard.customerName || "el cliente"}. ¡Gracias por su lealtad!`,
+        buttons: [
+          {
+            text: "Ok",
+            onPress: () => setCardCode(""),
+          },
+        ],
+      });
+    } catch (err) {
+      console.log("Error redeeming reward:", err);
+      let errorMessage = "Error al canjear la recompensa";
       if (err instanceof Error) {
         errorMessage = err.message;
       }
@@ -145,8 +175,8 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.title}>Agregar Sello</Text>
-          <Text style={styles.subtitle}>Agrega un sello a la tarjeta de lealtad de un cliente</Text>
+          <Text style={styles.title}>Gestionar Tarjeta</Text>
+          <Text style={styles.subtitle}>Agrega sellos o canjea recompensas de las tarjetas de lealtad</Text>
         </View>
         <View style={styles.form}>
           <InputField
@@ -164,7 +194,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
             <Text style={styles.instructionsText}>
               1. Solicita al cliente su código de tarjeta de 3 dígitos{"\n"}
               2. Ingrésalo arriba y presiona "Buscar Tarjeta"{"\n"}
-              3. Confirma los detalles del cliente y agrega el sello
+              3. Confirma los detalles y agrega sello o canjea recompensa según corresponda
             </Text>
           </View>
           <Button title="Buscar Tarjeta" onPress={handleFindCustomerCard} loading={loading} size="large" style={styles.addButton} />
@@ -189,7 +219,14 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
         </View>
       </View>
 
-      <StampConfirmationModal customerCard={customerCard} isVisible={showConfirmationModal} loading={addingStamp} onClose={handleCloseModal} onConfirmStamp={handleConfirmAddStamp} />
+      <StampConfirmationModal
+        customerCard={customerCard}
+        isVisible={showConfirmationModal}
+        loading={addingStamp}
+        onClose={handleCloseModal}
+        onConfirmStamp={handleConfirmAddStamp}
+        onRedeemReward={handleRedeemReward}
+      />
     </SafeAreaView>
   );
 };

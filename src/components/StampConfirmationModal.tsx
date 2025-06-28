@@ -12,13 +12,17 @@ interface StampConfirmationModalProps {
   loading: boolean;
   onClose: () => void;
   onConfirmStamp: () => void;
+  onRedeemReward?: () => void;
 }
 
-export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ customerCard, isVisible, loading, onClose, onConfirmStamp }) => {
+export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ customerCard, isVisible, loading, onClose, onConfirmStamp, onRedeemReward }) => {
   if (!customerCard) return null;
 
   const { loyaltyCard } = customerCard;
-  const isCardComplete = loyaltyCard && customerCard.currentStamps + 1 >= loyaltyCard.totalSlots;
+  const willCompleteCard = loyaltyCard && customerCard.currentStamps + 1 >= loyaltyCard.totalSlots;
+  const isCardComplete = loyaltyCard && customerCard.currentStamps >= loyaltyCard.totalSlots;
+  const canRedeem = isCardComplete && !customerCard.isRewardClaimed;
+  const isAlreadyRedeemed = isCardComplete && customerCard.isRewardClaimed;
 
   return (
     <Modal animationType="slide" transparent={false} visible={isVisible} onRequestClose={onClose}>
@@ -27,16 +31,30 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>{isCardComplete ? "Canjear Recompensa" : "Confirmar Sello"}</Text>
+          <Text style={styles.modalTitle}>{canRedeem ? "Canjear Recompensa" : isAlreadyRedeemed ? "Recompensa Canjeada" : willCompleteCard ? "Completar Tarjeta" : "Confirmar Sello"}</Text>
           <View style={{ width: 24 }}>{loading && <ActivityIndicator size="small" color={COLORS.primary} />}</View>
         </View>
         <ScrollView style={styles.modalContent}>
           <View style={styles.confirmationSection}>
             <View style={styles.iconContainer}>
-              <Ionicons name={isCardComplete ? "gift" : "checkmark-circle"} size={64} color={isCardComplete ? COLORS.warning : COLORS.success} />
+              <Ionicons
+                name={canRedeem ? "gift" : isAlreadyRedeemed ? "checkmark-done-circle" : willCompleteCard ? "star" : "checkmark-circle"}
+                size={64}
+                color={canRedeem ? COLORS.primary : isAlreadyRedeemed ? COLORS.success : willCompleteCard ? COLORS.warning : COLORS.success}
+              />
             </View>
-            <Text style={styles.confirmationTitle}>{isCardComplete ? "¡Tarjeta Lista para Canjear!" : "¡Tarjeta de Cliente Encontrada!"}</Text>
-            <Text style={styles.confirmationSubtitle}>{isCardComplete ? "Esta tarjeta está lista para canjear la recompensa" : "Revisa los detalles antes de agregar el sello"}</Text>
+            <Text style={styles.confirmationTitle}>
+              {canRedeem ? "¡Tarjeta Lista para Canjear!" : isAlreadyRedeemed ? "¡Recompensa Ya Canjeada!" : willCompleteCard ? "¡Tarjeta se Completará!" : "¡Tarjeta de Cliente Encontrada!"}
+            </Text>
+            <Text style={styles.confirmationSubtitle}>
+              {canRedeem
+                ? "El cliente puede reclamar su recompensa ahora"
+                : isAlreadyRedeemed
+                ? "Esta recompensa ya fue canjeada por el cliente"
+                : willCompleteCard
+                ? "Esta tarjeta estará lista para canjear en la próxima visita"
+                : "Revisa los detalles antes de agregar el sello"}
+            </Text>
           </View>
           <View style={styles.customerInfoSection}>
             <Text style={styles.sectionTitle}>Información del Cliente</Text>
@@ -60,6 +78,8 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                 <View style={styles.stampsSection}>
                   <Text style={styles.stampsLabel}>
                     Sellos Actuales: {customerCard.currentStamps} de {loyaltyCard.totalSlots}
+                    {canRedeem && " - ¡COMPLETA!"}
+                    {isAlreadyRedeemed && " - ¡CANJEADA!"}
                   </Text>
                   <StampsGrid
                     totalSlots={loyaltyCard.totalSlots}
@@ -69,40 +89,64 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                     size="medium"
                     containerStyle={styles.stampsGrid}
                     specialStampColor="darkgray"
+                    specialStampColorOutline={"darkgray"}
                     stampColor={loyaltyCard.cardColor || COLORS.primary}
                   />
-                  <View style={[styles.nextStampPreview, isCardComplete && styles.completeCardPreview]}>
-                    <Text style={[styles.previewLabel, isCardComplete && styles.completeCardLabel]}>
-                      {isCardComplete ? "¡Listo para canjear!" : `Después del sello: ${customerCard.currentStamps + 1} de ${loyaltyCard.totalSlots}`}
-                    </Text>
-                    <StampsGrid
-                      totalSlots={loyaltyCard.totalSlots}
-                      currentStamps={customerCard.currentStamps + 1}
-                      stampShape={loyaltyCard.stampShape || "circle"}
-                      showAnimation={false}
-                      size="small"
-                      containerStyle={styles.previewGrid}
-                      stampColor={loyaltyCard.cardColor || COLORS.primary}
-                      specialStampColor={"darkgray"}
-                    />
-                  </View>
+                  {!canRedeem && !isAlreadyRedeemed && (
+                    <View style={[styles.nextStampPreview, willCompleteCard && styles.completeCardPreview]}>
+                      <Text style={[styles.previewLabel, willCompleteCard && styles.completeCardLabel]}>
+                        {willCompleteCard ? "¡Listo para canjear en próxima visita!" : `Después del sello: ${customerCard.currentStamps + 1} de ${loyaltyCard.totalSlots}`}
+                      </Text>
+                      <StampsGrid
+                        totalSlots={loyaltyCard.totalSlots}
+                        currentStamps={customerCard.currentStamps + 1}
+                        stampShape={loyaltyCard.stampShape || "circle"}
+                        showAnimation={false}
+                        size="small"
+                        containerStyle={styles.previewGrid}
+                        stampColor={loyaltyCard.cardColor || COLORS.primary}
+                        specialStampColor={"darkgray"}
+                        specialStampColorOutline={"darkgray"}
+                      />
+                    </View>
+                  )}
+                  {(canRedeem || isAlreadyRedeemed) && (
+                    <View style={[styles.redeemSection, isAlreadyRedeemed && styles.redeemedSection]}>
+                      <Text style={[styles.redeemLabel, isAlreadyRedeemed && styles.redeemedLabel]}>{isAlreadyRedeemed ? "¡Recompensa ya canjeada!" : "¡Recompensa disponible para canjear!"}</Text>
+                      <View style={styles.rewardBox}>
+                        <Text style={styles.rewardText}>{loyaltyCard.rewardDescription}</Text>
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
           )}
           <View style={styles.actionSection}>
-            <TouchableOpacity style={[styles.actionButton, styles.confirmButton]} onPress={onConfirmStamp} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator size="small" color={COLORS.white} />
-              ) : (
-                <>
-                  <Ionicons name={isCardComplete ? "gift" : "add-circle"} size={20} color={COLORS.white} />
-                  <Text style={styles.confirmButtonText}>{isCardComplete ? "Canjear Recompensa" : "Agregar Sello"}</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {!isAlreadyRedeemed && (
+              <TouchableOpacity
+                style={[styles.actionButton, canRedeem ? styles.redeemButton : styles.confirmButton]}
+                onPress={canRedeem ? onRedeemReward || onConfirmStamp : onConfirmStamp}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color={COLORS.white} />
+                ) : (
+                  <>
+                    <Ionicons name={canRedeem ? "gift" : willCompleteCard ? "star" : "add-circle"} size={20} color={COLORS.white} />
+                    <Text style={styles.confirmButtonText}>{canRedeem ? "Canjear Recompensa" : willCompleteCard ? "Completar Tarjeta" : "Agregar Sello"}</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+            {isAlreadyRedeemed && (
+              <View style={[styles.actionButton, styles.redeemedButton]}>
+                <Ionicons name="checkmark-done-circle" size={20} color={COLORS.success} />
+                <Text style={styles.redeemedButtonText}>Recompensa Ya Canjeada</Text>
+              </View>
+            )}
             <TouchableOpacity style={[styles.actionButton, styles.cancelButton]} onPress={onClose} disabled={loading}>
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
+              <Text style={styles.cancelButtonText}>{isAlreadyRedeemed ? "Cerrar" : "Cancelar"}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -272,6 +316,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     ...SHADOWS.small,
   },
+  redeemButton: {
+    backgroundColor: COLORS.success,
+    ...SHADOWS.small,
+  },
   confirmButtonText: {
     fontSize: FONT_SIZES.md,
     fontWeight: "bold",
@@ -287,5 +335,48 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: "600",
     color: COLORS.textSecondary,
+  },
+  redeemSection: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: SPACING.md,
+    alignItems: "center",
+    marginTop: SPACING.md,
+  },
+  redeemLabel: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: "bold",
+    color: COLORS.white,
+    marginBottom: SPACING.sm,
+  },
+  rewardBox: {
+    backgroundColor: COLORS.white,
+    borderRadius: 6,
+    padding: SPACING.sm,
+    minWidth: "80%",
+    alignItems: "center",
+  },
+  rewardText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: "600",
+    color: COLORS.primary,
+    textAlign: "center",
+  },
+  redeemedSection: {
+    backgroundColor: COLORS.success,
+  },
+  redeemedLabel: {
+    color: COLORS.white,
+  },
+  redeemedButton: {
+    backgroundColor: COLORS.lightGray,
+    borderWidth: 1,
+    borderColor: COLORS.success,
+  },
+  redeemedButtonText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: "600",
+    color: COLORS.success,
+    marginLeft: SPACING.xs,
   },
 });

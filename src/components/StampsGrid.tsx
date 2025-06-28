@@ -15,6 +15,7 @@ interface StampsGridProps {
   stampColor?: string;
   showCheckmarks?: boolean;
   specialStampColor?: string;
+  specialStampColorOutline?: string;
 }
 
 const { width } = Dimensions.get("window");
@@ -29,6 +30,7 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
   stampColor = COLORS.primary,
   showCheckmarks = true,
   specialStampColor = "white",
+  specialStampColorOutline = "rgba(255, 255, 255, 0.7)",
 }) => {
   const stampAnimations = useRef<Animated.Value[]>([]).current;
 
@@ -169,7 +171,14 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
               },
             ]}
           >
-            {isStamped ? <Ionicons name="triangle" size={stampSize} color={specialStampColor} /> : <Ionicons name="triangle-outline" size={stampSize} color="rgba(128, 128, 128, 0.7)" />}
+            {isStamped ? (
+              <Ionicons name="triangle" size={stampSize} color={specialStampColor} />
+            ) : (
+              <View style={{ alignItems: "center", justifyContent: "center", position: "relative" }}>
+                <Ionicons name="triangle-outline" size={stampSize} color={specialStampColorOutline} />
+                <Text style={[styles.stampNumber, { fontSize: stampSize * 0.3, position: "absolute", bottom: 8, color: specialStampColorOutline }]}>{i + 1}</Text>
+              </View>
+            )}
           </Animated.View>
         );
       } // Star shape - use star icon always
@@ -189,7 +198,14 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
               },
             ]}
           >
-            {isStamped ? <Ionicons name="star" size={stampSize} color={specialStampColor} /> : <Ionicons name="star-outline" size={stampSize} color="rgba(128, 128, 128, 0.7)" />}
+            {isStamped ? (
+              <Ionicons name="star" size={stampSize} color={specialStampColor} />
+            ) : (
+              <View style={{ alignItems: "center", justifyContent: "center", position: "relative" }}>
+                <Ionicons name="star-outline" size={stampSize} color={specialStampColorOutline} />
+                <Text style={[styles.stampNumber, { fontSize: stampSize * 0.3, position: "absolute", bottom: stampSize == 48 ? 14 : 10, color: specialStampColorOutline }]}>{i + 1}</Text>
+              </View>
+            )}
           </Animated.View>
         );
       }
@@ -210,9 +226,13 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
               },
             ]}
           >
-            {showCheckmarks && (
-              <View style={{ transform: stampShape === "diamond" ? [{ rotate: "-45deg" }] : [] }}>{isStamped && <Ionicons name="checkmark" size={stampSize * 0.5} color={COLORS.white} />}</View>
-            )}
+            <View style={{ transform: stampShape === "diamond" ? [{ rotate: "-45deg" }] : [] }}>
+              {isStamped ? (
+                showCheckmarks && <Ionicons name="checkmark" size={stampSize * 0.5} color={COLORS.white} />
+              ) : (
+                <Text style={[styles.stampNumber, { fontSize: stampSize * 0.4 }]}>{i + 1}</Text>
+              )}
+            </View>
           </Animated.View>
         );
       }
@@ -254,5 +274,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 3,
     elevation: 2,
+  },
+  stampNumber: {
+    color: "rgba(128, 128, 128, 0.8)",
+    fontWeight: "600",
+    textAlign: "center",
   },
 });

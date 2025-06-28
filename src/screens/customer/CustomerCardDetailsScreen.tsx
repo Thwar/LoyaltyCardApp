@@ -281,7 +281,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>🎁 Recompensa:</Text>
               <Text style={styles.detailText}>{card.loyaltyCard.rewardDescription}</Text>
-            </View>{" "}
+            </View>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>📱 Para obtener un sello:</Text>
               <Text style={styles.detailText}>

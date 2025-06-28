@@ -160,7 +160,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
           {loyaltyCards.length === 0 && <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => setCreateModalVisible(true)} size="large" style={styles.actionButton} />}
           <Button
-            title="Agregar Sello a Cliente"
+            title="Gestionar Tarjetas de Clientes"
             onPress={() => {
               if (loyaltyCards.length > 0 && business) {
                 navigation.navigate("AddStamp", {

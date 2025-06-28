@@ -19,10 +19,12 @@ interface BusinessWithCards extends Business {
   claimedRewardsCount: { [loyaltyCardId: string]: number }; // Count of claimed rewards per loyalty card
 }
 
-// Cache for business data to avoid redundant API calls
-const businessCache = new Map<string, BusinessWithCards>();
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const BUSINESSES_PER_PAGE = 10;
+const MAX_CODE_GENERATION_ATTEMPTS = 1000;
+
+// Helper function for generating card codes
+const generateRandomCode = (): string => Math.floor(100 + Math.random() * 900).toString();
 
 export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
@@ -35,7 +37,6 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessWithCards | null>(null);
   const [joiningCard, setJoiningCard] = useState<string | null>(null);
   const [newCardCode, setNewCardCode] = useState<string>("");
-  const [lastFetchTimestamp, setLastFetchTimestamp] = useState<number>(0);
 
   // Memoized customer cards to avoid redundant calculations
   const [customerCardsCache, setCustomerCardsCache] = useState<{
@@ -89,8 +90,6 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
 
     try {
       setLoading(true);
-      businessCache.clear(); // Clear cache on initial load
-
       await loadBusinessesWithCards(true);
     } catch (error) {
       console.error("💥 Error loading initial data:", error);
@@ -153,104 +152,92 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     [user, getCustomerCardsData]
   );
 
-  // Process businesses in batches to improve performance
-  const procesBusinessesBatch = useCallback(async (businessesToProcess: Business[], allCustomerCards: CustomerCard[], unclaimedCustomerCards: CustomerCard[]): Promise<BusinessWithCards[]> => {
-    // Get all loyalty cards for all businesses in a single batch query
-    const businessIds = businessesToProcess.map((b) => b.id);
-    const allLoyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessIds(businessIds);
+  // Unified function to process business data with loyalty cards and customer cards
+  const processBusinessWithCards = useCallback((business: Business, loyaltyCards: LoyaltyCard[], allCustomerCards: CustomerCard[], unclaimedCustomerCards: CustomerCard[]): BusinessWithCards => {
+    try {
+      console.log("🔍 Processing business:", business.name, "(ID:", business.id, ")");
 
-    // Group loyalty cards by business ID
-    const loyaltyCardsByBusiness = allLoyaltyCards.reduce((acc, card) => {
-      if (!acc[card.businessId]) {
-        acc[card.businessId] = [];
-      }
-      acc[card.businessId].push(card);
-      return acc;
-    }, {} as { [businessId: string]: LoyaltyCard[] });
+      // Filter only active loyalty cards
+      const activeLoyaltyCards = loyaltyCards.filter((card) => card.isActive);
+      console.log("💳 Found", activeLoyaltyCards.length, "active loyalty cards for business:", business.name);
 
-    return businessesToProcess.map((business) => {
-      try {
-        console.log("🔍 Processing business:", business.name, "(ID:", business.id, ")");
+      // Get unclaimed customer cards for this business
+      const businessUnclaimedCards = unclaimedCustomerCards.filter((card) => card.loyaltyCard?.businessId === business.id);
 
-        // Get loyalty cards for this business from our batched results
-        const loyaltyCards = loyaltyCardsByBusiness[business.id] || [];
-        console.log("💳 Found", loyaltyCards.length, "loyalty cards for business:", business.name);
+      // Calculate claimed rewards count per loyalty card for this business
+      const claimedRewardsCount: { [loyaltyCardId: string]: number } = {};
+      allCustomerCards
+        .filter((card) => card.loyaltyCard?.businessId === business.id && card.isRewardClaimed)
+        .forEach((card) => {
+          claimedRewardsCount[card.loyaltyCardId] = (claimedRewardsCount[card.loyaltyCardId] || 0) + 1;
+        });
 
-        // Filter only active loyalty cards
-        const activeLoyaltyCards = loyaltyCards.filter((card) => card.isActive);
+      const result = {
+        ...business,
+        loyaltyCards: activeLoyaltyCards,
+        customerCards: businessUnclaimedCards,
+        claimedRewardsCount,
+      };
 
-        // Get unclaimed customer cards for this business
-        const businessUnclaimedCards = unclaimedCustomerCards.filter((card) => card.loyaltyCard?.businessId === business.id);
-
-        // Calculate claimed rewards count per loyalty card for this business
-        const claimedRewardsCount: { [loyaltyCardId: string]: number } = {};
-        allCustomerCards
-          .filter((card) => card.loyaltyCard?.businessId === business.id && card.isRewardClaimed)
-          .forEach((card) => {
-            claimedRewardsCount[card.loyaltyCardId] = (claimedRewardsCount[card.loyaltyCardId] || 0) + 1;
-          });
-
-        const result = {
-          ...business,
-          loyaltyCards: activeLoyaltyCards,
-          customerCards: businessUnclaimedCards,
-          claimedRewardsCount,
-        };
-
-        console.log("📋 Final business object for", business.name, ":", result);
-        return result;
-      } catch (error) {
-        console.error("❌ Error processing business", business.name, ":", error);
-        return {
-          ...business,
-          loyaltyCards: [],
-          customerCards: [],
-          claimedRewardsCount: {},
-        };
-      }
-    });
+      console.log("📋 Final business object for", business.name, ":", result);
+      return result;
+    } catch (error) {
+      console.error("❌ Error processing business", business.name, ":", error);
+      return {
+        ...business,
+        loyaltyCards: [],
+        customerCards: [],
+        claimedRewardsCount: {},
+      };
+    }
   }, []);
 
+  // Process businesses in batches to improve performance
+  const procesBusinessesBatch = useCallback(
+    async (businessesToProcess: Business[], allCustomerCards: CustomerCard[], unclaimedCustomerCards: CustomerCard[]): Promise<BusinessWithCards[]> => {
+      // Get all loyalty cards for all businesses in a single batch query
+      const businessIds = businessesToProcess.map((b) => b.id);
+      const allLoyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessIds(businessIds);
+
+      // Group loyalty cards by business ID
+      const loyaltyCardsByBusiness = allLoyaltyCards.reduce((acc, card) => {
+        if (!acc[card.businessId]) {
+          acc[card.businessId] = [];
+        }
+        acc[card.businessId].push(card);
+        return acc;
+      }, {} as { [businessId: string]: LoyaltyCard[] });
+
+      return businessesToProcess.map((business) => {
+        const loyaltyCards = loyaltyCardsByBusiness[business.id] || [];
+        return processBusinessWithCards(business, loyaltyCards, allCustomerCards, unclaimedCustomerCards);
+      });
+    },
+    [processBusinessWithCards]
+  );
+
   const generateUniqueCardCode = async (businessId: string, customerId: string): Promise<string> => {
-    // Generate a random 3-digit code
-    let code = "";
     let attempts = 0;
-    const maxAttempts = 1000; // Prevent infinite loop
 
     do {
-      code = Math.floor(100 + Math.random() * 900).toString();
+      const code = generateRandomCode();
       attempts++;
 
       // Check if this code already exists for this business where reward is not claimed
-      // This checks ALL customer cards for the business, not just the current customer's cards
       const existingCard = await CustomerCardService.getUnclaimedCustomerCardByCodeAndBusiness(code, businessId);
 
       if (!existingCard) {
-        break;
+        return code;
       }
-    } while (attempts < maxAttempts);
+    } while (attempts < MAX_CODE_GENERATION_ATTEMPTS);
 
-    if (attempts >= maxAttempts) {
-      throw new Error("Unable to generate unique card code. Please try again.");
-    }
-
-    return code;
+    throw new Error("Unable to generate unique card code. Please try again.");
   };
 
-  const handleJoinLoyaltyProgram = async (loyaltyCard: LoyaltyCard) => {
-    if (!user) return;
+  const updateBusinessAfterJoining = useCallback(
+    (loyaltyCard: LoyaltyCard, cardCode: string) => {
+      if (!user) return;
 
-    // Note: setJoiningCard is now called in the onPress for immediate feedback
-
-    try {
-      // Generate unique 3-digit code
-      const cardCode = await generateUniqueCardCode(loyaltyCard.businessId, user.id);
-
-      // Create the customer card
-      await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
-
-      setNewCardCode(cardCode);
-      setModalVisible(true); // Update only the specific business in state instead of reloading everything
       setBusinesses((prevBusinesses) =>
         prevBusinesses.map((business) => {
           if (business.id === loyaltyCard.businessId) {
@@ -276,6 +263,25 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
           return business;
         })
       );
+    },
+    [user]
+  );
+
+  const handleJoinLoyaltyProgram = async (loyaltyCard: LoyaltyCard) => {
+    if (!user) return;
+
+    try {
+      // Generate unique 3-digit code
+      const cardCode = await generateUniqueCardCode(loyaltyCard.businessId, user.id);
+
+      // Create the customer card
+      await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
+
+      setNewCardCode(cardCode);
+      setModalVisible(true);
+
+      // Update the business state optimistically
+      updateBusinessAfterJoining(loyaltyCard, cardCode);
     } catch (error) {
       console.error("Error joining loyalty program:", error);
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to join loyalty program");
@@ -288,13 +294,52 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       customerCard: customerCard,
     });
   };
-  const handleBusinessPress = (business: BusinessWithCards) => {
-    setSelectedBusiness(business);
+
+  const refreshBusinessData = useCallback(
+    async (business: BusinessWithCards): Promise<BusinessWithCards> => {
+      if (!user) return business;
+
+      try {
+        console.log("🔄 Refreshing business data for:", business.name);
+
+        // Get fresh customer cards data
+        const { allCards: allCustomerCards, unclaimedCards: unclaimedCustomerCards } = await getCustomerCardsData(true);
+
+        // Get fresh loyalty cards for this business
+        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessIds([business.id]);
+
+        // Use the unified processing function
+        const refreshedBusiness = processBusinessWithCards(business, loyaltyCards, allCustomerCards, unclaimedCustomerCards);
+
+        console.log("✅ Business data refreshed for:", business.name);
+        return refreshedBusiness;
+      } catch (error) {
+        console.error("❌ Error refreshing business data:", error);
+        return business; // Return original business on error
+      }
+    },
+    [user, getCustomerCardsData, processBusinessWithCards]
+  );
+
+  const handleBusinessPress = async (business: BusinessWithCards) => {
+    console.log("🔄 Business pressed, refreshing data for:", business.name);
+
+    try {
+      // Refresh the business data before setting it as selected
+      const refreshedBusiness = await refreshBusinessData(business);
+      setSelectedBusiness(refreshedBusiness);
+
+      // Also update the business in the main list to keep everything in sync
+      setBusinesses((prevBusinesses) => prevBusinesses.map((b) => (b.id === business.id ? refreshedBusiness : b)));
+    } catch (error) {
+      console.error("❌ Error refreshing business data on press:", error);
+      // Still open the modal with existing data if refresh fails
+      setSelectedBusiness(business);
+    }
   };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    businessCache.clear();
     setCustomerCardsCache(null); // Clear customer cards cache
     setHasMoreData(true);
     try {
@@ -324,17 +369,36 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       </View>
     );
   };
-  const handleJoinLoyaltyProgramFromModal = (loyaltyCard: LoyaltyCard) => {
-    // Set loading state immediately for instant feedback
-    setJoiningCard(loyaltyCard.id);
-    setSelectedBusiness(null);
-    handleJoinLoyaltyProgram(loyaltyCard);
-  };
+  const handleJoinLoyaltyProgramFromModal = useCallback(
+    (loyaltyCard: LoyaltyCard) => {
+      setJoiningCard(loyaltyCard.id);
+      setSelectedBusiness(null);
+      handleJoinLoyaltyProgram(loyaltyCard);
+    },
+    [handleJoinLoyaltyProgram]
+  );
 
-  const handleViewCardFromModal = (customerCard: CustomerCard) => {
+  const handleViewCardFromModal = useCallback((customerCard: CustomerCard) => {
     setSelectedBusiness(null);
     handleViewCard(customerCard);
-  };
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedBusiness(null);
+  }, []);
+
+  const navigateToCustomerHome = useCallback(() => {
+    setModalVisible(false);
+    console.log("📱 Navigating to CustomerTabs with refresh parameter");
+    navigation.navigate("CustomerTabs", {
+      screen: "Home",
+      params: { refresh: true, timestamp: Date.now() },
+    });
+  }, [navigation]);
+
+  const handleCloseSuccessModal = useCallback(() => {
+    setModalVisible(false);
+  }, []);
 
   if (loading) {
     return <LoadingState loading={true} />;
@@ -367,9 +431,10 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       <LoyaltyProgramListModal
         selectedBusiness={selectedBusiness}
         joiningCard={joiningCard}
-        onClose={() => setSelectedBusiness(null)}
+        onClose={handleCloseModal}
         onJoinProgram={handleJoinLoyaltyProgramFromModal}
         onViewCard={handleViewCardFromModal}
+        key={selectedBusiness ? `${selectedBusiness.id}-${selectedBusiness.customerCards.length}` : "no-business"}
       />
       {joiningCard && (
         <Modal
@@ -391,7 +456,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
         </Modal>
       )}
       {/* Success Modal */}
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={handleCloseSuccessModal}>
         <View style={styles.modalOverlay}>
           <View style={styles.successModalContent}>
             <View style={styles.successIcon}>
@@ -404,21 +469,10 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
               <Text style={styles.cardCode}>{newCardCode}</Text>
             </View>
             <Text style={styles.cardCodeDescription}>Presenta este código al negocio cuando hagas una compra para recibir sellos en tu tarjeta de lealtad.</Text>
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                setModalVisible(false);
-                console.log("📱 Navigating to CustomerTabs with refresh parameter");
-                // Navigate to customer home with refresh parameter
-                navigation.navigate("CustomerTabs", {
-                  screen: "Home",
-                  params: { refresh: true, timestamp: Date.now() },
-                });
-              }}
-            >
+            <TouchableOpacity style={styles.modalButton} onPress={navigateToCustomerHome}>
               <Text style={styles.modalButtonText}>Ver Mis Tarjetas</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setModalVisible(false)}>
+            <TouchableOpacity style={styles.modalCloseButton} onPress={handleCloseSuccessModal}>
               <Text style={styles.modalCloseText}>Cerrar</Text>
             </TouchableOpacity>
           </View>

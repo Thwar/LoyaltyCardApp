@@ -81,7 +81,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
         <Text style={[styles.customerDetail, customer.isRewardClaimed ? styles.rewardClaimed : styles.active]}>{customer.isRewardClaimed ? "🎁 Recompensa reclamada" : "✅ Activo"}</Text>
       </View>
       <Button
-        title="Agregar Sello"
+        title="Gestionar"
         onPress={() =>
           navigation.navigate("AddStamp", {
             loyaltyCardId: customer.loyaltyCardId,
@@ -125,7 +125,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
       )}
       <View style={styles.actionContainer}>
         <Button
-          title="Agregar Sello a Cliente"
+          title="Gestionar Tarjetas de Clientes"
           onPress={() => {
             if (loyaltyCards.length > 0 && businessId) {
               navigation.navigate("AddStamp", {

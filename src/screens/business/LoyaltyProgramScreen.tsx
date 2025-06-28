@@ -3,10 +3,9 @@ import { View, Text, StyleSheet, FlatList, SafeAreaView, RefreshControl, Touchab
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, LoadingState, EmptyState, StampsGrid } from "../../components";
+import { Button, LoadingState, EmptyState, LoyaltyCardPreview } from "../../components";
 import { CreateLoyaltyCardModal, EditLoyaltyCardModal } from "../business";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
@@ -131,24 +130,16 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
         </View>
       </View>
       {/* Preview Section */}
-      <View style={styles.previewContainer}>
-        <Text style={styles.previewTitle}>Vista Previa</Text>
-        <View style={styles.previewCard}>
-          <LinearGradient colors={[card.cardColor || COLORS.primary, card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark]} style={styles.gradient} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}>
-            <Text style={styles.previewBusinessName}>{card.businessName || "Nombre de Tu Negocio"}</Text>
-            <Text style={styles.previewStamps}>1 / {card.totalSlots || "10"} sellos</Text>
-            <StampsGrid
-              totalSlots={card.totalSlots}
-              currentStamps={1}
-              stampShape={card.stampShape || "circle"}
-              showAnimation={false}
-              stampColor={card.cardColor || COLORS.primary}
-              containerStyle={styles.previewStampsContainer}
-            />
-            <Text style={styles.previewReward}>🎯 Recompensa: {card.rewardDescription || "Descripción de tu recompensa"}</Text>
-          </LinearGradient>
-        </View>
-      </View>
+      <LoyaltyCardPreview
+        businessName={card.businessName}
+        totalSlots={card.totalSlots}
+        currentStamps={1}
+        cardColor={card.cardColor || COLORS.primary}
+        stampShape={card.stampShape || "circle"}
+        rewardDescription={card.rewardDescription}
+        containerStyle={styles.previewContainer}
+        showTitle={true}
+      />
     </TouchableOpacity>
   );
 
@@ -334,48 +325,6 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
     borderTopWidth: 1,
     borderTopColor: COLORS.inputBorder,
-  },
-  previewTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  previewCard: {
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    overflow: "hidden",
-  },
-  gradient: {
-    borderRadius: 12,
-    padding: SPACING.lg,
-  },
-  previewBusinessName: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "bold",
-    color: COLORS.white,
-    textAlign: "left",
-    marginBottom: SPACING.sm,
-  },
-  previewStamps: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.white,
-    marginBottom: SPACING.sm,
-  },
-  previewStampsContainer: {
-    margin: 0,
-    marginVertical: SPACING.sm,
-  },
-  previewReward: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.white,
-    textAlign: "center",
-    marginTop: SPACING.sm,
-    fontStyle: "italic",
   },
 });
 

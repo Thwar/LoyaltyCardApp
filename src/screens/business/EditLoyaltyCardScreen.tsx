@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, StampsGrid, Dropdown, useAlert } from "../../components";
+import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, LoyaltyCardPreview, Dropdown, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
 import { LoyaltyCard } from "../../types";
@@ -250,29 +249,15 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                 <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
                 <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
                 {/* Preview Section */}
-                <View style={styles.previewContainer}>
-                  <Text style={styles.previewTitle}>Vista Previa</Text>
-                  <View style={styles.previewCard}>
-                    <LinearGradient
-                      colors={[formData.cardColor || COLORS.primary, formData.cardColor ? `${formData.cardColor}CC` : COLORS.primaryDark]}
-                      style={styles.gradient}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      <Text style={styles.previewBusinessName}>{"Nombre de Tu Negocio"}</Text>
-                      <Text style={styles.previewStamps}>1 / {formData.totalSlots || "10"} sellos</Text>
-                      <StampsGrid
-                        totalSlots={parseInt(formData.totalSlots) || 10}
-                        currentStamps={1}
-                        stampShape={formData.stampShape}
-                        showAnimation={false}
-                        stampColor={formData.cardColor || COLORS.primary}
-                        containerStyle={styles.previewStampsContainer}
-                      />
-                      <Text style={styles.previewReward}>Recompensa: {formData.rewardDescription || "Descripción de tu recompensa"}</Text>
-                    </LinearGradient>
-                  </View>
-                </View>
+                <LoyaltyCardPreview
+                  businessName={loyaltyCard?.businessName}
+                  totalSlots={parseInt(formData.totalSlots) || 10}
+                  currentStamps={1}
+                  cardColor={formData.cardColor}
+                  stampShape={formData.stampShape}
+                  rewardDescription={formData.rewardDescription}
+                  containerStyle={styles.previewContainer}
+                />
               </View>
               <View style={styles.buttonContainer}>
                 <Button title="Actualizar Tarjeta" onPress={handleUpdateCard} loading={saving} style={styles.updateButton} />
@@ -355,43 +340,5 @@ const styles = StyleSheet.create({
   },
   previewContainer: {
     marginVertical: SPACING.lg,
-  },
-  previewTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: "600",
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  previewCard: {
-    borderRadius: 12,
-    elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    overflow: "hidden",
-  },
-  gradient: {
-    borderRadius: 12,
-    padding: SPACING.lg,
-  },
-  previewBusinessName: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: "bold",
-    color: COLORS.white,
-    marginBottom: SPACING.sm,
-  },
-  previewStamps: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.white,
-    marginBottom: SPACING.sm,
-  },
-  previewStampsContainer: {
-    marginBottom: SPACING.sm,
-  },
-  previewReward: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.white,
-    opacity: 0.9,
   },
 });
