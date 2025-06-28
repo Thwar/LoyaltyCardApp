@@ -305,6 +305,7 @@ export class BusinessService {
         instagram: data.instagram,
         facebook: data.facebook,
         tiktok: data.tiktok,
+        categories: data.categories,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -363,6 +364,7 @@ export class BusinessService {
           instagram: data.instagram,
           facebook: data.facebook,
           tiktok: data.tiktok,
+          categories: data.categories,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -398,6 +400,7 @@ export class BusinessService {
           instagram: data.instagram,
           facebook: data.facebook,
           tiktok: data.tiktok,
+          categories: data.categories,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -431,6 +434,7 @@ export class BusinessService {
         instagram: data.instagram,
         facebook: data.facebook,
         tiktok: data.tiktok,
+        categories: data.categories,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -457,6 +461,7 @@ export class BusinessService {
           instagram: data.instagram,
           facebook: data.facebook,
           tiktok: data.tiktok,
+          categories: data.categories,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };

@@ -2,7 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
+import { COLORS, FONT_SIZES, SPACING, SHADOWS, getCategoryLabel } from "../constants";
 import { Business, LoyaltyCard, CustomerCard } from "../types";
 import { LoyaltyProgramItem } from "./LoyaltyProgramItem";
 
@@ -45,7 +45,20 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
                 <View style={styles.overlayTitleContainer}>{joiningCard && <ActivityIndicator size="small" color={COLORS.white} />}</View>
               </View>
               <View style={styles.overlayTitleSection}>
-                <Text style={styles.overlayTitle}>{selectedBusiness.name}</Text>
+                <Text style={styles.overlayTitle}>{selectedBusiness.name}</Text> {/* Categories Badges */}
+                {selectedBusiness.categories && selectedBusiness.categories.length > 0 && (
+                  <View style={styles.categoriesContainer}>
+                    {selectedBusiness.categories.map((categoryValue) => {
+                      const categoryLabel = getCategoryLabel(categoryValue);
+
+                      return (
+                        <View key={categoryValue} style={styles.categoryBadge}>
+                          <Text style={styles.categoryBadgeText}>{categoryLabel}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
                 {/* City Badge */}
                 {selectedBusiness.city && (
                   <View style={styles.cityBadge}>
@@ -141,10 +154,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   businessInfoSection: {
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs,
     backgroundColor: COLORS.surface,
     padding: SPACING.lg,
-
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
     ...SHADOWS.small,
@@ -204,6 +218,25 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.7)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
+  },
+  categoriesContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: SPACING.xs,
+    gap: SPACING.xs,
+  },
+  categoryBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs / 2,
+    borderRadius: 12,
+    marginRight: SPACING.xs,
+    marginBottom: SPACING.xs / 2,
+  },
+  categoryBadgeText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textPrimary,
+    fontWeight: "600",
   },
   socialMediaTextContainer: {
     marginTop: SPACING.md,

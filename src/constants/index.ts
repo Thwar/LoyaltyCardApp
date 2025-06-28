@@ -153,3 +153,6 @@ export const VALIDATION_RULES = {
   REWARD_DESCRIPTION_MAX_LENGTH: 200,
   STAMP_DESCRIPTION_MAX_LENGTH: 50,
 } as const;
+
+// Export business categories
+export { BUSINESS_CATEGORIES, CATEGORY_LABELS, getCategoryLabel } from "./businessCategories";

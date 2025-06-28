@@ -19,6 +19,7 @@ export interface Business {
   instagram?: string;
   facebook?: string;
   tiktok?: string;
+  categories?: string[]; // Up to 2 categories
   createdAt: Date;
   isActive: boolean;
 }

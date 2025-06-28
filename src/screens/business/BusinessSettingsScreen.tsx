@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, useAlert, Dropdown, ImagePicker } from "../../components";
-import { COLORS, FONT_SIZES, SPACING } from "../../constants";
+import { Button, InputField, LoadingState, useAlert, Dropdown, ImagePicker, MultiSelectDropdown } from "../../components";
+import { COLORS, FONT_SIZES, SPACING, BUSINESS_CATEGORIES } from "../../constants";
 import { BusinessService } from "../../services/api";
 import { ImageUploadService } from "../../services/imageUpload";
 import { Business } from "../../types";
@@ -42,6 +42,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
     instagram: "",
     facebook: "",
     tiktok: "",
+    categories: [] as string[],
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -70,6 +71,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
           instagram: userBusiness.instagram || "",
           facebook: userBusiness.facebook || "",
           tiktok: userBusiness.tiktok || "",
+          categories: userBusiness.categories || [],
         });
       } else {
         // No business exists, prepare for creation
@@ -83,6 +85,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
           instagram: "",
           facebook: "",
           tiktok: "",
+          categories: [],
         });
       }
     } catch (error) {
@@ -164,6 +167,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
         instagram: formData.instagram || undefined,
         facebook: formData.facebook || undefined,
         tiktok: formData.tiktok || undefined,
+        categories: formData.categories.length > 0 ? formData.categories : undefined,
         isActive: true,
       };
 
@@ -223,7 +227,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
     });
   };
 
-  const updateFormData = (field: string, value: string) => {
+  const updateFormData = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -267,6 +271,15 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
               leftIcon="document-text"
               error={errors.description}
               multiline
+            />
+            <MultiSelectDropdown
+              label="Categorías del Negocio"
+              values={formData.categories}
+              options={BUSINESS_CATEGORIES}
+              onSelect={(values) => updateFormData("categories", values)}
+              placeholder="Selecciona hasta 2 categorías que describan tu negocio"
+              maxSelections={2}
+              error={errors.categories}
             />
             <Dropdown label="Ciudad" value={formData.city} options={bolivianCities} onSelect={(value) => updateFormData("city", value)} placeholder="Selecciona tu ciudad" error={errors.city} />
             <InputField

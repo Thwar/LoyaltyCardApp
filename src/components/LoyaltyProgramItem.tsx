@@ -197,9 +197,9 @@ const styles = StyleSheet.create({
   },
   cardPreview: {
     borderRadius: 14,
-    overflow: "hidden",
+    // overflow: "hidden",
     marginBottom: SPACING.sm,
-    ...SHADOWS.small,
+    ...SHADOWS.medium,
   },
   cardGradient: {
     borderRadius: 14,

@@ -4,6 +4,7 @@ export { LoyaltyCard } from "./LoyaltyCard";
 export { AnimatedLoyaltyCard } from "./AnimatedLoyaltyCard";
 export { InputField } from "./InputField";
 export { Dropdown } from "./Dropdown";
+export { MultiSelectDropdown } from "./MultiSelectDropdown";
 export { ImagePicker } from "./ImagePicker";
 export { LoadingState, EmptyState } from "./LoadingState";
 export { Alert, AlertProvider, useAlert, showAlert } from "./Alert";
