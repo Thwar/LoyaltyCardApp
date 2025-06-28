@@ -56,3 +56,27 @@ export const CATEGORY_LABELS: { [key: string]: string } = {
 export const getCategoryLabel = (categoryValue: string): string => {
   return CATEGORY_LABELS[categoryValue] || categoryValue;
 };
+
+// Bolivian cities mapping
+export const CITY_LABELS: { [key: string]: string } = {
+  la_paz: "La Paz",
+  santa_cruz: "Santa Cruz de la Sierra",
+  cochabamba: "Cochabamba",
+  sucre: "Sucre",
+  oruro: "Oruro",
+  potosi: "Potosí",
+  tarija: "Tarija",
+  trinidad: "Trinidad",
+  cobija: "Cobija",
+};
+
+// Helper function to get city label by value
+export const getCityLabel = (cityValue: string): string => {
+  return CITY_LABELS[cityValue] || cityValue;
+};
+
+// Helper function to format categories for display
+export const formatCategories = (categories: string[]): string => {
+  if (!categories || categories.length === 0) return "";
+  return categories.map(getCategoryLabel).join(" • ");
+};

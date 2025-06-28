@@ -155,4 +155,4 @@ export const VALIDATION_RULES = {
 } as const;
 
 // Export business categories
-export { BUSINESS_CATEGORIES, CATEGORY_LABELS, getCategoryLabel } from "./businessCategories";
+export { BUSINESS_CATEGORIES, CATEGORY_LABELS, getCategoryLabel, CITY_LABELS, getCityLabel, formatCategories } from "./businessCategories";

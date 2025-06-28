@@ -8,7 +8,6 @@ import { COLORS, FONT_SIZES, SPACING, BUSINESS_CATEGORIES } from "../../constant
 import { BusinessService } from "../../services/api";
 import { ImageUploadService } from "../../services/imageUpload";
 import { Business } from "../../types";
-import { testStoragePermissions } from "../../utils/firebaseTest";
 
 interface BusinessSettingsScreenProps {
   navigation: StackNavigationProp<any>;

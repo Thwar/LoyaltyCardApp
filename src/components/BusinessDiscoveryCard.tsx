@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
+import { getCityLabel, formatCategories } from "../constants/businessCategories";
 import { Business, LoyaltyCard, CustomerCard } from "../types";
 
 interface BusinessWithCards extends Business {
@@ -35,32 +36,32 @@ export const BusinessDiscoveryCard: React.FC<BusinessDiscoveryCardProps> = ({ bu
             {business.city && (
               <Text style={styles.businessCity}>
                 <Ionicons name="location" size={14} color={COLORS.textSecondary} />
-                {business.city}
+                {getCityLabel(business.city)}
               </Text>
             )}
+            {business.categories && business.categories.length > 0 && <Text style={styles.businessCategories}>{formatCategories(business.categories)}</Text>}
             <Text style={styles.businessDescription} numberOfLines={2}>
               {business.description}
             </Text>
+            {business.customerCards.length > 0 && (
+              <View style={styles.memberBadge}>
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                <Text style={styles.memberText}>
+                  Miembro de {business.customerCards.length} programa
+                  {business.customerCards.length > 1 ? "s" : ""}
+                </Text>
+              </View>
+            )}
           </View>
         </View>
         <View style={styles.businessActions}>
-          <View style={styles.loyaltyCardCount}>
+          {/* <View style={styles.loyaltyCardCount}>
             <Text style={styles.cardCountNumber}>{business.loyaltyCards.length}</Text>
             <Text style={styles.cardCountLabel}>{business.loyaltyCards.length === 1 ? "Programa" : "Programas"}</Text>
-          </View>
+          </View> */}
           <Ionicons name="chevron-forward" size={20} color={COLORS.gray} />
         </View>
       </View>
-
-      {business.customerCards.length > 0 && (
-        <View style={styles.memberBadge}>
-          <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
-          <Text style={styles.memberText}>
-            Miembro de {business.customerCards.length} programa
-            {business.customerCards.length > 1 ? "s" : ""}
-          </Text>
-        </View>
-      )}
     </TouchableOpacity>
   );
 };
@@ -69,7 +70,6 @@ const styles = StyleSheet.create({
   businessCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
-    padding: SPACING.lg,
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
@@ -77,20 +77,21 @@ const styles = StyleSheet.create({
   },
   businessHeader: {
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
     justifyContent: "space-between",
+    minHeight: 80,
   },
   businessInfo: {
     flex: 1,
     flexDirection: "row",
-    alignItems: "center",
+    alignItems: "stretch",
   },
   logoContainer: {
-    marginRight: SPACING.md,
+    width: 80,
   },
   logo: {
-    width: 60,
-    height: 60,
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
   },
   logoPlaceholder: {
@@ -100,6 +101,8 @@ const styles = StyleSheet.create({
   },
   businessDetails: {
     flex: 1,
+    marginLeft: SPACING.xs,
+    padding: SPACING.md,
   },
   businessName: {
     fontSize: FONT_SIZES.md,
@@ -112,6 +115,12 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 4,
   },
+  businessCategories: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+    fontStyle: "italic",
+  },
   businessDescription: {
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
@@ -119,7 +128,9 @@ const styles = StyleSheet.create({
   },
   businessActions: {
     alignItems: "center",
-    marginLeft: SPACING.sm,
+    justifyContent: "center",
+
+    padding: SPACING.sm,
   },
   loyaltyCardCount: {
     alignItems: "center",
