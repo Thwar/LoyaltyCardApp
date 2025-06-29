@@ -44,7 +44,8 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
                 <View style={styles.overlayTitleContainer}>{joiningCard && <ActivityIndicator size="small" color={COLORS.white} />}</View>
               </View>
               <View style={styles.overlayTitleSection}>
-                <Text style={styles.overlayTitle}>{selectedBusiness.name}</Text> {/* Categories Badges */}
+                <Text style={styles.overlayTitle}>{selectedBusiness.name}</Text>
+                {/* Categories Badges */}
                 {selectedBusiness.categories && selectedBusiness.categories.length > 0 && (
                   <View style={styles.categoriesContainer}>
                     {selectedBusiness.categories.map((categoryValue) => {

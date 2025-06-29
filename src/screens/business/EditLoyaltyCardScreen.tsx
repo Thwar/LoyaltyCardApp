@@ -307,6 +307,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                 />
                 <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
                 {/* Preview Section */}
+                <Text style={styles.previewTitle}>Vista Previa</Text>
                 <AnimatedLoyaltyCard
                   card={{
                     id: loyaltyCard?.id || "preview",
@@ -407,5 +408,12 @@ const styles = StyleSheet.create({
   },
   previewContainer: {
     marginVertical: SPACING.lg,
+  },
+  previewTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.md,
+    marginTop: SPACING.lg,
   },
 });

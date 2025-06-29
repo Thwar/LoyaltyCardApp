@@ -262,6 +262,10 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
               customerCard={card}
             />
           </View>
+          {/* Action Buttons */}
+          <View style={styles.buttonContainer}>
+            <Button title="Ver Perfil del Negocio" onPress={handleViewBusiness} variant="outline" size="large" loading={businessLoading} style={styles.businessButton} />
+          </View>
           {/* Card Status */}
           <View style={styles.statusContainer}>
             <Text style={styles.statusTitle}>Estado de la Tarjeta</Text>
@@ -287,6 +291,12 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
               <Text style={styles.statusLabel}>Recompensas Canjeadas:</Text>
               <Text style={styles.statusValue}>{redemptionCount} veces</Text>
             </View>
+            {card.createdAt && (
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Acumulando puntos desde:</Text>
+                <Text style={styles.statusValue}>{new Date(card.createdAt).toLocaleDateString()}</Text>
+              </View>
+            )}
           </View>
           {/* Card Details */}
           <View style={styles.detailsContainer}>
@@ -305,10 +315,6 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
                 Presenta tu número de cliente <Text style={[styles.detailText, { fontWeight: "bold" }]}>#{card.cardCode}</Text> al negocio para recibir un sello
               </Text>
             </View>
-          </View>
-          {/* Action Buttons */}
-          <View style={styles.buttonContainer}>
-            <Button title="Ver Perfil del Negocio" onPress={handleViewBusiness} variant="outline" size="large" loading={businessLoading} style={styles.businessButton} />
           </View>
         </ScrollView>
         {/* Loyalty Program List Modal */}
@@ -402,7 +408,7 @@ const styles = StyleSheet.create({
     margin: SPACING.md,
     padding: SPACING.md,
     borderRadius: 12,
-    marginBottom: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
   detailsTitle: {
     fontSize: FONT_SIZES.lg,
@@ -426,6 +432,8 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     padding: SPACING.lg,
+    paddingBottom: SPACING.xs,
+    paddingTop: SPACING.sm,
     gap: SPACING.md,
   },
   claimButton: {
@@ -438,8 +446,8 @@ const styles = StyleSheet.create({
 
 // Screen wrapper component for backward compatibility
 interface CustomerCardDetailsScreenProps {
-  navigation: StackNavigationProp<CustomerStackParamList, "CardDetails">;
-  route: RouteProp<CustomerStackParamList, "CardDetails">;
+  navigation: StackNavigationProp<CustomerStackParamList, "ClaimReward">;
+  route: RouteProp<CustomerStackParamList, "ClaimReward">;
 }
 
 export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps> = ({ navigation, route }) => {

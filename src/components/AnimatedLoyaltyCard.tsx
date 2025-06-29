@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useMemo } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Gyroscope } from "expo-sensors";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { LoyaltyCard as LoyaltyCardType } from "../types";
 import { StampsGrid } from "./StampsGrid";
@@ -121,58 +120,6 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     ]);
     Animated.loop(glowAnimation).start();
   }, [currentStamps, isCompleted, showAnimation]);
-
-  // Gyroscope tilt effect
-  useEffect(() => {
-    if (!enableTilt) return;
-
-    let subscription: any;
-
-    const startGyroscope = async () => {
-      try {
-        // Set gyroscope update interval (in milliseconds)
-        Gyroscope.setUpdateInterval(16); // ~60fps
-
-        subscription = Gyroscope.addListener(({ x, y, z }) => {
-          // Convert gyroscope data to rotation values
-          // Gyroscope gives angular velocity, so we need to accumulate it
-          // We'll use a dampening factor to make the effect subtle
-          const dampening = 0.5;
-          const maxRotation = tiltAmplitude;
-
-          // Clamp the rotation values
-          const rotationX = Math.max(-maxRotation, Math.min(maxRotation, -y * dampening * 100));
-          const rotationY = Math.max(-maxRotation, Math.min(maxRotation, x * dampening * 100));
-
-          // Apply smooth animation to the rotation values
-          Animated.parallel([
-            Animated.spring(rotateX, {
-              toValue: rotationX,
-              useNativeDriver: true,
-              tension: 100,
-              friction: 8,
-            }),
-            Animated.spring(rotateY, {
-              toValue: rotationY,
-              useNativeDriver: true,
-              tension: 100,
-              friction: 8,
-            }),
-          ]).start();
-        });
-      } catch (error) {
-        console.log("Gyroscope not available:", error);
-      }
-    };
-
-    startGyroscope();
-
-    return () => {
-      if (subscription) {
-        subscription.remove();
-      }
-    };
-  }, [enableTilt, tiltAmplitude, rotateX, rotateY]);
 
   // Touch handlers for scale effect only (no tilt)
   const handleTouchStart = (event: any) => {
