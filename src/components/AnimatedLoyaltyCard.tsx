@@ -94,6 +94,9 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     animationsRef.current = [];
 
     if (showAnimation && isCompleted) {
+      // Reset shine position to start position
+      shinePosition.setValue(-width);
+
       // Pulse animation for completed cards
       const pulseAnimation = Animated.loop(
         Animated.sequence([
@@ -123,6 +126,9 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
       animationsRef.current.push(pulseAnimation, shineAnimation);
       pulseAnimation.start();
       shineAnimation.start();
+    } else {
+      // Reset shine position when animation is disabled or card is not completed
+      shinePosition.setValue(-width);
     }
 
     // Subtle glass border glow animation
@@ -148,7 +154,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     return () => {
       animationsRef.current.forEach((anim) => anim.stop());
     };
-  }, [isCompleted, showAnimation]);
+  }, [isCompleted, showAnimation, width]);
 
   // Touch handlers for scale effect only (no tilt)
   const handleTouchStart = () => {

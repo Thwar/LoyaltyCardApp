@@ -1288,6 +1288,60 @@ export class CustomerCardService {
       return 0; // Return 0 if there's an error
     }
   }
+
+  // Delete a specific customer card and all its associated data
+  static async deleteCustomerCard(customerCardId: string): Promise<void> {
+    try {
+      console.log("Starting deletion process for customer card:", customerCardId);
+
+      // 1. Delete all stamp activities for this customer card
+      const stampActivitiesQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY), where("customerCardId", "==", customerCardId));
+      const stampActivitiesSnapshot = await getDocs(stampActivitiesQuery);
+
+      console.log("Found", stampActivitiesSnapshot.docs.length, "stamp activities to delete");
+
+      // 2. Delete all stamps for this customer card
+      const stampsQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMPS), where("customerCardId", "==", customerCardId));
+      const stampsSnapshot = await getDocs(stampsQuery);
+
+      console.log("Found", stampsSnapshot.docs.length, "stamps to delete");
+
+      // 3. Delete all rewards for this customer card
+      const rewardsQuery = query(collection(db, FIREBASE_COLLECTIONS.REWARDS), where("customerCardId", "==", customerCardId));
+      const rewardsSnapshot = await getDocs(rewardsQuery);
+
+      console.log("Found", rewardsSnapshot.docs.length, "rewards to delete");
+
+      // 4. Execute all deletions in parallel
+      const deletePromises: Promise<any>[] = [];
+
+      // Add stamp activity deletions
+      stampActivitiesSnapshot.docs.forEach((doc) => {
+        deletePromises.push(deleteDoc(doc.ref));
+      });
+
+      // Add stamp deletions
+      stampsSnapshot.docs.forEach((doc) => {
+        deletePromises.push(deleteDoc(doc.ref));
+      });
+
+      // Add reward deletions
+      rewardsSnapshot.docs.forEach((doc) => {
+        deletePromises.push(deleteDoc(doc.ref));
+      });
+
+      console.log("Executing", deletePromises.length, "deletion operations");
+      await Promise.all(deletePromises);
+
+      // 5. Finally, delete the customer card itself
+      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId));
+
+      console.log("Customer card deletion completed successfully");
+    } catch (error: any) {
+      console.error("Error during customer card deletion:", error);
+      throw new Error(error.message || "Error al eliminar la tarjeta de cliente");
+    }
+  }
 }
 
 // Stamp Activity Service

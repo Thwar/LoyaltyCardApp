@@ -83,6 +83,9 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   const handleModalClose = () => {
     setModalVisible(false);
     setSelectedCard(null);
+    // Force a refresh of the cards list when modal closes
+    // in case a card was deleted or modified
+    loadCards(true);
   };
 
   const handleRetry = () => {
@@ -94,15 +97,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
     const stampShape = stampShapes[index % stampShapes.length];
 
     return (
-      <AnimatedLoyaltyCard
-        card={item.loyaltyCard!}
-        currentStamps={item.currentStamps}
-        onPress={() => handleCardPress(item)}
-        cardCode={item.cardCode}
-        showAnimation={true}
-        stampShape={stampShape}
-        customerCard={item}
-      />
+      <AnimatedLoyaltyCard card={item.loyaltyCard!} currentStamps={item.currentStamps} onPress={() => handleCardPress(item)} cardCode={item.cardCode} showAnimation={true} stampShape={stampShape} />
     );
   };
 

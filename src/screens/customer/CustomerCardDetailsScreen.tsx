@@ -20,7 +20,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, Modal, TouchableOpacity, Dimensions } from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, Modal, TouchableOpacity, Dimensions, Platform, Alert } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
@@ -29,6 +29,7 @@ import { COLORS, FONT_SIZES, SHADOWS, SPACING } from "../../constants";
 import { CustomerCardService, BusinessService, LoyaltyCardService } from "../../services/api";
 import { CustomerCard, CustomerStackParamList, Business, LoyaltyCard } from "../../types";
 import { useAuth } from "../../context/AuthContext";
+import { refreshFlags } from "../../utils";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 interface BusinessWithCards extends Business {
@@ -53,12 +54,79 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessWithCards | null>(null);
   const [joiningCard, setJoiningCard] = useState<string | null>(null);
   const [redemptionCount, setRedemptionCount] = useState<number>(0);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Simple cache for business data to avoid repeated fetches
   const [businessCache, setBusinessCache] = useState<Record<string, BusinessWithCards>>({});
 
   const isCardComplete = card.currentStamps >= (card.loyaltyCard?.totalSlots || 0);
   const canClaimReward = isCardComplete && !card.isRewardClaimed;
+
+  const handleDestroyCard = () => {
+    console.log("handleDestroyCard called");
+
+    // For web, use native confirm as fallback
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("¿Destruir Tarjeta?\n\nEsta acción eliminará permanentemente tu tarjeta de lealtad y todo tu progreso. No se puede deshacer. ¿Estás seguro?");
+      if (confirmed) {
+        executeDestroy();
+      }
+      return;
+    }
+
+    // For mobile (iOS/Android), use React Native's native Alert
+    console.log("Showing native alert for mobile");
+    Alert.alert("¿Destruir Tarjeta?", "Esta acción eliminará permanentemente tu tarjeta de lealtad y todo tu progreso. No se puede deshacer. ¿Estás seguro?", [
+      {
+        text: "Cancelar",
+        style: "cancel",
+      },
+      {
+        text: "Destruir",
+        style: "destructive",
+        onPress: executeDestroy,
+      },
+    ]);
+  };
+
+  const executeDestroy = async () => {
+    console.log("executeDestroy called");
+    try {
+      setIsDeleting(true);
+      await CustomerCardService.deleteCustomerCard(card.id);
+
+      // Set refresh flags to trigger fresh data fetch in both screens
+      await refreshFlags.setRefreshForBothScreens();
+
+      if (Platform.OS === "web") {
+        window.alert("¡Tarjeta Eliminada!\n\nTu tarjeta de lealtad ha sido eliminada exitosamente.");
+        onClose();
+      } else {
+        // For mobile, use React Native's native Alert
+        console.log("Showing native success alert for mobile");
+        Alert.alert("¡Tarjeta Eliminada!", "Tu tarjeta de lealtad ha sido eliminada exitosamente.", [
+          {
+            text: "OK",
+            onPress: () => {
+              console.log("OK button pressed, closing modal and refreshing");
+              onClose(); // This will trigger navigation back to home in the screen wrapper
+            },
+          },
+        ]);
+      }
+    } catch (error: any) {
+      console.error("Error deleting card:", error);
+      if (Platform.OS === "web") {
+        window.alert(`Error\n\n${error.message || "Error al eliminar la tarjeta"}`);
+      } else {
+        // For mobile, use React Native's native Alert
+        Alert.alert("Error", error.message || "Error al eliminar la tarjeta");
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleViewBusiness = async () => {
     if (!card.loyaltyCard?.businessId || !user) return;
 
@@ -309,6 +377,11 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
               </Text>
             </View>
           </View>
+
+          {/* Destroy Card Button - At the bottom */}
+          <View style={styles.destroyButtonContainer}>
+            <Button title="Destruir Tarjeta" onPress={handleDestroyCard} variant="outline" size="large" loading={isDeleting} style={styles.destroyButton} textStyle={styles.destroyButtonText} />
+          </View>
         </ScrollView>
         {/* Loyalty Program List Modal */}
         <LoyaltyProgramListModal selectedBusiness={selectedBusiness} joiningCard={joiningCard} onClose={handleCloseBusinessModal} onJoinProgram={handleJoinProgram} onViewCard={handleViewCard} />
@@ -435,6 +508,20 @@ const styles = StyleSheet.create({
   businessButton: {
     marginTop: SPACING.sm,
   },
+  destroyButtonContainer: {
+    padding: SPACING.lg,
+    paddingTop: SPACING.md,
+    marginTop: SPACING.lg,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.inputBorder,
+  },
+  destroyButton: {
+    borderColor: COLORS.error,
+    borderWidth: 2,
+  },
+  destroyButtonText: {
+    color: COLORS.error,
+  },
 });
 
 // Screen wrapper component for backward compatibility
@@ -449,7 +536,12 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
 
   const handleClose = () => {
     setModalVisible(false);
+    // Navigate back to the home screen with timestamp to trigger refresh
     navigation.goBack();
+    // Use reset to ensure we're on the home tab and pass the timestamp
+    navigation.getParent()?.navigate("Home", {
+      timestamp: Date.now(), // This will trigger useFocusEffect to refresh the data
+    });
   };
 
   return <CustomerCardDetailsModal visible={modalVisible} customerCard={customerCard} onClose={handleClose} navigation={navigation} />;

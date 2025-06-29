@@ -10,6 +10,7 @@ import { LoadingState, BusinessDiscoveryCard, LoyaltyProgramListModal } from "..
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { BusinessService, LoyaltyCardService, CustomerCardService } from "../../services/api";
 import { Business, LoyaltyCard, CustomerCard } from "../../types";
+import { refreshFlags } from "../../utils";
 
 interface BusinessDiscoveryScreenProps {
   navigation: StackNavigationProp<any>;
@@ -40,6 +41,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessWithCards | null>(null);
   const [joiningCard, setJoiningCard] = useState<string | null>(null);
   const [newCardCode, setNewCardCode] = useState<string>("");
+  const [successModalKey, setSuccessModalKey] = useState<number>(0); // Force re-render of success modal
 
   // Memoized customer cards to avoid redundant calculations
   const [customerCardsCache, setCustomerCardsCache] = useState<{
@@ -52,6 +54,15 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   const clearCustomerCardsCache = useCallback(() => {
     console.log("🗑️ Clearing customer cards cache");
     setCustomerCardsCache(null);
+  }, []);
+
+  // Reset modal state - useful for debugging
+  const resetModalState = useCallback(() => {
+    console.log("🔄 Resetting modal state");
+    setModalVisible(false);
+    setNewCardCode("");
+    setJoiningCard(null); // Also clear joining state
+    setSuccessModalKey((prev) => prev + 1);
   }, []);
 
   useEffect(() => {
@@ -70,9 +81,39 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
         console.log("📱 BusinessDiscoveryScreen refresh requested via navigation params");
       }
 
+      // Check for stored refresh flag
+      const checkRefreshFlag = async () => {
+        const shouldRefreshFromFlag = await refreshFlags.shouldRefreshBusinessDiscovery();
+        if (shouldRefreshFromFlag) {
+          console.log("🚩 BusinessDiscoveryScreen refresh flag detected - forcing refresh");
+          // Clear the flag since we're handling it
+          await refreshFlags.clearBusinessDiscoveryRefresh();
+          // Force a complete refresh
+          setCustomerCardsCache(null);
+          setHasMoreData(true);
+          // Use a timeout to ensure the state updates are applied
+          setTimeout(async () => {
+            await loadBusinessesWithCards(true, 0);
+          }, 100);
+        }
+      };
+
       // Always clear cache on focus to ensure fresh data
       clearCustomerCardsCache();
-    }, [clearCustomerCardsCache, route?.params])
+
+      // Check refresh flag
+      checkRefreshFlag();
+
+      // Reset modal state if we're coming back from another screen
+      // This ensures the success modal can show properly after operations
+      if (shouldRefresh) {
+        console.log("🔄 Resetting modal state due to refresh request");
+        // Use setTimeout to ensure this happens after the focus effect completes
+        setTimeout(() => {
+          resetModalState();
+        }, 100);
+      }
+    }, [clearCustomerCardsCache, resetModalState, route?.params])
   );
 
   // Memoized customer cards data to avoid redundant API calls
@@ -205,7 +246,6 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
         claimedRewardsCount,
       };
 
-      console.log("📋 Final business object for", business.name, ":", result);
       return result;
     } catch (error) {
       console.error("❌ Error processing business", business.name, ":", error);
@@ -296,23 +336,36 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   const handleJoinLoyaltyProgram = async (loyaltyCard: LoyaltyCard) => {
     if (!user) return;
 
+    console.log("🔄 Starting to join loyalty program:", loyaltyCard.id);
     try {
       // Generate unique 3-digit code
       const cardCode = await generateUniqueCardCode(loyaltyCard.businessId, user.id);
+      console.log("✅ Generated card code:", cardCode);
 
       // Create the customer card
       await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
+      console.log("✅ Successfully joined loyalty program");
 
+      // Clear joining state FIRST to hide loading modal
+      setJoiningCard(null);
+
+      // Then set up success modal
       setNewCardCode(cardCode);
-      setModalVisible(true);
+      setSuccessModalKey((prev) => prev + 1);
+      console.log("🎉 About to show success modal with code:", cardCode);
+
+      // Small delay to ensure loading modal is fully hidden before showing success modal
+      setTimeout(() => {
+        setModalVisible(true);
+        console.log("✅ Success modal should now be visible");
+      }, 200);
 
       // Update the business state optimistically
       updateBusinessAfterJoining(loyaltyCard, cardCode);
     } catch (error) {
-      console.error("Error joining loyalty program:", error);
+      console.error("❌ Error joining loyalty program:", error);
+      setJoiningCard(null); // Clear loading state on error
       Alert.alert("Error", error instanceof Error ? error.message : "Failed to join loyalty program");
-    } finally {
-      setJoiningCard(null);
     }
   };
   const handleViewCard = (customerCard: CustomerCard) => {
@@ -375,7 +428,9 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   }, []);
 
   const navigateToCustomerHome = useCallback(() => {
+    console.log("📱 Navigating to CustomerTabs - closing success modal");
     setModalVisible(false);
+    setNewCardCode(""); // Clear the card code when navigating
     console.log("📱 Navigating to CustomerTabs with refresh parameter");
     navigation.navigate("CustomerTabs", {
       screen: "Home",
@@ -384,8 +439,47 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   }, [navigation]);
 
   const handleCloseSuccessModal = useCallback(() => {
+    console.log("🔴 Closing success modal");
     setModalVisible(false);
+    setNewCardCode(""); // Clear the card code when modal closes
   }, []);
+
+  // Debug effect to track modal state changes
+  useEffect(() => {
+    console.log("🎭 Modal state changed - visible:", modalVisible, "cardCode:", newCardCode, "joining:", joiningCard);
+  }, [modalVisible, newCardCode, joiningCard]);
+
+  // Safety timeout to prevent stuck loading state
+  useEffect(() => {
+    if (joiningCard) {
+      console.log("⏰ Starting safety timeout for joining state");
+      const timeout = setTimeout(() => {
+        console.log("⚠️ Safety timeout triggered - clearing stuck joining state");
+        setJoiningCard(null);
+      }, 30000); // 30 second timeout
+
+      return () => {
+        console.log("⏰ Clearing safety timeout");
+        clearTimeout(timeout);
+      };
+    }
+  }, [joiningCard]);
+
+  // Clean up modal state when screen loses focus (user navigates away)
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("blur", () => {
+      console.log("🔄 Screen blur - cleaning up modal state");
+      if (modalVisible) {
+        setModalVisible(false);
+        setNewCardCode("");
+      }
+      if (joiningCard) {
+        setJoiningCard(null);
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation, modalVisible, joiningCard]);
 
   if (loading) {
     return <LoadingState loading={true} />;
@@ -423,11 +517,12 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
         onViewCard={handleViewCardFromModal}
         key={selectedBusiness ? `${selectedBusiness.id}-${selectedBusiness.customerCards.length}` : "no-business"}
       />
-      {joiningCard && (
+      {/* Loading Modal - only show when joining and no success state */}
+      {joiningCard && !modalVisible && (
         <Modal
           animationType="fade"
           transparent={true}
-          visible={!!joiningCard}
+          visible={true}
           onRequestClose={() => {
             // Prevent closing while loading
             Alert.alert("Procesando", "Por favor espera mientras procesamos tu solicitud...");
@@ -442,29 +537,31 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
           </View>
         </Modal>
       )}
-      {/* Success Modal */}
-      <Modal animationType="fade" transparent={true} visible={modalVisible} onRequestClose={handleCloseSuccessModal}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.successModalContent}>
-            <View style={styles.successIcon}>
-              <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+      {/* Success Modal - only show when not loading */}
+      {!joiningCard && (
+        <Modal key={`success-modal-${successModalKey}`} animationType="fade" transparent={true} visible={modalVisible && newCardCode.length > 0} onRequestClose={handleCloseSuccessModal}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.successModalContent}>
+              <View style={styles.successIcon}>
+                <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+              </View>
+              <Text style={styles.successModalTitle}>¡Bienvenido al Programa!</Text>
+              <Text style={styles.modalMessage}>¡Te has unido exitosamente al programa de lealtad! Ahora puedes empezar a ganar sellos y recompensas.</Text>
+              <View style={styles.cardCodeContainer}>
+                <Text style={styles.cardCodeLabel}>Tu código de identificación:</Text>
+                <Text style={styles.cardCode}>{newCardCode}</Text>
+              </View>
+              <Text style={styles.cardCodeDescription}>Presenta este código al negocio cuando hagas una compra para recibir sellos en tu tarjeta de lealtad.</Text>
+              <TouchableOpacity style={styles.modalButton} onPress={navigateToCustomerHome}>
+                <Text style={styles.modalButtonText}>Ver Mis Tarjetas</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={handleCloseSuccessModal}>
+                <Text style={styles.modalCloseText}>Cerrar</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.successModalTitle}>¡Bienvenido al Programa!</Text>
-            <Text style={styles.modalMessage}>¡Te has unido exitosamente al programa de lealtad! Ahora puedes empezar a ganar sellos y recompensas.</Text>
-            <View style={styles.cardCodeContainer}>
-              <Text style={styles.cardCodeLabel}>Tu código de identificación:</Text>
-              <Text style={styles.cardCode}>{newCardCode}</Text>
-            </View>
-            <Text style={styles.cardCodeDescription}>Presenta este código al negocio cuando hagas una compra para recibir sellos en tu tarjeta de lealtad.</Text>
-            <TouchableOpacity style={styles.modalButton} onPress={navigateToCustomerHome}>
-              <Text style={styles.modalButtonText}>Ver Mis Tarjetas</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalCloseButton} onPress={handleCloseSuccessModal}>
-              <Text style={styles.modalCloseText}>Cerrar</Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet, Alert, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePickerExpo from "expo-image-picker";
+import Resizer from "react-image-file-resizer";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { useAlert } from "./Alert";
 
@@ -14,10 +15,31 @@ interface ImagePickerProps {
   uploading?: boolean;
 }
 
+/**
+ * ImagePicker component with built-in compression and optimization
+ *
+ * Features:
+ * - Web: Advanced compression using react-image-file-resizer with WebP format
+ * - Mobile: Uses expo-image-picker's built-in compression (60% quality)
+ * - Resizes images to max 400x400px with maintained aspect ratio
+ * - Progressive compression to ensure optimal file sizes
+ * - Cross-platform support (web, iOS, Android)
+ * - No native modules required - works with Expo Go and dev builds
+ * - Fallback compression methods for maximum compatibility
+ */
+
 export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageSelect, error, placeholder = "Seleccionar imagen", uploading: externalUploading = false }) => {
   const [uploading, setUploading] = useState(false);
   const { showAlert } = useAlert();
   const isUploading = uploading || externalUploading;
+
+  // Configuration for image optimization
+  const IMAGE_CONFIG = {
+    maxWidth: 400, // Will be used for web canvas compression
+    maxHeight: 400, // Will be used for web canvas compression
+    quality: 0.6, // More aggressive compression for expo-image-picker
+    maxFileSizeKB: 200, // Maximum file size in KB
+  };
 
   const requestPermissions = async () => {
     if (Platform.OS !== "web") {
@@ -32,6 +54,110 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
     }
     return true;
   };
+
+  const checkAndOptimizeFileSize = async (uri: string): Promise<string> => {
+    try {
+      if (Platform.OS === "web") {
+        // For web, check data URL size
+        const base64Data = uri.split(",")[1];
+        if (base64Data) {
+          const sizeInBytes = (base64Data.length * 3) / 4;
+          const sizeInKB = sizeInBytes / 1024;
+
+          if (sizeInKB > IMAGE_CONFIG.maxFileSizeKB) {
+            // Further compress by reducing quality
+            return await compressImageForWeb(uri, 0.5);
+          }
+        }
+        return uri;
+      } else {
+        // For mobile, we'll rely on the initial compression from expo-image-picker
+        // since we can't use FileSystem without additional setup
+        return uri;
+      }
+    } catch (error) {
+      console.error("Error checking file size:", error);
+      return uri;
+    }
+  };
+
+  const resizeAndCompressImage = async (uri: string): Promise<string> => {
+    try {
+      if (Platform.OS === "web") {
+        // For web, use react-image-file-resizer which works great on web
+        const response = await fetch(uri);
+        const blob = await response.blob();
+        const file = new File([blob], "image.jpg", { type: blob.type });
+
+        return new Promise((resolve) => {
+          Resizer.imageFileResizer(
+            file,
+            IMAGE_CONFIG.maxWidth, // maxWidth
+            IMAGE_CONFIG.maxHeight, // maxHeight
+            "WEBP", // compressFormat (WEBP for better compression)
+            IMAGE_CONFIG.quality * 100, // quality (0-100)
+            0, // rotation
+            (uri) => {
+              resolve(uri as string);
+            },
+            "base64" // outputType
+          );
+        });
+      } else {
+        // For mobile platforms, we'll use our canvas-based compression as fallback
+        return await compressImageForWeb(uri);
+      }
+    } catch (error) {
+      console.error("Error resizing image:", error);
+      // Fallback to canvas compression
+      if (Platform.OS === "web") {
+        return await compressImageForWeb(uri);
+      }
+      return uri; // Return original if compression failed
+    }
+  };
+
+  const compressImageForWeb = async (uri: string, customQuality?: number): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      const img = new window.Image();
+
+      img.onload = () => {
+        // Calculate new dimensions while maintaining aspect ratio
+        let { width, height } = img;
+        const maxSize = IMAGE_CONFIG.maxWidth;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Convert to WebP if supported, otherwise JPEG
+        const format = canvas.toDataURL("image/webp").startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+
+        const quality = customQuality || IMAGE_CONFIG.quality;
+        const compressedDataUrl = canvas.toDataURL(format, quality);
+        resolve(compressedDataUrl);
+      };
+
+      img.src = uri;
+    });
+  };
+
   const convertToDataUrl = async (uri: string): Promise<string> => {
     if (Platform.OS === "web") {
       try {
@@ -68,7 +194,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
           mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
           allowsEditing: true,
           aspect: [1, 1], // Square aspect ratio for logo
-          quality: 0.8,
+          quality: IMAGE_CONFIG.quality,
           base64: false,
         });
       } else {
@@ -77,16 +203,23 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
           mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
           allowsEditing: true,
           aspect: [1, 1], // Square aspect ratio for logo
-          quality: 0.8,
+          quality: IMAGE_CONFIG.quality,
           base64: false,
         });
       }
+
       if (!result.canceled && result.assets[0]) {
         let imageUri = result.assets[0].uri;
 
-        // Convert to data URL for web compatibility
+        // Compress and resize the image
         if (Platform.OS === "web") {
-          imageUri = await convertToDataUrl(imageUri);
+          // Use the advanced resizer for web
+          imageUri = await resizeAndCompressImage(imageUri);
+          imageUri = await checkAndOptimizeFileSize(imageUri);
+        } else {
+          // For mobile, expo-image-picker handles the compression with quality setting
+          // The allowsEditing and quality parameters provide basic optimization
+          imageUri = await checkAndOptimizeFileSize(imageUri);
         }
 
         onImageSelect(imageUri);
@@ -121,15 +254,22 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
       const result = await ImagePickerExpo.launchCameraAsync({
         allowsEditing: true,
         aspect: [1, 1], // Square aspect ratio for logo
-        quality: 0.8,
+        quality: IMAGE_CONFIG.quality,
         base64: false,
       });
+
       if (!result.canceled && result.assets[0]) {
         let imageUri = result.assets[0].uri;
 
-        // Convert to data URL for web compatibility
+        // Compress and resize the image
         if (Platform.OS === "web") {
-          imageUri = await convertToDataUrl(imageUri);
+          // Use the advanced resizer for web
+          imageUri = await resizeAndCompressImage(imageUri);
+          imageUri = await checkAndOptimizeFileSize(imageUri);
+        } else {
+          // For mobile, expo-image-picker handles the compression with quality setting
+          // The allowsEditing and quality parameters provide basic optimization
+          imageUri = await checkAndOptimizeFileSize(imageUri);
         }
 
         onImageSelect(imageUri);
@@ -203,15 +343,16 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
             {isUploading && (
               <View style={styles.uploadingOverlay}>
                 <Ionicons name="cloud-upload" size={32} color={COLORS.white} />
-                <Text style={styles.uploadingText}>Subiendo...</Text>
+                <Text style={styles.uploadingText}>Optimizando imagen...</Text>
+                <Text style={styles.uploadingSubtext}>Comprimiendo y redimensionando</Text>
               </View>
             )}
           </View>
         ) : (
           <View style={styles.placeholderContainer}>
             <Ionicons name={isUploading ? "cloud-upload" : "camera"} size={40} color={COLORS.textSecondary} />
-            <Text style={styles.placeholderText}>{isUploading ? "Subiendo..." : placeholder}</Text>
-            <Text style={styles.placeholderSubtext}>{isUploading ? "Por favor espera..." : `Toca para ${Platform.OS === "web" ? "seleccionar" : "seleccionar o tomar una foto"}`}</Text>
+            <Text style={styles.placeholderText}>{isUploading ? "Procesando imagen..." : placeholder}</Text>
+            <Text style={styles.placeholderSubtext}>{isUploading ? "Optimizando tamaño y calidad..." : `Toca para ${Platform.OS === "web" ? "seleccionar" : "seleccionar o tomar una foto"}`}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -304,5 +445,11 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     marginTop: SPACING.sm,
     fontWeight: "600",
+  },
+  uploadingSubtext: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.xs,
+    marginTop: 4,
+    opacity: 0.9,
   },
 });
