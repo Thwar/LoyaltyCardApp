@@ -147,4 +147,23 @@ export class ImageUploadService {
   static async deleteUserProfileImage(profileImageUrl: string): Promise<void> {
     return this.deleteImage(profileImageUrl);
   }
+
+  /**
+   * Upload loyalty card background image
+   * @param imageUri Local URI of the background image
+   * @param loyaltyCardId Loyalty card ID for unique naming
+   * @returns Promise<string> Download URL of uploaded background image
+   */
+  static async uploadLoyaltyCardBackground(imageUri: string, loyaltyCardId: string): Promise<string> {
+    const fileName = `${loyaltyCardId}_background.jpg`;
+    return this.uploadImage(imageUri, "loyalty-card-backgrounds", fileName);
+  }
+
+  /**
+   * Delete loyalty card background image
+   * @param backgroundImageUrl Full download URL of the background image
+   */
+  static async deleteLoyaltyCardBackground(backgroundImageUrl: string): Promise<void> {
+    return this.deleteImage(backgroundImageUrl);
+  }
 }

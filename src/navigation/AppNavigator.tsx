@@ -12,7 +12,6 @@ import { LandingScreen } from "../screens/LandingScreen";
 import { LoginScreen } from "../screens/LoginScreen";
 import { RegisterScreen } from "../screens/RegisterScreen";
 import { CustomerHomeScreen } from "../screens/customer/CustomerHomeScreen";
-import { CustomerCardDetailsScreen } from "../screens/customer/CustomerCardDetailsScreen";
 import { CustomerProfileScreen } from "../screens/customer/CustomerProfileScreen";
 import { BusinessDiscoveryScreen } from "../screens/customer/BusinessDiscoveryScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
@@ -28,6 +27,7 @@ const BusinessTab = createBottomTabNavigator<BusinessTabParamList>();
 const AuthNavigator = () => {
   return (
     <AuthStack.Navigator
+      id={undefined}
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: COLORS.background },
@@ -43,6 +43,7 @@ const AuthNavigator = () => {
 const CustomerNavigator = () => {
   return (
     <CustomerTab.Navigator
+      id={undefined}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
@@ -84,6 +85,7 @@ const CustomerNavigator = () => {
 const BusinessNavigator = () => {
   return (
     <BusinessTab.Navigator
+      id={undefined}
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
@@ -131,6 +133,7 @@ const BusinessStack = createStackNavigator<BusinessStackParamList>();
 const CustomerStackNavigator = () => {
   return (
     <CustomerStack.Navigator
+      id={undefined}
       screenOptions={{
         headerStyle: {
           backgroundColor: COLORS.primary,
@@ -141,16 +144,6 @@ const CustomerStackNavigator = () => {
       }}
     >
       <CustomerStack.Screen name="CustomerTabs" component={CustomerNavigator} options={{ headerShown: false }} />
-      <CustomerStack.Screen
-        name="CardDetails"
-        component={CustomerCardDetailsScreen}
-        options={{
-          title: "Detalles de Tarjeta",
-          headerBackTitle: "Atrás",
-          presentation: "modal",
-          headerShown: false,
-        }}
-      />
       <CustomerStack.Screen
         name="BusinessProfile"
         component={CustomerProfileScreen}
@@ -174,6 +167,7 @@ const CustomerStackNavigator = () => {
 const BusinessStackNavigator = () => {
   return (
     <BusinessStack.Navigator
+      id={undefined}
       screenOptions={{
         headerStyle: {
           backgroundColor: COLORS.primary,

@@ -1,6 +1,5 @@
 // Export all components from this file
 export { Button } from "./Button";
-export { LoyaltyCard } from "./LoyaltyCard";
 export { AnimatedLoyaltyCard } from "./AnimatedLoyaltyCard";
 export { InputField } from "./InputField";
 export { Dropdown } from "./Dropdown";
@@ -15,4 +14,3 @@ export { StampsGrid } from "./StampsGrid";
 export { StampConfirmationModal } from "./StampConfirmationModal";
 export { ColorPicker } from "./ColorPicker";
 export { StampShapePicker } from "./StampShapePicker";
-export { LoyaltyCardPreview } from "./LoyaltyCardPreview";

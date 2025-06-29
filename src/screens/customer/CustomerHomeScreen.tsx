@@ -7,9 +7,11 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
 import { AnimatedLoyaltyCard, LoadingState, EmptyState } from "../../components";
+import { CustomerCardDetailsModal } from "./CustomerCardDetailsScreen";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
 import { CustomerCard, LoyaltyCard as LoyaltyCardType, CustomerTabParamList } from "../../types";
+import { imageCache } from "../../utils";
 
 interface CustomerHomeScreenProps {
   navigation: StackNavigationProp<any>;
@@ -22,6 +24,8 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<CustomerCard | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
   const hasLoadedInitially = useRef(false);
 
   const loadCards = async (isRefresh = false) => {
@@ -37,6 +41,24 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
 
       const customerCards = await CustomerCardService.getUnclaimedRewardCustomerCards(user.id);
       setCards(customerCards);
+
+      // Pre-load all card images in the background for smooth experience
+      const imagesToPreload: string[] = [];
+      customerCards.forEach((card) => {
+        if (card.loyaltyCard?.backgroundImage) {
+          imagesToPreload.push(card.loyaltyCard.backgroundImage);
+        }
+        if (card.loyaltyCard?.businessLogo) {
+          imagesToPreload.push(card.loyaltyCard.businessLogo);
+        }
+      });
+
+      // Pre-load images in the background (don't wait for this)
+      if (imagesToPreload.length > 0) {
+        imageCache.preloadImages(imagesToPreload).catch((error) => {
+          console.warn("Some images failed to preload:", error);
+        });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load cards");
     } finally {
@@ -54,7 +76,13 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   );
 
   const handleCardPress = (card: CustomerCard) => {
-    navigation.navigate("CardDetails", { customerCard: card });
+    setSelectedCard(card);
+    setModalVisible(true);
+  };
+
+  const handleModalClose = () => {
+    setModalVisible(false);
+    setSelectedCard(null);
   };
 
   const handleRetry = () => {
@@ -124,6 +152,9 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
           showsVerticalScrollIndicator={false}
         />
       )}
+
+      {/* Card Details Modal */}
+      {selectedCard && <CustomerCardDetailsModal visible={modalVisible} customerCard={selectedCard} onClose={handleModalClose} />}
     </SafeAreaView>
   );
 };

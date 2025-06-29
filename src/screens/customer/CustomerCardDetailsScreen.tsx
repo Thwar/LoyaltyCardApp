@@ -44,7 +44,7 @@ interface CustomerCardDetailsModalProps {
   navigation?: StackNavigationProp<CustomerStackParamList, any>;
 }
 
-const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ visible, customerCard: initialCard, onClose, navigation }) => {
+const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ visible, customerCard: initialCard, onClose }) => {
   const { showAlert } = useAlert();
   const { user } = useAuth();
   const [card, setCard] = useState<CustomerCard>(initialCard);
@@ -189,9 +189,8 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
       setCard(customerCard);
     }
 
-    // If navigation is available and we want to navigate to a separate card details screen
-    // we can use navigation.navigate here, but since we're already in a card details modal,
-    // we just update the current card being displayed
+    // Since we're already in a card details modal, we just update the current card being displayed
+    // No navigation needed - the modal will update with the new card data
   };
 
   const refreshCard = async () => {

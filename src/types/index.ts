@@ -33,6 +33,7 @@ export interface LoyaltyCard {
   rewardDescription: string;
   cardColor?: string;
   stampShape?: "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
+  backgroundImage?: string;
   createdAt: Date;
   isActive: boolean;
 }
@@ -122,7 +123,6 @@ export type BusinessTabParamList = {
 
 export type CustomerStackParamList = {
   CustomerTabs: undefined;
-  CardDetails: { customerCard: CustomerCard };
   BusinessProfile: { businessId: string };
   ClaimReward: { customerCard: CustomerCard };
   BusinessDiscovery: undefined;

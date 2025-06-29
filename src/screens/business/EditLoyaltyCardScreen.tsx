@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, LoyaltyCardPreview, Dropdown, useAlert } from "../../components";
+import { Button, InputField, LoadingState, ColorPicker, StampShapePicker, AnimatedLoyaltyCard, Dropdown, ImagePicker, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
+import { ImageUploadService } from "../../services/imageUpload";
 import { LoyaltyCard } from "../../types";
 
 interface EditLoyaltyCardModalProps {
@@ -24,6 +25,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     rewardDescription: "",
     cardColor: "#8B1538",
     stampShape: "circle" as "circle" | "square" | "egg" | "triangle" | "diamond" | "star",
+    backgroundImage: "",
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -42,6 +44,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
         rewardDescription: cardData.rewardDescription,
         cardColor: cardData.cardColor || "#8B1538",
         stampShape: cardData.stampShape || "circle",
+        backgroundImage: cardData.backgroundImage || "",
       });
     }
   }, [cardData, visible]);
@@ -72,11 +75,49 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
 
     setSaving(true);
     try {
+      let backgroundImageUrl = formData.backgroundImage;
+      const oldBackgroundImage = loyaltyCard.backgroundImage;
+
+      // If background image was removed (empty string), keep it empty
+      if (!formData.backgroundImage) {
+        backgroundImageUrl = "";
+        // Delete old background image if it exists
+        if (oldBackgroundImage && oldBackgroundImage.startsWith("https://")) {
+          try {
+            await ImageUploadService.deleteLoyaltyCardBackground(oldBackgroundImage);
+          } catch (deleteError) {
+            console.warn("Could not delete old background image:", deleteError);
+            // Don't fail the update if deletion fails
+          }
+        }
+      }
+      // If there's a new background image and it's a data URL (not already uploaded), upload it
+      else if (formData.backgroundImage && formData.backgroundImage.startsWith("data:")) {
+        try {
+          backgroundImageUrl = await ImageUploadService.uploadLoyaltyCardBackground(formData.backgroundImage, loyaltyCard.id);
+
+          // Don't delete old background image when replacing, since the new image
+          // uses the same storage path and would overwrite the old one anyway.
+          // Deleting here would actually delete the newly uploaded image!
+        } catch (uploadError) {
+          console.error("Error uploading background image:", uploadError);
+          showAlert({
+            title: "Error",
+            message: "Error al subir la imagen de fondo. Por favor, intenta de nuevo.",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+      // If it's already an HTTP URL (existing image), keep it as is
+      // backgroundImageUrl = formData.backgroundImage (already set above)
+
       const updates = {
         totalSlots: parseInt(formData.totalSlots),
         rewardDescription: formData.rewardDescription.trim(),
         cardColor: formData.cardColor,
         stampShape: formData.stampShape,
+        backgroundImage: backgroundImageUrl,
       };
       await LoyaltyCardService.updateLoyaltyCard(loyaltyCard.id, updates);
 
@@ -188,6 +229,16 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
 
     setSaving(true);
     try {
+      // Delete background image if it exists before deleting the card
+      if (loyaltyCard.backgroundImage && loyaltyCard.backgroundImage.startsWith("https://")) {
+        try {
+          await ImageUploadService.deleteLoyaltyCardBackground(loyaltyCard.backgroundImage);
+        } catch (deleteError) {
+          console.warn("Could not delete background image:", deleteError);
+          // Don't fail the deletion if image cleanup fails
+        }
+      }
+
       await LoyaltyCardService.deleteLoyaltyCard(loyaltyCard.id);
       showAlert({
         title: "Éxito",
@@ -247,16 +298,32 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
                   labelStyle={{ fontSize: 16 }}
                 />
                 <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
+                <ImagePicker
+                  label="Imagen de Fondo (Opcional)"
+                  value={formData.backgroundImage}
+                  onImageSelect={(uri) => updateFormData("backgroundImage", uri)}
+                  placeholder="Seleccionar imagen de fondo"
+                  error={errors.backgroundImage}
+                />
                 <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
                 {/* Preview Section */}
-                <LoyaltyCardPreview
-                  businessName={loyaltyCard?.businessName}
-                  totalSlots={parseInt(formData.totalSlots) || 10}
+                <AnimatedLoyaltyCard
+                  card={{
+                    id: loyaltyCard?.id || "preview",
+                    businessId: loyaltyCard?.businessId || "preview",
+                    businessName: loyaltyCard?.businessName || "Nombre de Tu Negocio",
+                    totalSlots: parseInt(formData.totalSlots) || 10,
+                    rewardDescription: formData.rewardDescription || "Descripción de tu recompensa",
+                    cardColor: formData.cardColor,
+                    stampShape: formData.stampShape,
+                    backgroundImage: formData.backgroundImage,
+                    createdAt: loyaltyCard?.createdAt || new Date(),
+                    isActive: loyaltyCard?.isActive ?? true,
+                  }}
                   currentStamps={1}
-                  cardColor={formData.cardColor}
-                  stampShape={formData.stampShape}
-                  rewardDescription={formData.rewardDescription}
-                  containerStyle={styles.previewContainer}
+                  showAnimation={false}
+                  enableTilt={false}
+                  style={styles.previewContainer}
                 />
               </View>
               <View style={styles.buttonContainer}>

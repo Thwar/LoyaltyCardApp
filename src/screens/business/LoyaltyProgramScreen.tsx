@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, LoadingState, EmptyState, LoyaltyCardPreview } from "../../components";
+import { Button, LoadingState, EmptyState, AnimatedLoyaltyCard } from "../../components";
 import { CreateLoyaltyCardModal, EditLoyaltyCardModal } from "../business";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
@@ -130,16 +130,7 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
         </View>
       </View>
       {/* Preview Section */}
-      <LoyaltyCardPreview
-        businessName={card.businessName}
-        totalSlots={card.totalSlots}
-        currentStamps={1}
-        cardColor={card.cardColor || COLORS.primary}
-        stampShape={card.stampShape || "circle"}
-        rewardDescription={card.rewardDescription}
-        containerStyle={styles.previewContainer}
-        showTitle={true}
-      />
+      <AnimatedLoyaltyCard card={card} currentStamps={1} showAnimation={false} enableTilt={false} style={styles.previewContainer} />
     </TouchableOpacity>
   );
 
@@ -322,9 +313,6 @@ const styles = StyleSheet.create({
   },
   previewContainer: {
     marginBottom: SPACING.md,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.inputBorder,
   },
 });
 

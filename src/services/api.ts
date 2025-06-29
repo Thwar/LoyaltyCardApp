@@ -544,6 +544,7 @@ export class LoyaltyCardService {
           rewardDescription: data.rewardDescription,
           cardColor: data.cardColor,
           stampShape: data.stampShape,
+          backgroundImage: data.backgroundImage,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -578,6 +579,7 @@ export class LoyaltyCardService {
           rewardDescription: data.rewardDescription,
           cardColor: data.cardColor,
           stampShape: data.stampShape,
+          backgroundImage: data.backgroundImage,
           createdAt: data.createdAt.toDate(),
           isActive: data.isActive,
         };
@@ -689,6 +691,7 @@ export class LoyaltyCardService {
         rewardDescription: data.rewardDescription,
         cardColor: data.cardColor,
         stampShape: data.stampShape,
+        backgroundImage: data.backgroundImage,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -752,6 +755,7 @@ export class LoyaltyCardService {
         rewardDescription: data.rewardDescription,
         cardColor: data.cardColor,
         stampShape: data.stampShape,
+        backgroundImage: data.backgroundImage,
         createdAt: data.createdAt.toDate(),
         isActive: data.isActive,
       };
@@ -863,6 +867,7 @@ export class CustomerCardService {
               rewardDescription: loyaltyCardData.rewardDescription,
               cardColor: loyaltyCardData.cardColor,
               stampShape: loyaltyCardData.stampShape,
+              backgroundImage: loyaltyCardData.backgroundImage,
               createdAt: loyaltyCardData.createdAt.toDate(),
               isActive: loyaltyCardData.isActive,
             };
@@ -916,6 +921,7 @@ export class CustomerCardService {
               rewardDescription: loyaltyCardData.rewardDescription,
               cardColor: loyaltyCardData.cardColor,
               stampShape: loyaltyCardData.stampShape,
+              backgroundImage: loyaltyCardData.backgroundImage,
               createdAt: loyaltyCardData.createdAt.toDate(),
               isActive: loyaltyCardData.isActive,
             };
@@ -1015,6 +1021,7 @@ export class CustomerCardService {
           rewardDescription: loyaltyCardData.rewardDescription,
           cardColor: loyaltyCardData.cardColor,
           stampShape: loyaltyCardData.stampShape,
+          backgroundImage: loyaltyCardData.backgroundImage,
           createdAt: loyaltyCardData.createdAt.toDate(),
           isActive: loyaltyCardData.isActive,
         };
@@ -1080,6 +1087,7 @@ export class CustomerCardService {
               rewardDescription: loyaltyCardData.rewardDescription,
               cardColor: loyaltyCardData.cardColor,
               stampShape: loyaltyCardData.stampShape,
+              backgroundImage: loyaltyCardData.backgroundImage,
               createdAt: loyaltyCardData.createdAt.toDate(),
               isActive: loyaltyCardData.isActive,
             };
@@ -1169,6 +1177,7 @@ export class CustomerCardService {
           rewardDescription: loyaltyCardData.rewardDescription,
           cardColor: loyaltyCardData.cardColor,
           stampShape: loyaltyCardData.stampShape,
+          backgroundImage: loyaltyCardData.backgroundImage,
           createdAt: loyaltyCardData.createdAt.toDate(),
           isActive: loyaltyCardData.isActive,
         };

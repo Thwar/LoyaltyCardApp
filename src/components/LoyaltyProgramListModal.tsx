@@ -35,7 +35,6 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
                 <Ionicons name="business" size={40} color={COLORS.gray} />
               </View>
             )}
-
             {/* Overlay elements */}
             <SafeAreaView style={styles.overlayContainer}>
               <View style={styles.overlayHeader}>
@@ -68,12 +67,10 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
               </View>
             </SafeAreaView>
           </View>
-
           <View style={styles.businessInfoSection}>
             {/* Description and Social Media in new line below */}
             <View>
               <Text style={styles.businessDescriptionLarge}>{selectedBusiness.description}</Text>
-
               <View style={styles.businessHeaderModal}>
                 <View style={styles.businessDetailsModal}>
                   {/* Address */}
@@ -83,7 +80,6 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
                       <Text style={styles.addressText}>{selectedBusiness.address}</Text>
                     </View>
                   )}
-
                   {/* Phone */}
                   {selectedBusiness.phone && (
                     <View style={styles.contactItem}>
@@ -124,7 +120,6 @@ export const LoyaltyProgramListModal: React.FC<LoyaltyCardModalProps> = ({ selec
               const hasCard = selectedBusiness.customerCards.some((card) => card.loyaltyCardId === loyaltyCard.id);
               const customerCard = selectedBusiness.customerCards.find((card) => card.loyaltyCardId === loyaltyCard.id);
               const claimedRewardsCount = selectedBusiness.claimedRewardsCount[loyaltyCard.id] || 0;
-
               return (
                 <LoyaltyProgramItem
                   key={loyaltyCard.id}

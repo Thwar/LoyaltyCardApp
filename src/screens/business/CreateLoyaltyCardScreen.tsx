@@ -3,9 +3,10 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, KeyboardAvo
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, LoyaltyCardPreview, useAlert } from "../../components";
+import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, AnimatedLoyaltyCard, ImagePicker, useAlert } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
+import { ImageUploadService } from "../../services/imageUpload";
 
 interface CreateLoyaltyCardModalProps {
   visible: boolean;
@@ -21,6 +22,7 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
     rewardDescription: "",
     cardColor: "#8B1538", // Default to primary color
     stampShape: "circle" as "circle" | "square" | "egg" | "triangle" | "diamond" | "star",
+    backgroundImage: "",
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -59,6 +61,7 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
       }
       const businessId = businesses[0].id;
 
+      // Create card data without background image first
       const cardData = {
         businessId: businessId,
         businessName: businesses[0].name,
@@ -67,19 +70,45 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
         rewardDescription: formData.rewardDescription,
         cardColor: formData.cardColor,
         stampShape: formData.stampShape,
+        backgroundImage: "", // Will be updated after creation if image exists
         isActive: true,
       };
-      await LoyaltyCardService.createLoyaltyCard(cardData);
+
+      // Create the loyalty card first to get its ID
+      const createdCard = await LoyaltyCardService.createLoyaltyCard(cardData);
+
+      // If there's a background image and it's a data URL, upload it
+      let uploadSuccess = true;
+      if (formData.backgroundImage && formData.backgroundImage.startsWith("data:")) {
+        try {
+          const backgroundImageUrl = await ImageUploadService.uploadLoyaltyCardBackground(formData.backgroundImage, createdCard.id);
+
+          // Update the card with the uploaded background image URL
+          await LoyaltyCardService.updateLoyaltyCard(createdCard.id, {
+            backgroundImage: backgroundImageUrl,
+          });
+        } catch (uploadError) {
+          console.error("Error uploading background image:", uploadError);
+          uploadSuccess = false;
+        }
+      }
 
       // Close modal immediately after successful creation
       onClose();
       onSuccess?.();
 
-      // Show success alert after modal is closed
-      showAlert({
-        title: "¡Éxito!",
-        message: "Tu tarjeta de lealtad ha sido creada exitosamente.",
-      });
+      // Show appropriate success or warning alert after modal is closed
+      if (uploadSuccess) {
+        showAlert({
+          title: "¡Éxito!",
+          message: "Tu tarjeta de lealtad ha sido creada exitosamente.",
+        });
+      } else {
+        showAlert({
+          title: "Tarjeta Creada con Advertencia",
+          message: "La tarjeta fue creada exitosamente, pero hubo un error al subir la imagen de fondo. Puedes editarla más tarde para agregar la imagen.",
+        });
+      }
     } catch (error) {
       showAlert({
         title: "Error",
@@ -135,15 +164,32 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
                 multiline
               />
               <ColorPicker label="Color de la Tarjeta" selectedColor={formData.cardColor} onColorSelect={(color) => updateFormData("cardColor", color)} error={errors.cardColor} />
+              <ImagePicker
+                label="Imagen de Fondo (Opcional)"
+                value={formData.backgroundImage}
+                onImageSelect={(uri) => updateFormData("backgroundImage", uri)}
+                placeholder="Seleccionar imagen de fondo"
+                error={errors.backgroundImage}
+              />
               <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
               {/* Preview Section */}
-              <LoyaltyCardPreview
-                totalSlots={parseInt(formData.totalSlots) || 10}
+              <AnimatedLoyaltyCard
+                card={{
+                  id: "preview",
+                  businessId: "preview",
+                  businessName: "Nombre de Tu Negocio",
+                  totalSlots: parseInt(formData.totalSlots) || 10,
+                  rewardDescription: formData.rewardDescription || "Descripción de tu recompensa",
+                  cardColor: formData.cardColor,
+                  stampShape: formData.stampShape,
+                  backgroundImage: formData.backgroundImage,
+                  createdAt: new Date(),
+                  isActive: true,
+                }}
                 currentStamps={1}
-                cardColor={formData.cardColor}
-                stampShape={formData.stampShape}
-                rewardDescription={formData.rewardDescription}
-                containerStyle={styles.previewContainer}
+                showAnimation={false}
+                enableTilt={false}
+                style={styles.previewContainer}
               />
               <Button title="Crear Tarjeta de Lealtad" onPress={handleCreateCard} loading={loading} size="large" style={styles.createButton} />
             </View>
