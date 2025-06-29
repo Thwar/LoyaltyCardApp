@@ -301,7 +301,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   };
 
   const updateBusinessAfterJoining = useCallback(
-    (loyaltyCard: LoyaltyCard, cardCode: string) => {
+    (loyaltyCard: LoyaltyCard, newCustomerCard: CustomerCard) => {
       if (!user) return;
 
       setBusinesses((prevBusinesses) =>
@@ -312,14 +312,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
               customerCards: [
                 ...business.customerCards,
                 {
-                  id: `temp-${Date.now()}`, // Temporary ID until next full refresh
-                  customerId: user.id,
-                  loyaltyCardId: loyaltyCard.id,
-                  businessId: loyaltyCard.businessId,
-                  currentStamps: 0,
-                  isRewardClaimed: false,
-                  createdAt: new Date(),
-                  cardCode: cardCode,
+                  ...newCustomerCard,
                   loyaltyCard: loyaltyCard,
                 },
               ],
@@ -343,8 +336,8 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       console.log("✅ Generated card code:", cardCode);
 
       // Create the customer card
-      await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
-      console.log("✅ Successfully joined loyalty program");
+      const newCustomerCard = await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
+      console.log("✅ Successfully joined loyalty program with card ID:", newCustomerCard.id);
 
       // Clear joining state FIRST to hide loading modal
       setJoiningCard(null);
@@ -360,8 +353,8 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
         console.log("✅ Success modal should now be visible");
       }, 200);
 
-      // Update the business state optimistically
-      updateBusinessAfterJoining(loyaltyCard, cardCode);
+      // Update the business state optimistically with the real customer card
+      updateBusinessAfterJoining(loyaltyCard, newCustomerCard);
     } catch (error) {
       console.error("❌ Error joining loyalty program:", error);
       setJoiningCard(null); // Clear loading state on error
@@ -369,6 +362,8 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     }
   };
   const handleViewCard = (customerCard: CustomerCard) => {
+    console.log("🔄 Navigating to CustomerCardDetails for card:", customerCard);
+
     navigation.navigate("CustomerCardDetails", {
       customerCard: customerCard,
     });

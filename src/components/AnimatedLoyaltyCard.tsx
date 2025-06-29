@@ -23,318 +23,342 @@ interface AnimatedLoyaltyCardProps {
 
 const { width } = Dimensions.get("window");
 
-export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
-  card,
-  currentStamps = 0,
-  onPress,
-  style,
-  showAnimation = true,
-  cardCode,
-  stampShape = "circle",
-  enableTilt = true,
-  scaleOnHover = 1.03,
-}) => {
-  const isCompleted = currentStamps >= card.totalSlots;
+export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.memo(
+  ({ card, currentStamps = 0, onPress, style, showAnimation = true, cardCode, stampShape = "circle", enableTilt = true, scaleOnHover = 1.03 }) => {
+    const isCompleted = currentStamps >= card.totalSlots;
 
-  // Use stampShape from card first, then prop, then default to circle
-  const selectedStampShape = card.stampShape || stampShape;
+    // Use stampShape from card first, then prop, then default to circle
+    const selectedStampShape = card.stampShape || stampShape;
 
-  // Memoize image sources to prevent unnecessary re-renders
-  const backgroundImageSource = useMemo(() => {
-    return card.backgroundImage ? { uri: card.backgroundImage } : null;
-  }, [card.backgroundImage]);
+    // Memoize image sources to prevent unnecessary re-renders
+    const backgroundImageSource = useMemo(() => {
+      return card.backgroundImage ? { uri: card.backgroundImage } : null;
+    }, [card.backgroundImage]);
 
-  const businessLogoSource = useMemo(() => {
-    return card.businessLogo ? { uri: card.businessLogo } : null;
-  }, [card.businessLogo]);
+    const businessLogoSource = useMemo(() => {
+      return card.businessLogo ? { uri: card.businessLogo } : null;
+    }, [card.businessLogo]);
 
-  // Memoize texture dots to prevent re-creation on every render
-  const textureDots = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => (
-        <View
-          key={i}
-          style={[
-            styles.textureDot,
-            {
-              top: 30 + (i % 4) * 40,
-              left: 30 + Math.floor(i / 4) * 60,
-              opacity: 0.5 + (i % 3) * 0.2,
-            },
-          ]}
-        />
-      )),
-    []
-  );
+    // Memoize texture dots to prevent re-creation on every render
+    const textureDots = useMemo(
+      () =>
+        Array.from({ length: 12 }, (_, i) => (
+          <View
+            key={i}
+            style={[
+              styles.textureDot,
+              {
+                top: 30 + (i % 4) * 40,
+                left: 30 + Math.floor(i / 4) * 60,
+                opacity: 0.5 + (i % 3) * 0.2,
+              },
+            ]}
+          />
+        )),
+      []
+    );
 
-  // Pre-load images when component mounts or URLs change
-  useEffect(() => {
-    const imagesToPreload: string[] = [];
-    if (card.backgroundImage) imagesToPreload.push(card.backgroundImage);
-    if (card.businessLogo) imagesToPreload.push(card.businessLogo);
+    // Pre-load images when component mounts or URLs change
+    useEffect(() => {
+      const imagesToPreload: string[] = [];
+      if (card.backgroundImage) imagesToPreload.push(card.backgroundImage);
+      if (card.businessLogo) imagesToPreload.push(card.businessLogo);
 
-    if (imagesToPreload.length > 0) {
-      imageCache.preloadImages(imagesToPreload);
-    }
-  }, [card.backgroundImage, card.businessLogo]);
+      if (imagesToPreload.length > 0) {
+        imageCache.preloadImages(imagesToPreload);
+      }
+    }, [card.backgroundImage, card.businessLogo]);
 
-  // Animation values - only create what we need
-  const scaleValue = useRef(new Animated.Value(1)).current;
-  const pulseValue = useRef(new Animated.Value(1)).current;
-  const shinePosition = useRef(new Animated.Value(-width)).current;
-  const tiltScale = useRef(new Animated.Value(1)).current;
-  const borderGlow = useRef(new Animated.Value(0.5)).current;
+    // Animation values - only create what we need
+    const scaleValue = useRef(new Animated.Value(1)).current;
+    const pulseValue = useRef(new Animated.Value(1)).current;
+    const shinePosition = useRef(new Animated.Value(-width)).current;
+    const tiltScale = useRef(new Animated.Value(1)).current;
+    const borderGlow = useRef(new Animated.Value(0.5)).current;
 
-  // Animation cleanup ref
-  const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
+    // Animation cleanup ref
+    const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
 
-  useEffect(() => {
-    // Clear previous animations
-    animationsRef.current.forEach((anim) => anim.stop());
-    animationsRef.current = [];
+    // Track animation state to prevent unnecessary restarts
+    const animationState = useRef({ isCompleted: false, showAnimation: false });
 
-    if (showAnimation && isCompleted) {
-      // Reset shine position to start position
-      shinePosition.setValue(-width);
+    useEffect(() => {
+      const currentState = { isCompleted, showAnimation };
 
-      // Pulse animation for completed cards
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseValue, {
-            toValue: 1.05,
-            duration: 800,
-            useNativeDriver: true,
+      // Only restart animations if the relevant state has actually changed
+      if (animationState.current.isCompleted === currentState.isCompleted && animationState.current.showAnimation === currentState.showAnimation) {
+        return;
+      }
+
+      // Update tracked state
+      animationState.current = currentState;
+
+      // Clear previous animations
+      animationsRef.current.forEach((anim) => anim.stop());
+      animationsRef.current = [];
+
+      if (showAnimation && isCompleted) {
+        // Reset shine position to start position
+        shinePosition.setValue(-width);
+
+        // Pulse animation for completed cards
+        const pulseAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseValue, {
+              toValue: 1.05,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseValue, {
+              toValue: 1,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+
+        // Shine effect for completed cards only
+        const shineAnimation = Animated.loop(
+          Animated.timing(shinePosition, {
+            toValue: width,
+            duration: 2000,
+            useNativeDriver: false,
           }),
-          Animated.timing(pulseValue, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
+          { iterations: -1 }
+        );
+
+        animationsRef.current.push(pulseAnimation, shineAnimation);
+        pulseAnimation.start();
+        shineAnimation.start();
+      } else {
+        // Reset shine position when animation is disabled or card is not completed
+        shinePosition.setValue(-width);
+      }
+
+      // Cleanup function
+      return () => {
+        animationsRef.current.forEach((anim) => anim.stop());
+      };
+    }, [isCompleted, showAnimation]);
+
+    // Separate effect for border glow that doesn't depend on card completion
+    useEffect(() => {
+      // Subtle glass border glow animation - always run this
+      const glowAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(borderGlow, {
+            toValue: 0.8,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(borderGlow, {
+            toValue: 0.5,
+            duration: 2000,
+            useNativeDriver: false,
           }),
         ])
       );
 
-      // Shine effect for completed cards only
-      const shineAnimation = Animated.loop(
-        Animated.timing(shinePosition, {
-          toValue: width,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        { iterations: -1 }
-      );
+      glowAnimation.start();
 
-      animationsRef.current.push(pulseAnimation, shineAnimation);
-      pulseAnimation.start();
-      shineAnimation.start();
-    } else {
-      // Reset shine position when animation is disabled or card is not completed
-      shinePosition.setValue(-width);
-    }
+      return () => {
+        glowAnimation.stop();
+      };
+    }, []); // Only run once
 
-    // Subtle glass border glow animation
-    const glowAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(borderGlow, {
-          toValue: 0.8,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(borderGlow, {
-          toValue: 0.5,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-      ])
-    );
-
-    animationsRef.current.push(glowAnimation);
-    glowAnimation.start();
-
-    // Cleanup function
-    return () => {
-      animationsRef.current.forEach((anim) => anim.stop());
+    // Touch handlers for scale effect only (no tilt)
+    const handleTouchStart = () => {
+      Animated.spring(tiltScale, {
+        toValue: scaleOnHover,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }).start();
     };
-  }, [isCompleted, showAnimation, width]);
 
-  // Touch handlers for scale effect only (no tilt)
-  const handleTouchStart = () => {
-    Animated.spring(tiltScale, {
-      toValue: scaleOnHover,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 10,
-    }).start();
-  };
+    const handleTouchEnd = () => {
+      Animated.spring(tiltScale, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 300,
+        friction: 10,
+      }).start();
+    };
 
-  const handleTouchEnd = () => {
-    Animated.spring(tiltScale, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 10,
-    }).start();
-  };
+    const handlePress = () => {
+      if (onPress) {
+        // Scale animation on press
+        Animated.sequence([
+          Animated.timing(scaleValue, {
+            toValue: 0.95,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scaleValue, {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+        ]).start();
 
-  const handlePress = () => {
-    if (onPress) {
-      // Scale animation on press
-      Animated.sequence([
-        Animated.timing(scaleValue, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleValue, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]).start();
+        onPress();
+      }
+    };
 
-      onPress();
-    }
-  };
+    const CardContent = () => (
+      <View style={styles.container}>
+        {/* Business Logo Background - Only show if no custom background image */}
+        {backgroundImageSource && <Image source={backgroundImageSource} style={styles.backgroundLogo} resizeMode="cover" />}
 
-  const CardContent = () => (
-    <View style={styles.container}>
-      {/* Business Logo Background - Only show if no custom background image */}
-      {backgroundImageSource && <Image source={backgroundImageSource} style={styles.backgroundLogo} resizeMode="cover" />}
-
-      {/* Glass Border Effect */}
-      <Animated.View
-        style={[
-          styles.glassBorder,
-          {
-            opacity: borderGlow,
-          },
-        ]}
-      />
-
-      {/* 3D Background Overlay */}
-      <View style={styles.backgroundOverlay} />
-
-      {/* Subtle Texture Overlay - Only when no background image */}
-      {!card.backgroundImage && (
-        <View style={styles.textureOverlay}>
-          <View style={styles.texturePattern} />
-          <View style={[styles.texturePattern, styles.texturePattern2]} />
-          <View style={[styles.texturePattern, styles.texturePattern3]} />
-          {/* Add multiple small dots for texture */}
-          {textureDots}
-        </View>
-      )}
-
-      {/* Shine Effect Overlay */}
-      {showAnimation && isCompleted && (
+        {/* Glass Border Effect */}
         <Animated.View
           style={[
-            styles.shineOverlay,
+            styles.glassBorder,
             {
-              transform: [{ translateX: shinePosition }],
+              opacity: borderGlow,
             },
           ]}
         />
-      )}
 
-      {/* Header - Business Name and Progress */}
-      <View style={[styles.header, !card.backgroundImage && styles.headerNoBackground]}>
-        <View style={styles.businessInfo}>
-          {businessLogoSource && !card.backgroundImage && <Image source={businessLogoSource} style={styles.businessLogo} resizeMode="contain" />}
+        {/* 3D Background Overlay */}
+        <View style={styles.backgroundOverlay} />
 
-          <Text style={styles.businessName} numberOfLines={1}>
-            {card.businessName}
+        {/* Subtle Texture Overlay - Only when no background image */}
+        {!card.backgroundImage && (
+          <View style={styles.textureOverlay}>
+            <View style={styles.texturePattern} />
+            <View style={[styles.texturePattern, styles.texturePattern2]} />
+            <View style={[styles.texturePattern, styles.texturePattern3]} />
+            {/* Add multiple small dots for texture */}
+            {textureDots}
+          </View>
+        )}
+
+        {/* Shine Effect Overlay */}
+        {showAnimation && isCompleted && (
+          <Animated.View
+            style={[
+              styles.shineOverlay,
+              {
+                transform: [{ translateX: shinePosition }],
+              },
+            ]}
+          />
+        )}
+
+        {/* Header - Business Name and Progress */}
+        <View style={[styles.header, !card.backgroundImage && styles.headerNoBackground]}>
+          <View style={styles.businessInfo}>
+            {businessLogoSource && !card.backgroundImage && <Image source={businessLogoSource} style={styles.businessLogo} resizeMode="contain" />}
+
+            <Text style={styles.businessName} numberOfLines={1}>
+              {card.businessName}
+            </Text>
+          </View>
+          <View style={styles.progressContainer}>
+            <Text style={styles.progress}>#{cardCode}</Text>
+            {isCompleted && <Ionicons name="gift" size={24} color={COLORS.white} style={styles.giftIcon} />}
+          </View>
+        </View>
+
+        {/* Stamps Grid */}
+        <StampsGrid
+          totalSlots={card.totalSlots}
+          currentStamps={currentStamps}
+          stampShape={selectedStampShape}
+          showAnimation={showAnimation}
+          size={card.totalSlots >= 7 ? "medium" : "large"}
+          stampColor={card.cardColor || COLORS.primary}
+        />
+        {/* Reward Description */}
+        <View style={styles.rewardContainer}>
+          <Text style={styles.rewardDescription} numberOfLines={2}>
+            🎁 {card.rewardDescription}
           </Text>
         </View>
-        <View style={styles.progressContainer}>
-          <Text style={styles.progress}>#{cardCode}</Text>
-          {isCompleted && <Ionicons name="gift" size={24} color={COLORS.white} style={styles.giftIcon} />}
+      </View>
+    );
+    const cardStyle = [
+      styles.cardWrapper,
+      style,
+      {
+        transform: [
+          { scale: showAnimation && isCompleted ? pulseValue : scaleValue },
+          ...(enableTilt
+            ? [
+                { scale: tiltScale },
+                { rotateX: "2deg" }, // Simplified tilt effect
+              ]
+            : [
+                { rotateX: "2deg" }, // Default subtle 3D tilt when tilt is disabled
+              ]),
+        ],
+      },
+    ];
+
+    const TiltContainer = ({ children }: { children: React.ReactNode }) => {
+      if (!enableTilt) {
+        return <>{children}</>;
+      }
+
+      return (
+        <View onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchEnd} style={styles.tiltContainer}>
+          {children}
         </View>
-      </View>
+      );
+    };
 
-      {/* Stamps Grid */}
-      <StampsGrid
-        totalSlots={card.totalSlots}
-        currentStamps={currentStamps}
-        stampShape={selectedStampShape}
-        showAnimation={showAnimation}
-        size={card.totalSlots >= 7 ? "medium" : "large"}
-        stampColor={card.cardColor || COLORS.primary}
-      />
-      {/* Reward Description */}
-      <View style={styles.rewardContainer}>
-        <Text style={styles.rewardDescription} numberOfLines={2}>
-          🎁 {card.rewardDescription}
-        </Text>
-      </View>
-    </View>
-  );
-  const cardStyle = [
-    styles.cardWrapper,
-    style,
-    {
-      transform: [
-        { scale: showAnimation && isCompleted ? pulseValue : scaleValue },
-        ...(enableTilt
-          ? [
-              { scale: tiltScale },
-              { rotateX: "2deg" }, // Simplified tilt effect
-            ]
-          : [
-              { rotateX: "2deg" }, // Default subtle 3D tilt when tilt is disabled
-            ]),
-      ],
-    },
-  ];
+    const cardContent = (
+      <LinearGradient
+        colors={[card.cardColor || COLORS.primary, card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark]}
+        style={[styles.gradient, card.backgroundImage && styles.gradientWithBackground]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <CardContent />
+      </LinearGradient>
+    );
 
-  const TiltContainer = ({ children }: { children: React.ReactNode }) => {
-    if (!enableTilt) {
-      return <>{children}</>;
+    if (onPress) {
+      return (
+        <Animated.View style={cardStyle}>
+          <TiltContainer>
+            <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
+              {cardContent}
+            </TouchableOpacity>
+          </TiltContainer>
+        </Animated.View>
+      );
     }
 
     return (
-      <View onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchEnd} style={styles.tiltContainer}>
-        {children}
-      </View>
-    );
-  };
-
-  const cardContent = (
-    <LinearGradient
-      colors={[card.cardColor || COLORS.primary, card.cardColor ? `${card.cardColor}CC` : COLORS.primaryDark]}
-      style={[styles.gradient, card.backgroundImage && styles.gradientWithBackground]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-    >
-      <CardContent />
-    </LinearGradient>
-  );
-
-  if (onPress) {
-    return (
       <Animated.View style={cardStyle}>
         <TiltContainer>
-          <TouchableOpacity onPress={handlePress} activeOpacity={0.9}>
-            {cardContent}
-          </TouchableOpacity>
+          {backgroundImageSource ? (
+            <ImageBackground source={backgroundImageSource} style={styles.backgroundImage} imageStyle={{ borderRadius: 20, resizeMode: "cover" }}>
+              {cardContent}
+            </ImageBackground>
+          ) : (
+            cardContent
+          )}
         </TiltContainer>
       </Animated.View>
     );
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function to prevent unnecessary re-renders
+    return (
+      prevProps.currentStamps === nextProps.currentStamps &&
+      prevProps.showAnimation === nextProps.showAnimation &&
+      prevProps.cardCode === nextProps.cardCode &&
+      prevProps.stampShape === nextProps.stampShape &&
+      prevProps.enableTilt === nextProps.enableTilt &&
+      prevProps.scaleOnHover === nextProps.scaleOnHover &&
+      JSON.stringify(prevProps.card) === JSON.stringify(nextProps.card) &&
+      JSON.stringify(prevProps.style) === JSON.stringify(nextProps.style)
+    );
   }
-
-  return (
-    <Animated.View style={cardStyle}>
-      <TiltContainer>
-        {backgroundImageSource ? (
-          <ImageBackground source={backgroundImageSource} style={styles.backgroundImage} imageStyle={{ borderRadius: 20, resizeMode: "cover" }}>
-            {cardContent}
-          </ImageBackground>
-        ) : (
-          cardContent
-        )}
-      </TiltContainer>
-    </Animated.View>
-  );
-};
+);
 
 const styles = StyleSheet.create({
   cardWrapper: {

@@ -19,7 +19,7 @@
  * ```
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, Modal, TouchableOpacity, Dimensions, Platform, Alert } from "react-native";
 import { RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -56,11 +56,26 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
   const [redemptionCount, setRedemptionCount] = useState<number>(0);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Track last refresh time to prevent unnecessary re-renders
+  const lastRefreshTime = useRef(0);
+
   // Simple cache for business data to avoid repeated fetches
   const [businessCache, setBusinessCache] = useState<Record<string, BusinessWithCards>>({});
 
   const isCardComplete = card.currentStamps >= (card.loyaltyCard?.totalSlots || 0);
   const canClaimReward = isCardComplete && !card.isRewardClaimed;
+
+  // Memoize card props to prevent unnecessary re-renders of AnimatedLoyaltyCard
+  const cardProps = useMemo(
+    () => ({
+      card: card.loyaltyCard,
+      currentStamps: card.currentStamps,
+      cardCode: card.cardCode,
+      showAnimation: true,
+      stampShape: card.loyaltyCard?.stampShape,
+    }),
+    [card.loyaltyCard, card.currentStamps, card.cardCode]
+  );
 
   const handleDestroyCard = () => {
     console.log("handleDestroyCard called");
@@ -292,7 +307,15 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
 
   useEffect(() => {
     if (visible) {
-      refreshCard();
+      // Only refresh card if it's been more than 5 seconds since last refresh
+      // This prevents unnecessary re-renders that interrupt animations
+      const now = Date.now();
+
+      if (now - lastRefreshTime.current > 5000) {
+        refreshCard();
+        lastRefreshTime.current = now;
+      }
+
       fetchRedemptionCount();
     }
   }, [visible]);
@@ -321,7 +344,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
         <ScrollView style={styles.scrollView}>
           {/* Card Display */}
           <View style={styles.cardContainer}>
-            <AnimatedLoyaltyCard card={card.loyaltyCard} currentStamps={card.currentStamps} cardCode={card.cardCode} showAnimation={true} stampShape={card.loyaltyCard?.stampShape} />
+            <AnimatedLoyaltyCard {...cardProps} />
           </View>
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>

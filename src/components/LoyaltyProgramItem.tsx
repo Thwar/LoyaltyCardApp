@@ -51,6 +51,7 @@ export const LoyaltyProgramItem: React.FC<LoyaltyProgramItemProps> = ({ loyaltyC
             style={[styles.actionButton, styles.viewCardButton]}
             onPress={() => {
               if (customerCard) {
+                console.log("🔄 Navigating to CustomerCardDetails for card:", customerCard);
                 onViewCard(customerCard);
               }
             }}
