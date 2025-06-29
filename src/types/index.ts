@@ -124,7 +124,7 @@ export type BusinessTabParamList = {
 export type CustomerStackParamList = {
   CustomerTabs: undefined;
   BusinessProfile: { businessId: string };
-  ClaimReward: { customerCard: CustomerCard };
+  CustomerCardDetails: { customerCard: CustomerCard };
   BusinessDiscovery: undefined;
 };
 

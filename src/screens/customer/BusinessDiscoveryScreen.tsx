@@ -316,7 +316,7 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     }
   };
   const handleViewCard = (customerCard: CustomerCard) => {
-    navigation.navigate("CardDetails", {
+    navigation.navigate("CustomerCardDetails", {
       customerCard: customerCard,
     });
   };

@@ -543,10 +543,6 @@ const styles = StyleSheet.create({
   },
   giftIcon: {
     marginTop: 4,
-    shadowColor: "rgba(0, 0, 0, 0.25)",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 1,
-    shadowRadius: 2,
     elevation: 3,
   },
 

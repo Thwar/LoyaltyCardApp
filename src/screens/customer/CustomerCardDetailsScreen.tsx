@@ -253,14 +253,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
         <ScrollView style={styles.scrollView}>
           {/* Card Display */}
           <View style={styles.cardContainer}>
-            <AnimatedLoyaltyCard
-              card={card.loyaltyCard}
-              currentStamps={card.currentStamps}
-              cardCode={card.cardCode}
-              showAnimation={true}
-              stampShape={card.loyaltyCard?.stampShape}
-              customerCard={card}
-            />
+            <AnimatedLoyaltyCard card={card.loyaltyCard} currentStamps={card.currentStamps} cardCode={card.cardCode} showAnimation={true} stampShape={card.loyaltyCard?.stampShape} />
           </View>
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
@@ -446,8 +439,8 @@ const styles = StyleSheet.create({
 
 // Screen wrapper component for backward compatibility
 interface CustomerCardDetailsScreenProps {
-  navigation: StackNavigationProp<CustomerStackParamList, "ClaimReward">;
-  route: RouteProp<CustomerStackParamList, "ClaimReward">;
+  navigation: StackNavigationProp<CustomerStackParamList, "CustomerCardDetails">;
+  route: RouteProp<CustomerStackParamList, "CustomerCardDetails">;
 }
 
 export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps> = ({ navigation, route }) => {

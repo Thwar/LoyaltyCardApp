@@ -14,6 +14,7 @@ import { RegisterScreen } from "../screens/RegisterScreen";
 import { CustomerHomeScreen } from "../screens/customer/CustomerHomeScreen";
 import { CustomerProfileScreen } from "../screens/customer/CustomerProfileScreen";
 import { BusinessDiscoveryScreen } from "../screens/customer/BusinessDiscoveryScreen";
+import { CustomerCardDetailsScreen } from "../screens/customer/CustomerCardDetailsScreen";
 import { BusinessDashboardScreen } from "../screens/business/BusinessDashboardScreen";
 import { BusinessSettingsScreen } from "../screens/business/BusinessSettingsScreen";
 import { LoyaltyProgramScreen } from "../screens/business/LoyaltyProgramScreen";
@@ -157,6 +158,14 @@ const CustomerStackNavigator = () => {
         component={BusinessDiscoveryScreen}
         options={{
           title: "Descubrir Negocios",
+          headerBackTitle: "Atrás",
+        }}
+      />
+      <CustomerStack.Screen
+        name="CustomerCardDetails"
+        component={CustomerCardDetailsScreen}
+        options={{
+          title: "Detalles de Tarjeta",
           headerBackTitle: "Atrás",
         }}
       />
