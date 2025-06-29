@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { View, Text, StyleSheet, Animated, Dimensions } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
+import { createShadowStyle } from "../utils";
 
 type StampShape = "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
 
@@ -269,11 +270,13 @@ const styles = StyleSheet.create({
   stampFilled: {
     borderColor: COLORS.white,
     borderWidth: 3,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 2,
+    ...createShadowStyle({
+      shadowColor: COLORS.primary,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.3,
+      shadowRadius: 3,
+      elevation: 2,
+    }),
   },
   stampNumber: {
     color: "rgba(128, 128, 128, 0.8)",

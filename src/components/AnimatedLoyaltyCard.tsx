@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { LoyaltyCard as LoyaltyCardType } from "../types";
 import { StampsGrid } from "./StampsGrid";
-import { imageCache } from "../utils";
+import { imageCache, createShadowStyle, createTextShadowStyle } from "../utils";
 
 type StampShape = "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
 
@@ -335,11 +335,13 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.sm,
     borderRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8.0,
-    elevation: 12,
+    ...createShadowStyle({
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.25,
+      shadowRadius: 8.0,
+      elevation: 12,
+    }),
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
   },
@@ -500,9 +502,11 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     marginBottom: 4,
     flex: 1,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 1, height: 2 },
-    textShadowRadius: 4,
+    ...createTextShadowStyle({
+      textShadowColor: "rgba(0, 0, 0, 0.5)",
+      textShadowOffset: { width: 1, height: 2 },
+      textShadowRadius: 4,
+    }),
   },
   businessLogo: {
     width: 72,
@@ -537,9 +541,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 2,
     elevation: 2,
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    ...createTextShadowStyle({
+      textShadowColor: "rgba(0, 0, 0, 0.5)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    }),
   },
   giftIcon: {
     marginTop: 4,
@@ -567,9 +573,11 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     opacity: 0.95,
     lineHeight: 18,
-    textShadowColor: "rgba(0, 0, 0, 0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    ...createTextShadowStyle({
+      textShadowColor: "rgba(0, 0, 0, 0.4)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    }),
   },
   gradientWithBackground: {
     backgroundColor: "rgba(0, 0, 0, 0.2)",

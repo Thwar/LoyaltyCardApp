@@ -4,7 +4,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState } from "../../components";
-import { CreateLoyaltyCardModal } from "../business";
+import { CreateLoyaltyCardModal } from "./CreateLoyaltyCardScreen";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { CustomerCardService, BusinessService, LoyaltyCardService } from "../../services/api";
 import { CustomerCard, LoyaltyCard } from "../../types";

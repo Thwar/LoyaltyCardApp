@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState } from "../../components";
-import { CreateLoyaltyCardModal } from "../business";
+import { CreateLoyaltyCardModal } from "./CreateLoyaltyCardScreen";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { BusinessService, LoyaltyCardService, CustomerCardService } from "../../services/api";
 import { Business, LoyaltyCard } from "../../types";
@@ -36,76 +36,84 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadDashboardData = async (isRefresh = false) => {
-    if (!user) return;
+  const loadDashboardData = useCallback(
+    async (isRefresh = false) => {
+      if (!user) return;
 
-    try {
-      if (isRefresh) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
+      try {
+        if (isRefresh) {
+          setRefreshing(true);
+        } else {
+          setLoading(true);
+        }
+        setError(null);
 
-      // Load business info
-      const businesses = await BusinessService.getBusinessesByOwner(user.id);
-      console.log("Found businesses:", businesses.length);
-      const userBusiness = businesses[0];
-      setBusiness(userBusiness);
-      console.log("User business:", userBusiness);
-      if (userBusiness) {
-        // Load loyalty cards for this business
-        console.log("Loading loyalty cards for business:", userBusiness.id);
-        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(userBusiness.id);
-        console.log("Found loyalty cards:", loyaltyCards.length, loyaltyCards);
-        setLoyaltyCards(loyaltyCards);
+        // Load business info
+        const businesses = await BusinessService.getBusinessesByOwner(user.id);
+        const userBusiness = businesses[0];
+        setBusiness(userBusiness);
 
-        // Calculate stats
-        let totalStamps = 0;
-        let activeCustomers = 0;
-        let claimedRewards = 0;
-        const uniqueCustomers = new Set<string>();
+        if (userBusiness) {
+          // Load loyalty cards for this business
+          const businessLoyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(userBusiness.id);
+          setLoyaltyCards(businessLoyaltyCards);
 
-        for (const card of loyaltyCards) {
-          const customerCards = await CustomerCardService.getAllCustomerCardsByLoyaltyCard(card.id);
-          console.log(`Customer cards for loyalty card ${card.id}:`, customerCards.length, customerCards);
+          if (businessLoyaltyCards.length > 0) {
+            // Get all customer cards for all loyalty cards in parallel
+            const customerCardsPromises = businessLoyaltyCards.map((card) => CustomerCardService.getAllCustomerCardsByLoyaltyCard(card.id));
 
-          customerCards.forEach((customerCard) => {
-            totalStamps += customerCard.currentStamps;
-            // Count each unique customer who has joined the loyalty program
+            const allCustomerCardsArrays = await Promise.all(customerCardsPromises);
+            const allCustomerCards = allCustomerCardsArrays.flat();
 
-            if (customerCard.isRewardClaimed) {
-              claimedRewards++;
-            } else {
-              uniqueCustomers.add(customerCard.customerId);
-            }
+            // Calculate stats efficiently
+            const uniqueActiveCustomers = new Set<string>();
+            let totalStamps = 0;
+            let claimedRewards = 0;
+
+            allCustomerCards.forEach((customerCard) => {
+              totalStamps += customerCard.currentStamps;
+
+              if (customerCard.isRewardClaimed) {
+                claimedRewards++;
+              } else {
+                uniqueActiveCustomers.add(customerCard.customerId);
+              }
+            });
+
+            setStats({
+              totalCards: businessLoyaltyCards.length,
+              activeCustomers: uniqueActiveCustomers.size,
+              totalStamps,
+              claimedRewards,
+            });
+          } else {
+            // Reset stats if no loyalty cards
+            setStats({
+              totalCards: 0,
+              activeCustomers: 0,
+              totalStamps: 0,
+              claimedRewards: 0,
+            });
+          }
+        } else {
+          // Reset everything if no business
+          setLoyaltyCards([]);
+          setStats({
+            totalCards: 0,
+            activeCustomers: 0,
+            totalStamps: 0,
+            claimedRewards: 0,
           });
         }
-
-        // Active customers = total unique customers who have joined any loyalty program and not claimed rewards
-        activeCustomers = uniqueCustomers.size;
-
-        console.log("Final stats:", {
-          totalCards: loyaltyCards.length,
-          activeCustomers,
-          totalStamps,
-          claimedRewards,
-        });
-
-        setStats({
-          totalCards: loyaltyCards.length,
-          activeCustomers,
-          totalStamps,
-          claimedRewards,
-        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load dashboard");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    },
+    [user]
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -113,21 +121,48 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
     }, [user])
   );
 
-  const handleRetry = () => {
+  const handleNavigateToAddStamp = useCallback(() => {
+    if (loyaltyCards.length > 0 && business) {
+      navigation.navigate("AddStamp", {
+        loyaltyCardId: loyaltyCards[0].id,
+        businessId: business.id,
+      });
+    } else {
+      alert("Primero debe crear una tarjeta de lealtad");
+    }
+  }, [loyaltyCards, business, navigation]);
+
+  const handleNavigateToCustomers = useCallback(() => {
+    navigation.navigate("BusinessTabs", { screen: "Customers" });
+  }, [navigation]);
+
+  const handleNavigateToSettings = useCallback(() => {
+    navigation.navigate("BusinessTabs", { screen: "Settings" });
+  }, [navigation]);
+
+  const handleRefresh = useCallback(() => {
+    loadDashboardData(true);
+  }, [loadDashboardData]);
+
+  const handleCreateModalSuccess = useCallback(() => {
     loadDashboardData();
-  };
+  }, [loadDashboardData]);
+
+  const handleRetry = useCallback(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   const StatCard: React.FC<{
     title: string;
     value: string | number;
     icon: string;
-  }> = ({ title, value, icon }) => (
+  }> = React.memo(({ title, value, icon }) => (
     <View style={styles.statCard}>
       <Text style={styles.statIcon}>{icon}</Text>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statTitle}>{title}</Text>
     </View>
-  );
+  ));
 
   if (loading && !refreshing) {
     return <LoadingState loading={true} />;
@@ -139,7 +174,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.scrollView} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadDashboardData(true)} colors={[COLORS.primary]} tintColor={COLORS.primary} />}>
+      <ScrollView style={styles.scrollView} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.welcomeText}>Bienvenido,</Text>
@@ -159,37 +194,21 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
           {loyaltyCards.length === 0 && <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => setCreateModalVisible(true)} size="large" style={styles.actionButton} />}
-          <Button
-            title="Gestionar Tarjetas de Clientes"
-            onPress={() => {
-              if (loyaltyCards.length > 0 && business) {
-                navigation.navigate("AddStamp", {
-                  loyaltyCardId: loyaltyCards[0].id,
-                  businessId: business.id,
-                });
-              } else {
-                // Show alert to create a loyalty card first
-                alert("Primero debe crear una tarjeta de lealtad");
-              }
-            }}
-            variant="outline"
-            size="large"
-            style={styles.actionButton}
-          />
-          <Button title="Ver Todos los Clientes" onPress={() => navigation.navigate("BusinessTabs", { screen: "Customers" })} variant="outline" size="large" style={styles.actionButton} />
+          <Button title="Gestionar Tarjetas de Clientes" onPress={handleNavigateToAddStamp} variant="outline" size="large" style={styles.actionButton} />
+          <Button title="Ver Todos los Clientes" onPress={handleNavigateToCustomers} variant="outline" size="large" style={styles.actionButton} />
         </View>
         {/* Business Setup */}
         {!business && (
           <View style={styles.setupContainer}>
             <Text style={styles.setupTitle}>Completa la Configuración de Tu Negocio</Text>
             <Text style={styles.setupText}>Configura el perfil de tu negocio para comenzar a crear tarjetas de lealtad y gestionar clientes.</Text>
-            <Button title="Configurar Perfil del Negocio" onPress={() => navigation.navigate("BusinessTabs", { screen: "Settings" })} size="large" style={styles.setupButton} />
+            <Button title="Configurar Perfil del Negocio" onPress={handleNavigateToSettings} size="large" style={styles.setupButton} />
           </View>
         )}
       </ScrollView>
 
       {/* Modal */}
-      <CreateLoyaltyCardModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSuccess={() => loadDashboardData()} />
+      <CreateLoyaltyCardModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSuccess={handleCreateModalSuccess} />
     </SafeAreaView>
   );
 };

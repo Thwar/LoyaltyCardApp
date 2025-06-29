@@ -6,7 +6,8 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState, EmptyState, AnimatedLoyaltyCard } from "../../components";
-import { CreateLoyaltyCardModal, EditLoyaltyCardModal } from "../business";
+import { CreateLoyaltyCardModal } from "./CreateLoyaltyCardScreen";
+import { EditLoyaltyCardModal } from "./EditLoyaltyCardScreen";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
 import { LoyaltyCard, BusinessTabParamList } from "../../types";
