@@ -47,19 +47,3 @@ export const testFirebaseConnection = async () => {
     };
   }
 };
-
-// Test function for debugging auth state
-export const debugAuthState = () => {
-  console.log("=== Firebase Auth Debug ===");
-  console.log("Auth object:", auth);
-  console.log("Current user:", auth.currentUser);
-  console.log("Auth state ready:", auth.authStateReady);
-
-  // Listen for auth state changes
-  const unsubscribe = auth.onAuthStateChanged((user) => {
-    console.log("Auth state changed:", user ? `Logged in as ${user.email}` : "Logged out");
-  });
-
-  // Return unsubscribe function
-  return unsubscribe;
-};
