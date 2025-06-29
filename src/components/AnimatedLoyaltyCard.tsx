@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground, ViewStyle } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
@@ -13,14 +13,11 @@ interface AnimatedLoyaltyCardProps {
   card: LoyaltyCardType;
   currentStamps?: number;
   onPress?: () => void;
-  style?: any;
+  style?: ViewStyle;
   showAnimation?: boolean;
   cardCode?: string;
   stampShape?: StampShape;
-  customerCard?: { createdAt: Date };
-  // Gyroscope tilt animation props
   enableTilt?: boolean;
-  tiltAmplitude?: number;
   scaleOnHover?: number;
 }
 
@@ -35,25 +32,40 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
   cardCode,
   stampShape = "circle",
   enableTilt = true,
-  tiltAmplitude = 12,
   scaleOnHover = 1.03,
 }) => {
-  const progress = Math.min(currentStamps / card.totalSlots, 1);
   const isCompleted = currentStamps >= card.totalSlots;
 
   // Use stampShape from card first, then prop, then default to circle
-  const selectedStampShape = card.stampShape || stampShape || "circle";
+  const selectedStampShape = card.stampShape || stampShape;
 
   // Memoize image sources to prevent unnecessary re-renders
   const backgroundImageSource = useMemo(() => {
-    if (!card.backgroundImage) return null;
-    return { uri: card.backgroundImage };
+    return card.backgroundImage ? { uri: card.backgroundImage } : null;
   }, [card.backgroundImage]);
 
   const businessLogoSource = useMemo(() => {
-    if (!card.businessLogo) return null;
-    return { uri: card.businessLogo };
+    return card.businessLogo ? { uri: card.businessLogo } : null;
   }, [card.businessLogo]);
+
+  // Memoize texture dots to prevent re-creation on every render
+  const textureDots = useMemo(
+    () =>
+      Array.from({ length: 12 }, (_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.textureDot,
+            {
+              top: 30 + (i % 4) * 40,
+              left: 30 + Math.floor(i / 4) * 60,
+              opacity: 0.5 + (i % 3) * 0.2,
+            },
+          ]}
+        />
+      )),
+    []
+  );
 
   // Pre-load images when component mounts or URLs change
   useEffect(() => {
@@ -66,63 +78,80 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
     }
   }, [card.backgroundImage, card.businessLogo]);
 
-  // Animation values
+  // Animation values - only create what we need
   const scaleValue = useRef(new Animated.Value(1)).current;
   const pulseValue = useRef(new Animated.Value(1)).current;
   const shinePosition = useRef(new Animated.Value(-width)).current;
-
-  // Tilt animation values
-  const rotateX = useRef(new Animated.Value(0)).current;
-  const rotateY = useRef(new Animated.Value(0)).current;
   const tiltScale = useRef(new Animated.Value(1)).current;
-
-  // Glass border effect animation value
   const borderGlow = useRef(new Animated.Value(0.5)).current;
 
+  // Animation cleanup ref
+  const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
+
   useEffect(() => {
+    // Clear previous animations
+    animationsRef.current.forEach((anim) => anim.stop());
+    animationsRef.current = [];
+
     if (showAnimation && isCompleted) {
       // Pulse animation for completed cards
-      const pulseAnimation = Animated.sequence([
-        Animated.timing(pulseValue, {
-          toValue: 1.05,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseValue, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-      ]);
-      Animated.loop(pulseAnimation).start();
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseValue, {
+            toValue: 1.05,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseValue, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
 
       // Shine effect for completed cards only
-      const shineAnimation = Animated.timing(shinePosition, {
-        toValue: width,
-        duration: 2000,
-        useNativeDriver: false,
-      });
-      Animated.loop(shineAnimation, { iterations: -1 }).start();
+      const shineAnimation = Animated.loop(
+        Animated.timing(shinePosition, {
+          toValue: width,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        { iterations: -1 }
+      );
+
+      animationsRef.current.push(pulseAnimation, shineAnimation);
+      pulseAnimation.start();
+      shineAnimation.start();
     }
 
     // Subtle glass border glow animation
-    const glowAnimation = Animated.sequence([
-      Animated.timing(borderGlow, {
-        toValue: 0.8,
-        duration: 2000,
-        useNativeDriver: false,
-      }),
-      Animated.timing(borderGlow, {
-        toValue: 0.5,
-        duration: 2000,
-        useNativeDriver: false,
-      }),
-    ]);
-    Animated.loop(glowAnimation).start();
-  }, [currentStamps, isCompleted, showAnimation]);
+    const glowAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(borderGlow, {
+          toValue: 0.8,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(borderGlow, {
+          toValue: 0.5,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    animationsRef.current.push(glowAnimation);
+    glowAnimation.start();
+
+    // Cleanup function
+    return () => {
+      animationsRef.current.forEach((anim) => anim.stop());
+    };
+  }, [isCompleted, showAnimation]);
 
   // Touch handlers for scale effect only (no tilt)
-  const handleTouchStart = (event: any) => {
+  const handleTouchStart = () => {
     Animated.spring(tiltScale, {
       toValue: scaleOnHover,
       useNativeDriver: true,
@@ -178,6 +207,17 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
       {/* 3D Background Overlay */}
       <View style={styles.backgroundOverlay} />
 
+      {/* Subtle Texture Overlay - Only when no background image */}
+      {!card.backgroundImage && (
+        <View style={styles.textureOverlay}>
+          <View style={styles.texturePattern} />
+          <View style={[styles.texturePattern, styles.texturePattern2]} />
+          <View style={[styles.texturePattern, styles.texturePattern3]} />
+          {/* Add multiple small dots for texture */}
+          {textureDots}
+        </View>
+      )}
+
       {/* Shine Effect Overlay */}
       {showAnimation && isCompleted && (
         <Animated.View
@@ -191,7 +231,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
       )}
 
       {/* Header - Business Name and Progress */}
-      <View style={styles.header}>
+      <View style={[styles.header, !card.backgroundImage && styles.headerNoBackground]}>
         <View style={styles.businessInfo}>
           {businessLogoSource && !card.backgroundImage && <Image source={businessLogoSource} style={styles.businessLogo} resizeMode="contain" />}
 
@@ -216,24 +256,10 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
       />
       {/* Reward Description */}
       <View style={styles.rewardContainer}>
-        {/* <Text style={styles.rewardLabel}>🎁</Text> */}
         <Text style={styles.rewardDescription} numberOfLines={2}>
           🎁 {card.rewardDescription}
         </Text>
       </View>
-      {/* Customer Card Date */}
-      {/* {customerCard && (
-        <View style={styles.customerCardContainer}>
-          <Text style={styles.createdDate} numberOfLines={1}>
-            Acumulando desde:{" "}
-            {new Date(customerCard.createdAt).toLocaleDateString("es-ES", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </Text>
-        </View>
-      )} */}
     </View>
   );
   const cardStyle = [
@@ -245,20 +271,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = ({
         ...(enableTilt
           ? [
               { scale: tiltScale },
-              {
-                rotateX: rotateX.interpolate({
-                  inputRange: [-tiltAmplitude, tiltAmplitude],
-                  outputRange: [`${-tiltAmplitude + 2}deg`, `${tiltAmplitude + 2}deg`], // Add base 2deg tilt
-                  extrapolate: "clamp",
-                }),
-              },
-              {
-                rotateY: rotateY.interpolate({
-                  inputRange: [-tiltAmplitude, tiltAmplitude],
-                  outputRange: [`-${tiltAmplitude}deg`, `${tiltAmplitude}deg`],
-                  extrapolate: "clamp",
-                }),
-              },
+              { rotateX: "2deg" }, // Simplified tilt effect
             ]
           : [
               { rotateX: "2deg" }, // Default subtle 3D tilt when tilt is disabled
@@ -322,16 +335,11 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.sm,
     borderRadius: 20,
-    // Reduced 3D shadows
     shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 8.0,
     elevation: 12,
-    // Add subtle border for depth
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
   },
@@ -342,7 +350,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     position: "relative",
-    // Add inner shadow effect
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
   },
@@ -350,9 +357,68 @@ const styles = StyleSheet.create({
     minHeight: 200,
     flex: 1,
     position: "relative",
-    // Add subtle inner glow for depth
     backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 19, // Slightly smaller than outer radius for layered effect
+    borderRadius: 19,
+  },
+  textureOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 19,
+    opacity: 0.6,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+  },
+  texturePattern: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 19,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.12)",
+    shadowColor: "rgba(255, 255, 255, 0.15)",
+    shadowOffset: { width: 1, height: 1 },
+    shadowOpacity: 0.8,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  texturePattern2: {
+    top: 20,
+    left: 20,
+    right: 20,
+    bottom: 20,
+    borderRadius: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.07)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.10)",
+    transform: [{ rotate: "45deg" }],
+  },
+  texturePattern3: {
+    top: 40,
+    left: 40,
+    right: 40,
+    bottom: 40,
+    borderRadius: 1,
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    transform: [{ rotate: "-45deg" }],
+  },
+  textureDot: {
+    position: "absolute",
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    shadowColor: "rgba(255, 255, 255, 0.15)",
+    shadowOffset: { width: 0.5, height: 0.5 },
+    shadowOpacity: 1,
+    shadowRadius: 1.5,
+    elevation: 1,
   },
   backgroundLogo: {
     position: "absolute",
@@ -363,16 +429,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 19,
-    opacity: 0.8, // Make logo subtle so content is readable
-  },
-  darkOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "rgba(0, 0, 0, 0.3)", // Dark overlay for better text readability
-    borderRadius: 19,
+    opacity: 0.8,
   },
   glassBorder: {
     position: "absolute",
@@ -396,9 +453,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderRadius: 19,
-    // Create subtle gradient overlay for depth
     backgroundColor: "rgba(0, 0, 0, 0.05)",
-    // Reduced inner shadow effect
     shadowColor: "rgba(0, 0, 0, 0.2)",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5,
@@ -415,7 +470,6 @@ const styles = StyleSheet.create({
     width: 100,
     backgroundColor: "rgba(255, 255, 255, 0.3)",
     transform: [{ skewX: "-20deg" }],
-    // Add shadow to shine effect
     shadowColor: "rgba(255, 255, 255, 0.5)",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
@@ -428,35 +482,17 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     paddingTop: SPACING.md,
     paddingHorizontal: SPACING.md,
-    // Lighter header background since we have logo background
-    //backgroundColor: "rgba(255, 255, 255, 0.15)",
     marginHorizontal: SPACING.xs,
     marginTop: SPACING.xs,
-    // borderRadius: 16,
     paddingBottom: SPACING.sm,
-    // // Reduced header shadow for layered effect
-    // shadowColor: "rgba(0, 0, 0, 0.25)",
-    // shadowOffset: { width: 0, height: 2 },
-    // shadowOpacity: 1,
-    // shadowRadius: 4,
-    // Add border for definition
-    // borderWidth: 1,
-    // borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  headerNoBackground: {
+    marginBottom: 0,
   },
   businessInfo: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
-  },
-  customerCardContainer: {
-    marginHorizontal: SPACING.sm,
-    marginBottom: SPACING.sm,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    // backgroundColor: "rgba(255, 255, 255, 0.12)",
-    borderRadius: 8,
-    //  borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
   },
   businessName: {
     fontSize: FONT_SIZES.lg,
@@ -464,7 +500,6 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     marginBottom: 4,
     flex: 1,
-    // Add text shadow for 3D effect
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 1, height: 2 },
     textShadowRadius: 4,
@@ -474,7 +509,6 @@ const styles = StyleSheet.create({
     height: 72,
     marginRight: SPACING.sm,
     borderRadius: 18,
-    // Reduced 3D logo effects
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.3)",
     shadowColor: "rgba(0, 0, 0, 0.2)",
@@ -482,13 +516,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 3,
     elevation: 4,
-  },
-  createdDate: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.white,
-    opacity: 0.8,
-    fontStyle: "italic",
-    marginTop: 2,
   },
   progressContainer: {
     alignItems: "center",
@@ -503,7 +530,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     textAlign: "center",
     minWidth: 50,
-    // Reduced 3D badge effect
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.4)",
     shadowColor: "rgba(0, 0, 0, 0.15)",
@@ -511,47 +537,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 2,
     elevation: 2,
-    // Text shadow
     textShadowColor: "rgba(0, 0, 0, 0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   giftIcon: {
     marginTop: 4,
-    // Reduced 3D gift icon effect
     shadowColor: "rgba(0, 0, 0, 0.25)",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 1,
     shadowRadius: 2,
     elevation: 3,
-  },
-
-  stampCounterContainer: {
-    alignItems: "center",
-    marginVertical: SPACING.sm,
-  },
-  stampCounter: {
-    fontSize: FONT_SIZES.sm,
-    fontWeight: "600",
-    color: COLORS.white,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs,
-    borderRadius: 20,
-    textAlign: "center",
-    minWidth: 60,
-    // Reduced 3D counter effect
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: "rgba(0, 0, 0, 0.2)",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
-    shadowRadius: 3,
-    elevation: 3,
-    // Text shadow
-    textShadowColor: "rgba(0, 0, 0, 0.6)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
   },
 
   rewardContainer: {
@@ -560,7 +556,6 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     marginHorizontal: SPACING.sm,
     borderRadius: 12,
-    // Reduced 3D reward container effects
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
     shadowColor: "rgba(0, 0, 0, 0.15)",
@@ -568,7 +563,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 2,
     elevation: 2,
-    // Add subtle inner glow
     borderTopWidth: 1,
     borderTopColor: "rgba(255, 255, 255, 0.3)",
   },
@@ -577,13 +571,12 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     opacity: 0.95,
     lineHeight: 18,
-    // Add text shadow for better readability
     textShadowColor: "rgba(0, 0, 0, 0.4)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   gradientWithBackground: {
-    backgroundColor: "rgba(0, 0, 0, 0.2)", // Reduced overlay opacity to make background image more visible
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
   },
   backgroundImage: {
     borderRadius: 20,
