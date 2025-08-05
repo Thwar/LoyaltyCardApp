@@ -1,8 +1,6 @@
 {
   "name": "loyalty-app-api",
   "version": "1.0.0",
-  "description": "Serverless functions for LoyaltyCard App",
-  "dependencies": {
-    "nodemailer": "^6.9.8"
-  }
+  "description": "Serverless functions for LoyaltyCard App using SendGrid",
+  "dependencies": {}
 }

@@ -1,4 +1,5 @@
-const nodemailer = require('nodemailer');
+// SendGrid email service using REST API
+// No need for nodemailer anymore - using fetch for HTTP requestser = require('nodemailer');
 
 // SMTP Configuration for Resend
 const smtpConfig = {
@@ -269,13 +270,13 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Check if API key is available
-    if (!process.env.RESEND_API_KEY) {
-      console.error('RESEND_API_KEY environment variable is not set');
+    // Check if SendGrid API key is available
+    if (!process.env.SENDGRID_API_KEY) {
+      console.error('SENDGRID_API_KEY environment variable is not set');
       return res.status(500).json({ 
         success: false, 
         error: 'Email service configuration error',
-        details: 'Missing API key configuration'
+        details: 'Missing SendGrid API key configuration'
       });
     }
 
@@ -305,22 +306,58 @@ module.exports = async (req, res) => {
       html = getCustomerWelcomeTemplate(displayName);
     }
 
-    const mailOptions = {
-      from: 'LoyaltyCard App <onboarding@resend.dev>',
-      to: email,
-      subject: subject,
-      html: html,
+    // SendGrid API payload
+    const emailData = {
+      personalizations: [
+        {
+          to: [{ email: email, name: displayName }],
+          subject: subject
+        }
+      ],
+      from: { 
+        email: 'noreply@loyaltyapp.com', 
+        name: 'LoyaltyCard App' 
+      },
+      content: [
+        {
+          type: 'text/html',
+          value: html
+        }
+      ]
     };
 
-    console.log('Attempting to send email to:', email);
-    const result = await transporter.sendMail(mailOptions);
-    console.log('Welcome email sent successfully:', result.messageId);
+    console.log('Sending email via SendGrid to:', email);
 
-    res.status(200).json({ 
-      success: true, 
-      messageId: result.messageId,
-      message: 'Welcome email sent successfully' 
+    // Send email using SendGrid REST API
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(emailData)
     });
+
+    if (response.ok) {
+      // SendGrid returns 202 for successful requests
+      const messageId = response.headers.get('x-message-id') || 'success';
+      console.log('Welcome email sent successfully via SendGrid:', messageId);
+
+      res.status(200).json({ 
+        success: true, 
+        messageId: messageId,
+        message: 'Welcome email sent successfully via SendGrid' 
+      });
+    } else {
+      const errorText = await response.text();
+      console.error('SendGrid API error:', response.status, errorText);
+      
+      res.status(500).json({ 
+        success: false, 
+        error: 'Failed to send email via SendGrid',
+        details: `SendGrid API returned ${response.status}: ${errorText}`
+      });
+    }
 
   } catch (error) {
     console.error('Error sending welcome email:', error);
