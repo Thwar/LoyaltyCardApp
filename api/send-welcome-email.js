@@ -7,7 +7,7 @@ const smtpConfig = {
   secure: true,
   auth: {
     user: 'resend',
-    pass: process.env.RESEND_API_KEY || 're_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT'
+    pass: process.env.RESEND_API_KEY
   }
 };
 
@@ -269,14 +269,30 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Check if API key is available
+    if (!process.env.RESEND_API_KEY) {
+      console.error('RESEND_API_KEY environment variable is not set');
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Email service configuration error',
+        details: 'Missing API key configuration'
+      });
+    }
+
     const { email, displayName, userType } = req.body;
 
     if (!email || !displayName || !userType) {
-      return res.status(400).json({ error: 'Missing required fields: email, displayName, userType' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Missing required fields: email, displayName, userType' 
+      });
     }
 
     if (!['business', 'customer'].includes(userType)) {
-      return res.status(400).json({ error: 'userType must be either "business" or "customer"' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'userType must be either "business" or "customer"' 
+      });
     }
 
     let subject, html;
@@ -296,6 +312,7 @@ module.exports = async (req, res) => {
       html: html,
     };
 
+    console.log('Attempting to send email to:', email);
     const result = await transporter.sendMail(mailOptions);
     console.log('Welcome email sent successfully:', result.messageId);
 
