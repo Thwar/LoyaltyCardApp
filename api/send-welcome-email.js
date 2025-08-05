@@ -1,4 +1,5 @@
 // SendGrid email service using REST API
+// No need for nodemailer anymore - using fetch for HTTP requestsil service using REST API
 // No need for nodemailer anymore - using fetch for HTTP requestser = require('nodemailer');
 
 // SMTP Configuration for Resend
