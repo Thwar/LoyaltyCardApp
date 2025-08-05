@@ -4,8 +4,8 @@
   "devCommand": "npx expo start --web",
   "framework": "create-react-app",
   "functions": {
-    "api/send-welcome-email.js": {
-      "runtime": "nodejs18.x"
+    "api/**/*.js": {
+      "runtime": "@vercel/node@3.0.0"
     }
   },
   "rewrites": [
