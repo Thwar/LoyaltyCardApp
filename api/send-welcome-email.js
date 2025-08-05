@@ -306,7 +306,7 @@ module.exports = async (req, res) => {
     }
 
     const mailOptions = {
-      from: 'noreply@loyaltyapp.com',
+      from: 'LoyaltyCard App <onboarding@resend.dev>',
       to: email,
       subject: subject,
       html: html,
