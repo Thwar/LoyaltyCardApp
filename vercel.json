@@ -3,11 +3,6 @@
   "outputDirectory": "dist",
   "devCommand": "npx expo start --web",
   "framework": "create-react-app",
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/node@2.5.20"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
