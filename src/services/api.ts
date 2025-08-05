@@ -3,6 +3,7 @@ import { doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, w
 import { auth, db } from "./firebase";
 import { FIREBASE_COLLECTIONS } from "../constants";
 import { User, Business, LoyaltyCard, CustomerCard, Stamp, Reward, StampActivity } from "../types";
+import EmailService from "./emailService";
 
 // Auth Service
 export class AuthService {
@@ -27,6 +28,16 @@ export class AuthService {
       };
 
       await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);
+
+      // Send welcome email in background (don't block registration if email fails)
+      EmailService.sendWelcomeEmail({
+        email,
+        displayName,
+        userType
+      }).catch(error => {
+        console.error("Failed to send welcome email:", error);
+        // Email failure should not affect registration success
+      });
 
       return {
         id: firebaseUser.uid,
