@@ -302,7 +302,7 @@ module.exports = async (req, res) => {
         }
       ],
       from: { 
-        email: 'noreply@alquilaunanovia.com', 
+        email: 'thomaswar3@gmail.com', 
         name: 'LoyaltyCard App' 
       },
       content: [
