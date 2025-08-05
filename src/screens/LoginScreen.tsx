@@ -14,11 +14,12 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
-  const { login } = useAuth();
+  const { login, resetPassword } = useAuth();
   const { showAlert } = useAlert();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validateForm = () => {
@@ -60,6 +61,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      showAlert({
+        title: "Email Requerido",
+        message: "Por favor ingresa tu correo electrónico para enviar las instrucciones de restablecimiento de contraseña.",
+      });
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      showAlert({
+        title: "Email Inválido",
+        message: "Por favor ingresa una dirección de correo electrónico válida.",
+      });
+      return;
+    }
+
+    setResetPasswordLoading(true);
+    try {
+      await resetPassword(email);
+      showAlert({
+        title: "Email Enviado",
+        message: "Se han enviado las instrucciones para restablecer tu contraseña a tu correo electrónico. Por favor revisa tu bandeja de entrada y spam.",
+      });
+    } catch (error) {
+      showAlert({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Ocurrió un error al enviar el email de restablecimiento.",
+      });
+    } finally {
+      setResetPasswordLoading(false);
+    }
+  };
+
   const navigateToRegister = () => {
     navigation.navigate("Register");
   };
@@ -88,11 +123,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               error={errors.email}
             />
             <InputField label="Contraseña" value={password} onChangeText={setPassword} placeholder="Ingresa tu contraseña" isPassword leftIcon="lock-closed" error={errors.password} />
+
+            <View style={styles.forgotPasswordContainer}>
+              <Text style={styles.forgotPasswordText} onPress={handleForgotPassword} disabled={resetPasswordLoading}>
+                {resetPasswordLoading ? "Enviando..." : "¿Olvidaste tu contraseña?"}
+              </Text>
+            </View>
+
             <Button title="Iniciar Sesión" onPress={handleLogin} loading={loading} size="large" style={styles.loginButton} />
           </View>
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              ¿No tienes una cuenta?
+              ¿No tienes una cuenta?{" "}
               <Text style={styles.linkText} onPress={navigateToRegister}>
                 Regístrate
               </Text>
@@ -139,6 +181,16 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: SPACING.lg,
+  },
+  forgotPasswordContainer: {
+    alignItems: "flex-end",
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  forgotPasswordText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.primary,
+    fontWeight: "600",
   },
   footer: {
     alignItems: "center",
