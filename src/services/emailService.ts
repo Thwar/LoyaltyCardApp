@@ -1,7 +1,18 @@
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
-// Initialize Resend with API key
-const resend = new Resend('re_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT');
+// SMTP Configuration for Resend
+const smtpConfig = {
+  host: 'smtp.resend.com',
+  port: 465, // or 587 for TLS
+  secure: true, // true for 465, false for other ports
+  auth: {
+    user: 'resend',
+    pass: 're_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT' // Using API key as password
+  }
+};
+
+// Create reusable transporter object using SMTP transport
+const transporter = nodemailer.createTransport(smtpConfig);
 
 interface EmailData {
   to: string;
@@ -26,14 +37,15 @@ class EmailService {
     try {
       const emailData = this.buildWelcomeEmail(params);
       
-      const result = await resend.emails.send({
+      const mailOptions = {
         from: this.FROM_EMAIL,
         to: emailData.to,
         subject: emailData.subject,
         html: emailData.html,
-      });
+      };
 
-      console.log('Welcome email sent successfully:', result);
+      const result = await transporter.sendMail(mailOptions);
+      console.log('Welcome email sent successfully:', result.messageId);
       return true;
     } catch (error) {
       console.error('Error sending welcome email:', error);
@@ -418,7 +430,7 @@ class EmailService {
    */
   static async sendTestEmail(to: string): Promise<boolean> {
     try {
-      const result = await resend.emails.send({
+      const mailOptions = {
         from: this.FROM_EMAIL,
         to: to,
         subject: 'Test Email - LoyaltyCard App',
@@ -427,9 +439,10 @@ class EmailService {
           <p>This is a test email from LoyaltyCard App email service.</p>
           <p>If you receive this, the email service is working correctly!</p>
         `
-      });
+      };
 
-      console.log('Test email sent successfully:', result);
+      const result = await transporter.sendMail(mailOptions);
+      console.log('Test email sent successfully:', result.messageId);
       return true;
     } catch (error) {
       console.error('Error sending test email:', error);

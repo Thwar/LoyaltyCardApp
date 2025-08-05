@@ -35,12 +35,25 @@ This document describes the implementation of the welcome email system for Loyal
 
 ## API Configuration
 
-### Resend Setup
+### SMTP Setup with Resend
 ```typescript
-const resend = new Resend('re_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT');
+const smtpConfig = {
+  host: 'smtp.resend.com',
+  port: 465,
+  secure: true,
+  auth: {
+    user: 'resend',
+    pass: 're_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT' // API key as password
+  }
+};
+
+const transporter = nodemailer.createTransport(smtpConfig);
 ```
 
 ### Email Configuration
+- **SMTP Host**: `smtp.resend.com`
+- **Port**: `465` (secure) or `587` (TLS)
+- **Authentication**: Username: `resend`, Password: API key
 - **From Email**: `noreply@loyaltyapp.com`
 - **Company Name**: `LoyaltyCard App`
 - **Language**: Spanish (es)

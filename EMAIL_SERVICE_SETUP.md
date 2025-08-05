@@ -69,8 +69,11 @@ await EmailService.sendWelcomeEmail({
 ## 📧 Email Service Configuration
 
 ### Current Setup
-- **Service**: Resend
-- **API Key**: `re_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT`
+- **Service**: Resend SMTP
+- **SMTP Host**: `smtp.resend.com`
+- **Port**: `465` (secure)
+- **Username**: `resend`
+- **Password**: `re_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT` (API key)
 - **From Email**: `noreply@loyaltyapp.com`
 - **Language**: Spanish (es)
 
