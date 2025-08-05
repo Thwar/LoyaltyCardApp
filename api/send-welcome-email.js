@@ -1,19 +1,5 @@
 // SendGrid email service using REST API
-// No need for nodemailer anymore - using fetch for HTTP requestsil service using REST API
-// No need for nodemailer anymore - using fetch for HTTP requestser = require('nodemailer');
-
-// SMTP Configuration for Resend
-const smtpConfig = {
-  host: 'smtp.resend.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: 'resend',
-    pass: process.env.RESEND_API_KEY
-  }
-};
-
-const transporter = nodemailer.createTransport(smtpConfig);
+// No need for nodemailer anymore - using fetch for HTTP requests
 
 // Email templates
 const getBusinessWelcomeTemplate = (displayName) => {
