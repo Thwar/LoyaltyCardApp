@@ -7,7 +7,7 @@ const smtpConfig = {
   secure: true,
   auth: {
     user: 'resend',
-    pass: 're_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT'
+    pass: process.env.RESEND_API_KEY || 're_DN28F9BM_E7sbVGgM76wHWMhTUPicXomT'
   }
 };
 

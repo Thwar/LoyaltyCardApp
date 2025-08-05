@@ -6,7 +6,7 @@ interface WelcomeEmailParams {
 
 class EmailService {
   private static readonly API_BASE_URL = process.env.NODE_ENV === 'production' 
-    ? 'https://caseroapp-h9qngm11m-thomas-projects-09adf0ba.vercel.app'
+    ? '' // Use same origin in production to avoid CORS issues
     : 'http://localhost:3000';
 
   /**
