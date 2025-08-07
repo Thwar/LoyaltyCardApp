@@ -46,6 +46,30 @@ if (Platform.OS === "web") {
         console.warn("Multiple tabs open, persistence can only be enabled in one tab at a time.");
       } else if (err.code === "unimplemented") {
         console.warn("The current browser does not support all of the features required to enable persistence");
+      } else {
+        console.warn("Failed to enable IndexedDB persistence:", err);
+      }
+    });
+  });
+
+  // Monitor Firestore connection state
+  import("firebase/firestore").then(({ enableNetwork, disableNetwork }) => {
+    // Handle online/offline events
+    window.addEventListener('online', async () => {
+      console.log('Network online - enabling Firestore network');
+      try {
+        await enableNetwork(db);
+      } catch (error) {
+        console.warn('Failed to enable Firestore network:', error);
+      }
+    });
+
+    window.addEventListener('offline', async () => {
+      console.log('Network offline - disabling Firestore network');
+      try {
+        await disableNetwork(db);
+      } catch (error) {
+        console.warn('Failed to disable Firestore network:', error);
       }
     });
   });

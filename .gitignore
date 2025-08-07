@@ -14,12 +14,21 @@ android/app/build/
 android/build/
 android/.gradle/
 android/app/src/main/res/drawable-*/
+android/.idea/
+android/local.properties
+android/gradle/
 *.orig.*
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+
+# iOS
+ios/build/
+ios/Pods/
+ios/*.xcworkspace
+ios/*.xcuserdata
 
 # Metro
 .metro-health-check*
@@ -40,3 +49,16 @@ yarn-error.*
 *.tsbuildinfo
 
 .vercel
+
+# Firebase
+google-services.json
+GoogleService-Info.plist
+
+# Development
+*.log
+.vscode/
+.idea/
+
+# Package locks (keep main package-lock.json but ignore others)
+api/package-lock.json
+functions/package-lock.json

@@ -60,7 +60,7 @@
         "android.permission.RECEIVE_BOOT_COMPLETED"
       ],
       "package": "com.thwar077.LoyaltyCardApp",
-      "googleServicesFile": "./google-services.json",
+      "googleServicesFile": "./android/app/google-services.json",
       "intentFilters": [
         {
           "action": "VIEW",

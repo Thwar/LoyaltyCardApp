@@ -8,6 +8,38 @@ import { SSOService } from "./ssoService";
 import { NotificationService, StampNotificationData } from "./notificationService";
 import { SoundService } from "./soundService";
 
+// Enhanced error handling for Firestore operations
+const handleFirestoreError = (error: any, operation: string) => {
+  console.error(`Firestore ${operation} error:`, error);
+  
+  if (error.code) {
+    switch (error.code) {
+      case "permission-denied":
+        throw new Error("Permiso denegado. Por favor verifica las reglas de seguridad de Firestore.");
+      case "unauthenticated":
+        throw new Error("Autenticación requerida. Por favor inicia sesión e intenta de nuevo.");
+      case "not-found":
+        throw new Error("Documento no encontrado. Puede haber sido eliminado.");
+      case "unavailable":
+        throw new Error("El servicio Firestore no está disponible temporalmente. Por favor intenta de nuevo.");
+      case "resource-exhausted":
+        throw new Error("Límite de cuota excedido. Por favor intenta de nuevo más tarde.");
+      case "deadline-exceeded":
+        throw new Error("La operación tardó demasiado tiempo. Por favor intenta de nuevo.");
+      case "cancelled":
+        // This is often due to connection issues, don't show error to user
+        console.warn("Firestore operation was cancelled (likely due to connection issues)");
+        return;
+      case "failed-precondition":
+        throw new Error("Operación no válida en el estado actual. Por favor actualiza la página.");
+      default:
+        throw new Error(`Error de Firestore (${error.code}): ${error.message}`);
+    }
+  }
+  
+  throw new Error(error.message || `Error al realizar ${operation}`);
+};
+
 // Auth Service
 export class AuthService {
   static async register(email: string, password: string, displayName: string, userType: "customer" | "business"): Promise<User> {
@@ -378,8 +410,9 @@ export class UserService {
         profileImage: userData.profileImage,
         pushToken: userData.pushToken,
       };
-    } catch (error) {
-      console.error("Error getting user:", error);
+    } catch (error: any) {
+      // Use enhanced error handling
+      handleFirestoreError(error, "obtener usuario");
       return null;
     }
   }
@@ -435,23 +468,9 @@ export class BusinessService {
         createdAt: new Date(),
       };
     } catch (error: any) {
-      console.error("Failed to create business:", error); // Provide more specific error messages
-      if (error.code) {
-        switch (error.code) {
-          case "permission-denied":
-            throw new Error("Permiso denegado. Por favor verifica las reglas de seguridad de Firestore.");
-          case "unauthenticated":
-            throw new Error("Autenticación requerida. Por favor inicia sesión e intenta de nuevo.");
-          case "not-found":
-            throw new Error("Base de datos Firestore no encontrada. Por favor verifica la configuración de Firebase.");
-          case "unavailable":
-            throw new Error("El servicio Firestore no está disponible temporalmente. Por favor intenta de nuevo.");
-          default:
-            throw new Error(`Error de Firestore (${error.code}): ${error.message}`);
-        }
-      }
-
-      throw new Error(error.message || "Error al crear el negocio");
+      // Use enhanced error handling
+      handleFirestoreError(error, "crear negocio");
+      throw error;
     }
   }
   static async getBusinessByOwnerId(ownerId: string): Promise<Business | null> {
@@ -1198,7 +1217,9 @@ export class CustomerCardService {
       }
     } catch (error: any) {
       console.error("addStamp: Error occurred:", error);
-      throw new Error(error.message || "Error al agregar sello");
+      // Use enhanced error handling
+      handleFirestoreError(error, "agregar sello");
+      throw error;
     }
   }
 
