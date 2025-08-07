@@ -10,12 +10,12 @@ WebBrowser.maybeCompleteAuthSession();
 
 // Google Sign-In Configuration
 const GOOGLE_CONFIG = {
-  // Using iOS client ID as web client ID temporarily for testing
-  webClientId: "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com", // Same as iOS for now
-  // Android client ID (if different)
-  androidClientId: "521869790852-d44rnvmkcvni1e7ijs2q371sgl36k05q.apps.googleusercontent.com", // Replace with actual client ID
-  // iOS client ID (updated with real Firebase config)
-  iosClientId: "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com", // Real iOS client ID from Firebase
+  // Web client ID from Android google-services.json (client_type: 3)
+  webClientId: "853612097033-6nqf00qv5ei37ggspu0g1abqauposvb0.apps.googleusercontent.com",
+  // Android client ID from google-services.json (client_type: 1)
+  androidClientId: "853612097033-ff3988li4hlsbvlsemnslko7n8idsirv.apps.googleusercontent.com",
+  // iOS client ID from GoogleService-Info.plist (CLIENT_ID)
+  iosClientId: "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com",
 };
 
 // Facebook App Configuration
@@ -29,13 +29,19 @@ export class SSOService {
   static async initializeGoogleSignIn() {
     if (Platform.OS !== "web") {
       try {
-        await GoogleSignin.configure({
+        const config: any = {
           webClientId: GOOGLE_CONFIG.webClientId,
           offlineAccess: true,
           hostedDomain: "",
           forceCodeForRefreshToken: true,
-          iosClientId: GOOGLE_CONFIG.iosClientId, // Add iOS client ID
-        });
+        };
+
+        // Platform-specific configuration
+        if (Platform.OS === 'ios') {
+          config.iosClientId = GOOGLE_CONFIG.iosClientId;
+        }
+
+        await GoogleSignin.configure(config);
         console.log("Google Sign-In configured successfully");
       } catch (error) {
         console.error("Error configuring Google Sign-In:", error);
@@ -52,6 +58,8 @@ export class SSOService {
         const result = await signInWithPopup(auth, googleProvider);
         return result;
       } else {
+        console.log("Starting Google Sign-In for mobile platform:", Platform.OS);
+        
         // Check if Google Sign-In is properly configured
         try {
           await this.initializeGoogleSignIn();
@@ -60,23 +68,33 @@ export class SSOService {
           throw new Error("Google Sign-In no está disponible en este momento. Por favor usa email/contraseña para iniciar sesión.");
         }
 
+        console.log("Checking Google Play Services...");
         // Check if device supports Google Play Services
         await GoogleSignin.hasPlayServices({
           showPlayServicesUpdateDialog: true,
         });
 
+        console.log("Attempting Google Sign-In...");
         // Get user info from Google
         const userInfo = await GoogleSignin.signIn();
 
+        console.log("Google Sign-In successful, userInfo:", {
+          hasIdToken: !!userInfo.data?.idToken,
+          userEmail: userInfo.data?.user.email,
+        });
+
         if (!userInfo.data?.idToken) {
+          console.error("No ID token received from Google");
           throw new Error("No ID token received from Google");
         }
 
         // Create Firebase credential
         const googleCredential = GoogleAuthProvider.credential(userInfo.data.idToken);
 
+        console.log("Signing in with Firebase...");
         // Sign in with Firebase
         const result = await signInWithCredential(auth, googleCredential);
+        console.log("Firebase sign-in successful");
         return result;
       }
     } catch (error: any) {
@@ -88,9 +106,13 @@ export class SSOService {
         throw new Error("Inicio de sesión con Google en progreso");
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         throw new Error("Google Play Services no disponible");
-      } else if (error.message?.includes("GoogleService-Info.plist") || error.message?.includes("DEVELOPER_ERROR")) {
+      } else if (error.message?.includes("GoogleService-Info.plist") || 
+                 error.message?.includes("DEVELOPER_ERROR") ||
+                 error.code === 'DEVELOPER_ERROR') {
+        console.error("Developer error - likely configuration issue:", error);
         throw new Error("Google Sign-In no está disponible en este momento. Por favor usa email/contraseña para iniciar sesión.");
       } else {
+        console.error("Unexpected Google Sign-In error:", error);
         throw new Error(error.message || "Error al iniciar sesión con Google");
       }
     }

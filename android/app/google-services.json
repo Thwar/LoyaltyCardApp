@@ -1,45 +1,45 @@
 {
   "project_info": {
-    "project_number": "521869790852",
-    "project_id": "loyaltycardapp-b6ddc",
-    "storage_bucket": "loyaltycardapp-b6ddc.firebasestorage.app"
+    "project_number": "853612097033",
+    "project_id": "casero-app",
+    "storage_bucket": "casero-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:521869790852:android:27a19959d8693698d48616914",
+        "mobilesdk_app_id": "1:853612097033:android:e4e61e9085b9416eca52d8",
         "android_client_info": {
           "package_name": "com.thwar077.LoyaltyCardApp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "521869790852-d44rnvmkcvni1e7ijs2q371sgl36k05q.apps.googleusercontent.com",
+          "client_id": "853612097033-ff3988li4hlsbvlsemnslko7n8idsirv.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.thwar077.LoyaltyCardApp",
-            "certificate_hash": "27a19959d8693698d48616914c3ae25"
+            "certificate_hash": "a0a478e8377fa32e5d13d20b129553b67b85670a"
           }
         },
         {
-          "client_id": "521869790852-72fbi96sk01f8lh0muldice9pqnu711n.apps.googleusercontent.com",
+          "client_id": "853612097033-6nqf00qv5ei37ggspu0g1abqauposvb0.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyDFlVbiMMKSOOZHOgFCflsxMOdv-3xvORk"
+          "current_key": "AIzaSyBNP04O4Xf-yYGQ6BficBXa6u-F716UqSo"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "521869790852-72fbi96sk01f8lh0muldice9pqnu711n.apps.googleusercontent.com",
+              "client_id": "853612097033-6nqf00qv5ei37ggspu0g1abqauposvb0.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "521869790852-lbmnm70iecpl8eklt102ddnnb5ja9j3e.apps.googleusercontent.com",
+              "client_id": "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
                 "bundle_id": "com.thwar077.LoyaltyCardApp"

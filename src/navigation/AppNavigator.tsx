@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../constants";
 import { AuthStackParamList, CustomerTabParamList, BusinessTabParamList, CustomerStackParamList, BusinessStackParamList } from "../types";
+import { LogoHeader } from "../components";
 
 import { LandingScreen } from "../screens/LandingScreen";
 import { LoginScreen } from "../screens/LoginScreen";
@@ -76,9 +77,33 @@ const CustomerNavigator = () => {
         },
       })}
     >
-      <CustomerTab.Screen name="Home" component={CustomerHomeScreen} options={{ title: "Mis Tarjetas" }} />
-      <CustomerTab.Screen name="Discovery" component={BusinessDiscoveryScreen} options={{ title: "Descubrir Negocios" }} />
-      <CustomerTab.Screen name="Profile" component={CustomerProfileScreen} options={{ title: "Perfil" }} />
+      <CustomerTab.Screen
+        name="Home"
+        component={CustomerHomeScreen}
+        options={{
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Mis Tarjetas" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
+      <CustomerTab.Screen
+        name="Discovery"
+        component={BusinessDiscoveryScreen}
+        options={{
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Descubrir Negocios" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
+      <CustomerTab.Screen
+        name="Profile"
+        component={CustomerProfileScreen}
+        options={{
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Perfil" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
     </CustomerTab.Navigator>
   );
 };
@@ -119,10 +144,42 @@ const BusinessNavigator = () => {
         },
       })}
     >
-      <BusinessTab.Screen name="Dashboard" component={BusinessDashboardScreen} options={{ title: "Resumen" }} />
-      <BusinessTab.Screen name="MyProgram" component={LoyaltyProgramScreen} options={{ title: "Mi Programa" }} />
-      <BusinessTab.Screen name="Customers" component={CustomerManagementScreen} options={{ title: "Clientes" }} />
-      <BusinessTab.Screen name="Profile" component={BusinessSettingsScreen} options={{ title: "Perfil" }} />
+      <BusinessTab.Screen
+        name="Dashboard"
+        component={BusinessDashboardScreen}
+        options={{
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Resumen" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
+      <BusinessTab.Screen
+        name="MyProgram"
+        component={LoyaltyProgramScreen}
+        options={{
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Mi Programa" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
+      <BusinessTab.Screen
+        name="Customers"
+        component={CustomerManagementScreen}
+        options={{
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Clientes" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
+      <BusinessTab.Screen
+        name="Profile"
+        component={BusinessSettingsScreen}
+        options={{
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Perfil" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
     </BusinessTab.Navigator>
   );
 };
@@ -149,7 +206,9 @@ const CustomerStackNavigator = () => {
         name="BusinessProfile"
         component={CustomerProfileScreen}
         options={{
-          title: "Perfil del Negocio",
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Perfil del Negocio" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}
       />
@@ -157,7 +216,9 @@ const CustomerStackNavigator = () => {
         name="BusinessDiscovery"
         component={BusinessDiscoveryScreen}
         options={{
-          title: "Descubrir Negocios",
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Descubrir Negocios" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}
       />
@@ -165,7 +226,9 @@ const CustomerStackNavigator = () => {
         name="CustomerCardDetails"
         component={CustomerCardDetailsScreen}
         options={{
-          title: "Detalles de Tarjeta",
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Detalles de Tarjeta" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}
       />
@@ -193,7 +256,9 @@ const BusinessStackNavigator = () => {
         name="AddStamp"
         component={AddStampScreen}
         options={{
-          title: "Agregar Sello",
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="Agregar Sello" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}
       />
