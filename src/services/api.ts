@@ -1,9 +1,10 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, User as FirebaseUser } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, User as FirebaseUser, UserCredential } from "firebase/auth";
 import { doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { FIREBASE_COLLECTIONS } from "../constants";
 import { User, Business, LoyaltyCard, CustomerCard, Stamp, Reward, StampActivity } from "../types";
 import EmailService from "./emailService";
+import { SSOService } from "./ssoService";
 
 // Auth Service
 export class AuthService {
@@ -33,8 +34,8 @@ export class AuthService {
       EmailService.sendWelcomeEmail({
         email,
         displayName,
-        userType
-      }).catch(error => {
+        userType,
+      }).catch((error) => {
         console.error("Failed to send welcome email:", error);
         // Email failure should not affect registration success
       });
@@ -196,6 +197,137 @@ export class AuthService {
     } catch (error) {
       console.error("Error getting current user:", error);
       return null;
+    }
+  }
+
+  // Google Sign-In
+  static async signInWithGoogle(): Promise<User> {
+    try {
+      console.log("Starting Google Sign-In");
+      const userCredential = await SSOService.signInWithGoogle();
+      const firebaseUser = userCredential.user;
+
+      console.log("Google Sign-In successful, checking user data");
+
+      // Check if user already exists in Firestore
+      const userDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid));
+
+      if (userDoc.exists()) {
+        // User exists, return user data
+        const userData = userDoc.data();
+        console.log("Existing user found:", userData.email);
+        return {
+          id: firebaseUser.uid,
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+          createdAt: userData.createdAt.toDate(),
+          profileImage: userData.profileImage,
+        };
+      } else {
+        // New user, create user document
+        console.log("New Google user, creating account");
+        const userData: Omit<User, "id"> = {
+          email: firebaseUser.email || "",
+          displayName: firebaseUser.displayName || "",
+          userType: "customer", // Default to customer for SSO users
+          createdAt: new Date(),
+          profileImage: firebaseUser.photoURL,
+        };
+
+        await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);
+
+        // Send welcome email in background
+        EmailService.sendWelcomeEmail({
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+        }).catch((error) => {
+          console.error("Failed to send welcome email:", error);
+        });
+
+        return {
+          id: firebaseUser.uid,
+          ...userData,
+        };
+      }
+    } catch (error: any) {
+      console.error("Google Sign-In error:", error);
+
+      // Ensure user is signed out on any login failure
+      try {
+        await signOut(auth);
+        await SSOService.signOutGoogle();
+      } catch (signOutError) {
+        console.error("Error signing out after Google login failure:", signOutError);
+      }
+
+      throw new Error(error.message || "Error al iniciar sesión con Google");
+    }
+  }
+
+  // Facebook Sign-In
+  static async signInWithFacebook(): Promise<User> {
+    try {
+      console.log("Starting Facebook Sign-In");
+      const userCredential = await SSOService.signInWithFacebook();
+      const firebaseUser = userCredential.user;
+
+      console.log("Facebook Sign-In successful, checking user data");
+
+      // Check if user already exists in Firestore
+      const userDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid));
+
+      if (userDoc.exists()) {
+        // User exists, return user data
+        const userData = userDoc.data();
+        console.log("Existing user found:", userData.email);
+        return {
+          id: firebaseUser.uid,
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+          createdAt: userData.createdAt.toDate(),
+          profileImage: userData.profileImage,
+        };
+      } else {
+        // New user, create user document
+        console.log("New Facebook user, creating account");
+        const userData: Omit<User, "id"> = {
+          email: firebaseUser.email || "",
+          displayName: firebaseUser.displayName || "",
+          userType: "customer", // Default to customer for SSO users
+          createdAt: new Date(),
+          profileImage: firebaseUser.photoURL,
+        };
+
+        await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);
+
+        // Send welcome email in background
+        EmailService.sendWelcomeEmail({
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+        }).catch((error) => {
+          console.error("Failed to send welcome email:", error);
+        });
+
+        return {
+          id: firebaseUser.uid,
+          ...userData,
+        };
+      }
+    } catch (error: any) {
+      console.error("Facebook Sign-In error:", error);
+
+      // Ensure user is signed out on any login failure
+      try {
+        await signOut(auth);
+      } catch (signOutError) {
+        console.error("Error signing out after Facebook login failure:", signOutError);
+      }
+
+      throw new Error(error.message || "Error al iniciar sesión con Facebook");
     }
   }
 }

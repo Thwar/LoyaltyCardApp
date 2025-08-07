@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../context/AuthContext";
-import { Button, InputField, useAlert } from "../components";
+import { Button, InputField, useAlert, SSOButton } from "../components";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { AuthStackParamList } from "../types";
 
@@ -14,12 +14,14 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
-  const { login, resetPassword } = useAuth();
+  const { login, resetPassword, signInWithGoogle, signInWithFacebook } = useAuth();
   const { showAlert } = useAlert();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [facebookLoading, setFacebookLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validateForm = () => {
@@ -95,6 +97,40 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      console.log("LoginScreen: Starting Google Sign-In process");
+      await signInWithGoogle();
+      console.log("LoginScreen: Google Sign-In process completed successfully");
+    } catch (error) {
+      console.error("LoginScreen: Google Sign-In error caught:", error);
+      showAlert({
+        title: "Error de Google",
+        message: error instanceof Error ? error.message : "Error al iniciar sesión con Google",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setFacebookLoading(true);
+    try {
+      console.log("LoginScreen: Starting Facebook Sign-In process");
+      await signInWithFacebook();
+      console.log("LoginScreen: Facebook Sign-In process completed successfully");
+    } catch (error) {
+      console.error("LoginScreen: Facebook Sign-In error caught:", error);
+      showAlert({
+        title: "Error de Facebook",
+        message: error instanceof Error ? error.message : "Error al iniciar sesión con Facebook",
+      });
+    } finally {
+      setFacebookLoading(false);
+    }
+  };
+
   const navigateToRegister = () => {
     navigation.navigate("Register");
   };
@@ -131,6 +167,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             </View>
 
             <Button title="Iniciar Sesión" onPress={handleLogin} loading={loading} size="large" style={styles.loginButton} />
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>O continúa con</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.ssoContainer}>
+              <SSOButton provider="google" onPress={handleGoogleSignIn} loading={googleLoading} disabled={loading || facebookLoading} style={styles.ssoButton} />
+              <SSOButton provider="facebook" onPress={handleFacebookSignIn} loading={facebookLoading} disabled={loading || googleLoading} style={styles.ssoButton} />
+            </View>
           </View>
           <View style={styles.footer}>
             <Text style={styles.footerText}>
@@ -203,5 +250,27 @@ const styles = StyleSheet.create({
   linkText: {
     color: COLORS.primary,
     fontWeight: "600",
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: SPACING.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.inputBorder,
+  },
+  dividerText: {
+    marginHorizontal: SPACING.md,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+  },
+  ssoContainer: {
+    gap: SPACING.sm,
+  },
+  ssoButton: {
+    marginVertical: 0,
   },
 });

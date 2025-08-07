@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView,
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../context/AuthContext";
-import { Button, InputField, useAlert } from "../components";
+import { Button, InputField, useAlert, SSOButton } from "../components";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { AuthStackParamList } from "../types";
 import { testFirebaseConnection } from "../utils/firebaseTest";
@@ -16,7 +16,7 @@ interface RegisterScreenProps {
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
-  const { register } = useAuth();
+  const { register, signInWithGoogle, signInWithFacebook } = useAuth();
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     email: "",
@@ -26,6 +26,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     userType: "customer" as "customer" | "business",
   });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [facebookLoading, setFacebookLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -99,6 +101,40 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
   const navigateToLogin = () => {
     navigation.navigate("Login");
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      console.log("RegisterScreen: Starting Google Sign-In process");
+      await signInWithGoogle();
+      console.log("RegisterScreen: Google Sign-In process completed successfully");
+    } catch (error) {
+      console.error("RegisterScreen: Google Sign-In error caught:", error);
+      showAlert({
+        title: "Error de Google",
+        message: error instanceof Error ? error.message : "Error al registrarse con Google",
+      });
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleFacebookSignIn = async () => {
+    setFacebookLoading(true);
+    try {
+      console.log("RegisterScreen: Starting Facebook Sign-In process");
+      await signInWithFacebook();
+      console.log("RegisterScreen: Facebook Sign-In process completed successfully");
+    } catch (error) {
+      console.error("RegisterScreen: Facebook Sign-In error caught:", error);
+      showAlert({
+        title: "Error de Facebook",
+        message: error instanceof Error ? error.message : "Error al registrarse con Facebook",
+      });
+    } finally {
+      setFacebookLoading(false);
+    }
   };
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => {
@@ -184,6 +220,17 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
               </View>
             </View>
             <Button title="Crear Cuenta" onPress={handleRegister} loading={loading} size="large" style={styles.registerButton} />
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>O regístrate con</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.ssoContainer}>
+              <SSOButton provider="google" onPress={handleGoogleSignIn} loading={googleLoading} disabled={loading || facebookLoading} style={styles.ssoButton} />
+              <SSOButton provider="facebook" onPress={handleFacebookSignIn} loading={facebookLoading} disabled={loading || googleLoading} style={styles.ssoButton} />
+            </View>
           </View>
           <View style={styles.footer}>
             <Text style={styles.footerText}>
@@ -260,5 +307,27 @@ const styles = StyleSheet.create({
   linkText: {
     color: COLORS.primary,
     fontWeight: "600",
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: SPACING.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: COLORS.inputBorder,
+  },
+  dividerText: {
+    marginHorizontal: SPACING.md,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    fontWeight: "500",
+  },
+  ssoContainer: {
+    gap: SPACING.sm,
+  },
+  ssoButton: {
+    marginVertical: 0,
   },
 });

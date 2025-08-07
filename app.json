@@ -7,9 +7,7 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": [
-      "expo-dev-client"
-    ],
+    "plugins": ["expo-dev-client", "@react-native-google-signin/google-signin"],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -22,7 +20,12 @@
         "NSPhotoLibraryUsageDescription": "Esta aplicación necesita acceso a tu galería de fotos para seleccionar el logo de tu negocio.",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.thwar077.LoyaltyCardApp"
+      "bundleIdentifier": "com.thwar077.LoyaltyCardApp",
+      "config": {
+        "googleSignIn": {
+          "reservedClientId": "521869790852-lbmnm70iecpl8eklt102ddnnb5ja9j3e.apps.googleusercontent.com"
+        }
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -44,11 +47,17 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ],
-      "package": "com.thwar077.LoyaltyCardApp"
+      "package": "com.thwar077.LoyaltyCardApp",
+      "config": {
+        "googleServices": {
+          "apiKey": "AIzaSyDFlVbiMMKSOOZHOgFCflsxMOdv-3xvORk"
+        }
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "scheme": "loyaltycardapp",
     "extra": {
       "eas": {
         "projectId": "20c6dc88-4b0c-4405-85e3-a0b7e343d220"

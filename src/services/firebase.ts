@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, initializeAuth } from "firebase/auth";
+import { getAuth, initializeAuth, GoogleAuthProvider, FacebookAuthProvider } from "firebase/auth";
 import { getFirestore, enableNetwork, disableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
@@ -54,4 +54,13 @@ if (Platform.OS === "web") {
 export { auth };
 export { db };
 export const storage = getStorage(app);
+
+// Auth providers for SSO
+export const googleProvider = new GoogleAuthProvider();
+export const facebookProvider = new FacebookAuthProvider();
+
+// Configure providers
+googleProvider.addScope("profile");
+googleProvider.addScope("email");
+
 export default app;

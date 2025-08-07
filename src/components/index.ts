@@ -14,3 +14,4 @@ export { StampsGrid } from "./StampsGrid";
 export { StampConfirmationModal } from "./StampConfirmationModal";
 export { ColorPicker } from "./ColorPicker";
 export { StampShapePicker } from "./StampShapePicker";
+export { default as SSOButton } from "./SSOButton";

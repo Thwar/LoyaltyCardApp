@@ -11,6 +11,8 @@ interface AuthContextType {
   isLoggingIn: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string, userType: "customer" | "business") => Promise<User>;
+  signInWithGoogle: () => Promise<void>;
+  signInWithFacebook: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -163,6 +165,58 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const signInWithGoogle = async (): Promise<void> => {
+    setIsLoggingIn(true);
+    setLoginHasFailed(false);
+    try {
+      console.log("Attempting Google Sign-In");
+      const userData = await AuthService.signInWithGoogle();
+      console.log("Google Sign-In completed successfully");
+
+      // Wait a moment to ensure Firebase auth state has stabilized
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error("Google Sign-In failed in AuthContext:", error);
+      setLoginHasFailed(true);
+
+      // Ensure we're signed out if login fails
+      try {
+        await AuthService.logout();
+      } catch (logoutError) {
+        console.error("Error during cleanup logout:", logoutError);
+      }
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const signInWithFacebook = async (): Promise<void> => {
+    setIsLoggingIn(true);
+    setLoginHasFailed(false);
+    try {
+      console.log("Attempting Facebook Sign-In");
+      const userData = await AuthService.signInWithFacebook();
+      console.log("Facebook Sign-In completed successfully");
+
+      // Wait a moment to ensure Firebase auth state has stabilized
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    } catch (error) {
+      console.error("Facebook Sign-In failed in AuthContext:", error);
+      setLoginHasFailed(true);
+
+      // Ensure we're signed out if login fails
+      try {
+        await AuthService.logout();
+      } catch (logoutError) {
+        console.error("Error during cleanup logout:", logoutError);
+      }
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   const value: AuthContextType = {
     user,
     authUser,
@@ -170,6 +224,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoggingIn,
     login,
     register,
+    signInWithGoogle,
+    signInWithFacebook,
     logout,
     resetPassword,
     refreshUser,
