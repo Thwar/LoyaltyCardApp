@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, ScrollView, SafeAreaView, Platform, KeyboardAvo
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, AnimatedLoyaltyCard, ImagePicker, useAlert } from "../../components";
-import { COLORS, FONT_SIZES, SPACING } from "../../constants";
+import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, AnimatedLoyaltyCard, ImagePicker, useAlert, Typography } from "../../components";
+import { COLORS, FONT_SIZES, SPACING, getFontFamily } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
 import { ImageUploadService } from "../../services/imageUpload";
 
@@ -20,7 +20,7 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
   const [formData, setFormData] = useState({
     totalSlots: "10",
     rewardDescription: "",
-    cardColor: "#8B1538", // Default to primary color
+    cardColor: "#E53935", // Default to primary color
     stampShape: "circle" as "circle" | "square" | "egg" | "triangle" | "diamond" | "star",
     backgroundImage: "",
   });
@@ -135,13 +135,17 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={COLORS.textPrimary} />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Crear Tarjeta de Lealtad</Text>
+            <Typography variant="h3" style={styles.modalTitle}>
+              Crear Tarjeta de Lealtad
+            </Typography>
             <View style={styles.closeButton} />
           </View>
 
           <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
             <View style={styles.header}>
-              <Text style={styles.subtitle}>Configura un nuevo programa de lealtad para tus clientes</Text>
+              <Typography variant="body1" color={COLORS.textSecondary}>
+                Configura un nuevo programa de lealtad para tus clientes
+              </Typography>
             </View>
 
             <View style={styles.form}>
@@ -173,7 +177,9 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
               />
               <StampShapePicker label="Forma del Sello" selectedShape={formData.stampShape} onShapeSelect={(shape) => updateFormData("stampShape", shape)} error={errors.stampShape} />
               {/* Preview Section */}
-              <Text style={styles.previewTitle}>Vista Previa</Text>
+              <Typography variant="h3" style={styles.previewTitle}>
+                Vista Previa
+              </Typography>
               <AnimatedLoyaltyCard
                 card={{
                   id: "preview",
@@ -221,7 +227,7 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: "bold",
+    fontFamily: getFontFamily("semiBold"),
     color: COLORS.textPrimary,
   },
   closeButton: {
@@ -242,12 +248,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.xl,
-    fontWeight: "bold",
+    fontFamily: getFontFamily("bold"),
     color: COLORS.textPrimary,
     marginBottom: SPACING.sm,
   },
   subtitle: {
     fontSize: FONT_SIZES.md,
+    fontFamily: getFontFamily("regular"),
     color: COLORS.textSecondary,
   },
   form: {
@@ -260,7 +267,7 @@ const styles = StyleSheet.create({
   },
   previewTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: "bold",
+    fontFamily: getFontFamily("semiBold"),
     color: COLORS.textPrimary,
     marginBottom: SPACING.md,
     marginTop: SPACING.lg,

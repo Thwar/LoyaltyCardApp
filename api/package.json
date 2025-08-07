@@ -1,6 +1,6 @@
 {
-  "name": "loyalty-app-api",
+  "name": "casero-app-api",
   "version": "1.0.0",
-  "description": "Serverless functions for LoyaltyCard App using SendGrid",
+  "description": "Serverless functions for CaseroApp using SendGrid",
   "dependencies": {}
 }

@@ -1,6 +1,6 @@
 # SSO Integration Setup Guide
 
-This guide explains how to complete the setup of Google and Facebook SSO for your LoyaltyCardApp.
+This guide explains how to complete the setup of Google and Facebook SSO for your CaseroApp.
 
 ## 🔧 What's Been Implemented
 
@@ -39,28 +39,28 @@ Create **THREE** separate client IDs:
 **Web Application Client ID:**
 
 ```
-Name: LoyaltyCardApp Web
+Name: CaseroApp Web
 Application type: Web application
 Authorized redirect URIs:
 - http://localhost:19006 (for Expo development)
-- https://auth.expo.io/@thwar077/LoyaltyCardApp (for production)
+- https://auth.expo.io/@thwar077/CaseroApp (for production)
 ```
 
 **Android Client ID:**
 
 ```
-Name: LoyaltyCardApp Android
+Name: CaseroApp Android
 Application type: Android
-Package name: com.thwar077.LoyaltyCardApp
+Package name: com.thwar077.CaseroApp
 SHA-1 certificate fingerprint: [See SHA-1 section below]
 ```
 
 **iOS Client ID:**
 
 ```
-Name: LoyaltyCardApp iOS
+Name: CaseroApp iOS
 Application type: iOS
-Bundle ID: com.thwar077.LoyaltyCardApp
+Bundle ID: com.thwar077.CaseroApp
 ```
 
 #### Step 3: Update Configuration Files
@@ -240,8 +240,8 @@ The `YOUR_FIREBASE_API_KEY_FOR_ANDROID` is **NOT** the Google OAuth client ID. T
 
 Add these redirect URIs in Facebook Login settings:
 
-- `https://auth.expo.io/@thwar077/LoyaltyCardApp`
-- `loyaltycardapp://` (custom scheme)
+- `https://auth.expo.io/@thwar077/CaseroApp`
+- `caseroapp://` (custom scheme)
 
 #### Step 3: Update Configuration
 
@@ -250,7 +250,7 @@ Add these redirect URIs in Facebook Login settings:
 ```typescript
 const FACEBOOK_CONFIG = {
   appId: "YOUR_FACEBOOK_APP_ID",
-  appName: "LoyaltyCardApp",
+  appName: "CaseroApp",
 };
 ```
 
@@ -280,7 +280,7 @@ const FACEBOOK_CONFIG = {
 ### iOS
 
 1. **Download GoogleService-Info.plist** from Firebase Console
-2. **Place in iOS folder** (create if needed): `ios/LoyaltyCardApp/GoogleService-Info.plist`
+2. **Place in iOS folder** (create if needed): `ios/CaseroApp/GoogleService-Info.plist`
 3. **Update Info.plist** with URL schemes:
 
 ```xml
@@ -288,10 +288,10 @@ const FACEBOOK_CONFIG = {
 <array>
   <dict>
     <key>CFBundleURLName</key>
-    <string>com.thwar077.LoyaltyCardApp</string>
+    <string>com.thwar077.CaseroApp</string>
     <key>CFBundleURLSchemes</key>
     <array>
-      <string>loyaltycardapp</string>
+      <string>caseroapp</string>
       <string>YOUR_IOS_CLIENT_ID</string>
     </array>
   </dict>
@@ -313,7 +313,7 @@ const FACEBOOK_CONFIG = {
     <action android:name="android.intent.action.VIEW" />
     <category android:name="android.intent.category.DEFAULT" />
     <category android:name="android.intent.category.BROWSABLE" />
-    <data android:scheme="loyaltycardapp" />
+    <data android:scheme="caseroapp" />
   </intent-filter>
 </activity>
 ```

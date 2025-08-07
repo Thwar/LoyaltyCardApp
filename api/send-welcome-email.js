@@ -9,7 +9,7 @@ const getBusinessWelcomeTemplate = (displayName) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bienvenido a LoyaltyCard App</title>
+        <title>Bienvenido a CaseroApp</title>
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -83,14 +83,14 @@ const getBusinessWelcomeTemplate = (displayName) => {
     <body>
         <div class="container">
             <div class="header">
-                <div class="logo">🎯 LoyaltyCard App</div>
+                <div class="logo">🎯 CaseroApp</div>
                 <p style="color: #666; margin: 0;">Plataforma Empresarial de Fidelización</p>
             </div>
 
             <h1 class="welcome-title">¡Bienvenido, ${displayName}!</h1>
 
             <div class="content">
-                <p>Nos complace darte la bienvenida a <strong>LoyaltyCard App</strong>, la plataforma líder en soluciones de fidelización empresarial.</p>
+                <p>Nos complace darte la bienvenida a <strong>CaseroApp</strong>, la plataforma líder en soluciones de fidelización empresarial.</p>
                 
                 <div class="highlight">
                     <p><strong>¡Felicidades por dar el primer paso hacia el crecimiento de tu negocio!</strong></p>
@@ -108,10 +108,10 @@ const getBusinessWelcomeTemplate = (displayName) => {
             </div>
 
             <div class="footer">
-                <p><strong>¡Gracias por confiar en LoyaltyCard App!</strong></p>
+                <p><strong>¡Gracias por confiar en CaseroApp!</strong></p>
                 <p>Estamos emocionados de ser parte del crecimiento de tu negocio.</p>
                 <p style="margin-top: 20px;">
-                    © 2025 LoyaltyCard App. Todos los derechos reservados.<br>
+                    © 2025 CaseroApp. Todos los derechos reservados.<br>
                     <small>Este es un email automático, por favor no respondas a este mensaje.</small>
                 </p>
             </div>
@@ -128,7 +128,7 @@ const getCustomerWelcomeTemplate = (displayName) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bienvenido a LoyaltyCard App</title>
+        <title>Bienvenido a CaseroApp</title>
         <style>
             body {
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -202,14 +202,14 @@ const getCustomerWelcomeTemplate = (displayName) => {
     <body>
         <div class="container">
             <div class="header">
-                <div class="logo">🎁 LoyaltyCard App</div>
+                <div class="logo">🎁 CaseroApp</div>
                 <p style="color: #666; margin: 0;">Tu Pasaporte a Increíbles Recompensas</p>
             </div>
 
             <h1 class="welcome-title">¡Hola, ${displayName}!</h1>
 
             <div class="content">
-                <p>¡Bienvenido a <strong>LoyaltyCard App</strong>! Estás a punto de descubrir un mundo lleno de recompensas increíbles en tus lugares favoritos.</p>
+                <p>¡Bienvenido a <strong>CaseroApp</strong>! Estás a punto de descubrir un mundo lleno de recompensas increíbles en tus lugares favoritos.</p>
                 
                 <div class="highlight">
                     <p><strong>🎉 ¡Tu aventura de recompensas comienza ahora!</strong></p>
@@ -230,7 +230,7 @@ const getCustomerWelcomeTemplate = (displayName) => {
                 <p><strong>¡Bienvenido a la familia LoyaltyCard!</strong></p>
                 <p>Estamos emocionados de ayudarte a obtener las mejores recompensas.</p>
                 <p style="margin-top: 20px;">
-                    © 2025 LoyaltyCard App. Todos los derechos reservados.<br>
+                    © 2025 CaseroApp. Todos los derechos reservados.<br>
                     <small>Este es un email automático, por favor no respondas a este mensaje.</small>
                 </p>
             </div>
@@ -242,54 +242,54 @@ const getCustomerWelcomeTemplate = (displayName) => {
 
 module.exports = async (req, res) => {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Credentials', true);
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+  res.setHeader("Access-Control-Allow-Credentials", true);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+  res.setHeader("Access-Control-Allow-Headers", "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version");
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     res.status(200).end();
     return;
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
     // Check if SendGrid API key is available
     if (!process.env.SENDGRID_API_KEY) {
-      console.error('SENDGRID_API_KEY environment variable is not set');
-      return res.status(500).json({ 
-        success: false, 
-        error: 'Email service configuration error',
-        details: 'Missing SendGrid API key configuration'
+      console.error("SENDGRID_API_KEY environment variable is not set");
+      return res.status(500).json({
+        success: false,
+        error: "Email service configuration error",
+        details: "Missing SendGrid API key configuration",
       });
     }
 
     const { email, displayName, userType } = req.body;
 
     if (!email || !displayName || !userType) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         success: false,
-        error: 'Missing required fields: email, displayName, userType' 
+        error: "Missing required fields: email, displayName, userType",
       });
     }
 
-    if (!['business', 'customer'].includes(userType)) {
-      return res.status(400).json({ 
+    if (!["business", "customer"].includes(userType)) {
+      return res.status(400).json({
         success: false,
-        error: 'userType must be either "business" or "customer"' 
+        error: 'userType must be either "business" or "customer"',
       });
     }
 
     let subject, html;
 
-    if (userType === 'business') {
-      subject = '¡Bienvenido a LoyaltyCard App! - Tu plataforma de fidelización empresarial';
+    if (userType === "business") {
+      subject = "¡Bienvenido a CaseroApp! - Tu plataforma de fidelización empresarial";
       html = getBusinessWelcomeTemplate(displayName);
     } else {
-      subject = '¡Bienvenido a LoyaltyCard App! - Descubre recompensas increíbles';
+      subject = "¡Bienvenido a CaseroApp! - Descubre recompensas increíbles";
       html = getCustomerWelcomeTemplate(displayName);
     }
 
@@ -298,60 +298,59 @@ module.exports = async (req, res) => {
       personalizations: [
         {
           to: [{ email: email, name: displayName }],
-          subject: subject
-        }
+          subject: subject,
+        },
       ],
-      from: { 
-        email: 'thomaswar3@gmail.com', 
-        name: 'LoyaltyCard App' 
+      from: {
+        email: "thomaswar3@gmail.com",
+        name: "CaseroApp",
       },
       content: [
         {
-          type: 'text/html',
-          value: html
-        }
-      ]
+          type: "text/html",
+          value: html,
+        },
+      ],
     };
 
-    console.log('Sending email via SendGrid to:', email);
+    console.log("Sending email via SendGrid to:", email);
 
     // Send email using SendGrid REST API
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(emailData)
+      body: JSON.stringify(emailData),
     });
 
     if (response.ok) {
       // SendGrid returns 202 for successful requests
-      const messageId = response.headers.get('x-message-id') || 'success';
-      console.log('Welcome email sent successfully via SendGrid:', messageId);
+      const messageId = response.headers.get("x-message-id") || "success";
+      console.log("Welcome email sent successfully via SendGrid:", messageId);
 
-      res.status(200).json({ 
-        success: true, 
+      res.status(200).json({
+        success: true,
         messageId: messageId,
-        message: 'Welcome email sent successfully via SendGrid' 
+        message: "Welcome email sent successfully via SendGrid",
       });
     } else {
       const errorText = await response.text();
-      console.error('SendGrid API error:', response.status, errorText);
-      
-      res.status(500).json({ 
-        success: false, 
-        error: 'Failed to send email via SendGrid',
-        details: `SendGrid API returned ${response.status}: ${errorText}`
+      console.error("SendGrid API error:", response.status, errorText);
+
+      res.status(500).json({
+        success: false,
+        error: "Failed to send email via SendGrid",
+        details: `SendGrid API returned ${response.status}: ${errorText}`,
       });
     }
-
   } catch (error) {
-    console.error('Error sending welcome email:', error);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to send email',
-      details: error.message 
+    console.error("Error sending welcome email:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to send email",
+      details: error.message,
     });
   }
 };

@@ -10,18 +10,18 @@ WebBrowser.maybeCompleteAuthSession();
 
 // Google Sign-In Configuration
 const GOOGLE_CONFIG = {
-  // You'll need to add your Google Web Client ID here
-  webClientId: "521869790852-72fbi96sk01f8lh0muldice9pqnu711n.apps.googleusercontent.com", // Replace with actual client ID
+  // Using iOS client ID as web client ID temporarily for testing
+  webClientId: "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com", // Same as iOS for now
   // Android client ID (if different)
   androidClientId: "521869790852-d44rnvmkcvni1e7ijs2q371sgl36k05q.apps.googleusercontent.com", // Replace with actual client ID
-  // iOS client ID (if different)
-  iosClientId: "521869790852-lbmnm70iecpl8eklt102ddnnb5ja9j3e.apps.googleusercontent.com", // Replace with actual client ID
+  // iOS client ID (updated with real Firebase config)
+  iosClientId: "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com", // Real iOS client ID from Firebase
 };
 
 // Facebook App Configuration
 const FACEBOOK_CONFIG = {
   appId: "YOUR_FACEBOOK_APP_ID", // Replace with your Facebook App ID
-  appName: "LoyaltyCardApp",
+  appName: "CaseroApp",
 };
 
 export class SSOService {
@@ -34,6 +34,7 @@ export class SSOService {
           offlineAccess: true,
           hostedDomain: "",
           forceCodeForRefreshToken: true,
+          iosClientId: GOOGLE_CONFIG.iosClientId, // Add iOS client ID
         });
         console.log("Google Sign-In configured successfully");
       } catch (error) {
@@ -51,11 +52,18 @@ export class SSOService {
         const result = await signInWithPopup(auth, googleProvider);
         return result;
       } else {
-        // React Native implementation
-        await this.initializeGoogleSignIn();
+        // Check if Google Sign-In is properly configured
+        try {
+          await this.initializeGoogleSignIn();
+        } catch (configError) {
+          console.error("Google Sign-In not properly configured:", configError);
+          throw new Error("Google Sign-In no está disponible en este momento. Por favor usa email/contraseña para iniciar sesión.");
+        }
 
         // Check if device supports Google Play Services
-        await GoogleSignin.hasPlayServices();
+        await GoogleSignin.hasPlayServices({
+          showPlayServicesUpdateDialog: true,
+        });
 
         // Get user info from Google
         const userInfo = await GoogleSignin.signIn();
@@ -80,6 +88,8 @@ export class SSOService {
         throw new Error("Inicio de sesión con Google en progreso");
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         throw new Error("Google Play Services no disponible");
+      } else if (error.message?.includes("GoogleService-Info.plist") || error.message?.includes("DEVELOPER_ERROR")) {
+        throw new Error("Google Sign-In no está disponible en este momento. Por favor usa email/contraseña para iniciar sesión.");
       } else {
         throw new Error(error.message || "Error al iniciar sesión con Google");
       }

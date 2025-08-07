@@ -30,7 +30,7 @@ import { StampsGrid } from '../components/StampsGrid';
   stampShape="square"
   size="large"
   showAnimation={false}
-  stampColor="#8B1538"
+  stampColor="#E53935"
   showCheckmarks={false}
   containerStyle={{ marginVertical: 20 }}
 />

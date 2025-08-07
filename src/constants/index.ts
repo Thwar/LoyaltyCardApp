@@ -1,8 +1,8 @@
 export const COLORS = {
-  // Primary brand color (darker red as requested)
-  primary: "#8B1538",
-  primaryLight: "#B91C47",
-  primaryDark: "#6B0E29",
+  // Primary brand color (updated to E53935)
+  primary: "#E53935",
+  primaryLight: "#EF5350",
+  primaryDark: "#C62828",
 
   // Secondary colors
   secondary: "#2C3E50",
@@ -35,21 +35,21 @@ export const COLORS = {
   cardShadow: "rgba(0, 0, 0, 0.1)",
 
   // Button colors
-  buttonPrimary: "#8B1538",
+  buttonPrimary: "#E53935",
   buttonSecondary: "#95A5A6",
   buttonDisabled: "#BDC3C7",
 
   // Input colors
   inputBackground: "#F8F9FA",
   inputBorder: "#E9ECEF",
-  inputFocus: "#8B1538",
+  inputFocus: "#E53935",
 
   // Tab colors
-  tabActive: "#8B1538",
+  tabActive: "#E53935",
   tabInactive: "#95A5A6",
 
   // Stamp colors for loyalty cards
-  stampFilled: "#8B1538",
+  stampFilled: "#E53935",
   stampEmpty: "#E9ECEF",
   stampBorder: "#BDC3C7",
 } as const;
@@ -87,6 +87,14 @@ export const FONT_WEIGHTS = {
   medium: "500",
   semiBold: "600",
   bold: "700",
+} as const;
+
+export const FONTS = {
+  regular: "BalooBhaijaan2-Regular",
+  medium: "BalooBhaijaan2-Medium",
+  semiBold: "BalooBhaijaan2-SemiBold",
+  bold: "BalooBhaijaan2-Bold",
+  extraBold: "BalooBhaijaan2-ExtraBold",
 } as const;
 
 export const SHADOWS = {
@@ -156,3 +164,6 @@ export const VALIDATION_RULES = {
 
 // Export business categories
 export { BUSINESS_CATEGORIES, CATEGORY_LABELS, getCategoryLabel, CITY_LABELS, getCityLabel, formatCategories } from "./businessCategories";
+
+// Export font utilities
+export { useCustomFonts, getFontFamily } from "../utils/fontLoader";

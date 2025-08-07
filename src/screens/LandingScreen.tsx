@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, Image, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { StackNavigationProp } from "@react-navigation/stack";
 
@@ -21,14 +21,17 @@ export const LandingScreen: React.FC<LandingScreenProps> = ({ navigation }) => {
   const navigateToRegister = () => {
     navigation.navigate("Register");
   };
+
+  const { width } = Dimensions.get("window");
+
   return (
     <LinearGradient colors={[COLORS.primary, COLORS.primaryDark]} style={styles.gradient}>
       <SafeAreaView style={styles.container}>
         <View style={styles.content}>
           {/* Hero Section */}
           <View style={styles.heroSection}>
-            <Text style={styles.title}>TarjetaLealtad</Text>
-            <Text style={styles.subtitle}>Tu billetera digital para tarjetas de lealtad</Text>
+            <Image source={require("../../assets/logo.png")} style={styles.logo} resizeMode="contain" />
+            <Text style={[styles.subtitle, { fontFamily: "BalooBhaijaan2-Regular" }]}>Tu billetera digital para tarjetas de lealtad</Text>
             <Text style={styles.description}>Colecta sellos, gana recompensas y nunca pierdas tus tarjetas de lealtad nuevamente. Perfecto tanto para clientes como para negocios.</Text>
           </View>
           {/* Features */}
@@ -76,6 +79,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: SPACING.xl,
   },
+  logo: {
+    marginBottom: SPACING.md,
+    width: "100%",
+    height: 150,
+  },
   title: {
     fontSize: 48,
     fontWeight: "bold",
@@ -88,7 +96,8 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     textAlign: "center",
     marginBottom: SPACING.lg,
-    opacity: 0.9,
+    opacity: 0.95,
+    fontWeight: "600",
   },
   description: {
     fontSize: FONT_SIZES.md,

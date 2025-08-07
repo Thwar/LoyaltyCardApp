@@ -11,7 +11,7 @@ interface ColorPickerProps {
 
 // Predefined color templates for loyalty cards
 const COLOR_TEMPLATES = [
-  { name: "Rojo Clásico", value: "#8B1538" },
+  { name: "Rojo Clásico", value: "#E53935" },
   { name: "Azul Océano", value: "#2980B9" },
   { name: "Verde Esmeralda", value: "#27AE60" },
   { name: "Naranja Vibrante", value: "#E67E22" },

@@ -314,6 +314,7 @@ const styles = StyleSheet.create({
   },
   previewContainer: {
     marginBottom: SPACING.md,
+    marginHorizontal: 0,
   },
 });
 

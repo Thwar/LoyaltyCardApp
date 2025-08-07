@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCsfXjLweY2aXo6cTPGV4KzndfN0ZwRwUc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>853612097033</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.thwar077.LoyaltyCardApp</string>
+	<key>PROJECT_ID</key>
+	<string>casero-app</string>
+	<key>STORAGE_BUCKET</key>
+	<string>casero-app.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:853612097033:ios:a5efa372bb468cd5ca52d8</string>
+</dict>
+</plist>

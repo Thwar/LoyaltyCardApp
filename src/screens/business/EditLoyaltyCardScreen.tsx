@@ -23,7 +23,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
   const [formData, setFormData] = useState({
     totalSlots: "",
     rewardDescription: "",
-    cardColor: "#8B1538",
+    cardColor: "#E53935",
     stampShape: "circle" as "circle" | "square" | "egg" | "triangle" | "diamond" | "star",
     backgroundImage: "",
   });
@@ -42,7 +42,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       setFormData({
         totalSlots: cardData.totalSlots.toString(),
         rewardDescription: cardData.rewardDescription,
-        cardColor: cardData.cardColor || "#8B1538",
+        cardColor: cardData.cardColor || "#E53935",
         stampShape: cardData.stampShape || "circle",
         backgroundImage: cardData.backgroundImage || "",
       });

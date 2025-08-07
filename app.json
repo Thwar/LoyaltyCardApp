@@ -13,19 +13,26 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Esta aplicación necesita acceso a la cámara para tomar fotos del logo de tu negocio.",
         "NSPhotoLibraryUsageDescription": "Esta aplicación necesita acceso a tu galería de fotos para seleccionar el logo de tu negocio.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLName": "google",
+            "CFBundleURLSchemes": ["com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba"]
+          },
+          {
+            "CFBundleURLName": "loyaltycardapp",
+            "CFBundleURLSchemes": ["loyaltycardapp"]
+          }
+        ]
       },
       "bundleIdentifier": "com.thwar077.LoyaltyCardApp",
-      "config": {
-        "googleSignIn": {
-          "reservedClientId": "521869790852-lbmnm70iecpl8eklt102ddnnb5ja9j3e.apps.googleusercontent.com"
-        }
-      }
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,26 +40,21 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
-      ],
+      "permissions": ["android.permission.CAMERA", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"],
       "package": "com.thwar077.LoyaltyCardApp",
-      "config": {
-        "googleServices": {
-          "apiKey": "AIzaSyDFlVbiMMKSOOZHOgFCflsxMOdv-3xvORk"
+      "googleServicesFile": "./google-services.json",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "loyaltycardapp"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
         }
-      }
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
