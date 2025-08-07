@@ -181,7 +181,9 @@ class ImageCacheManager {
     // If cache is full, remove oldest entries
     if (this.cache.size >= this.MAX_CACHE_SIZE) {
       const oldestKey = this.cache.keys().next().value;
-      this.cache.delete(oldestKey);
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
     }
 
     const now = Date.now();

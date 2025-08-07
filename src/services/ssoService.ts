@@ -37,7 +37,7 @@ export class SSOService {
         };
 
         // Platform-specific configuration
-        if (Platform.OS === 'ios') {
+        if (Platform.OS === "ios") {
           config.iosClientId = GOOGLE_CONFIG.iosClientId;
         }
 
@@ -59,7 +59,7 @@ export class SSOService {
         return result;
       } else {
         console.log("Starting Google Sign-In for mobile platform:", Platform.OS);
-        
+
         // Check if Google Sign-In is properly configured
         try {
           await this.initializeGoogleSignIn();
@@ -106,9 +106,7 @@ export class SSOService {
         throw new Error("Inicio de sesión con Google en progreso");
       } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
         throw new Error("Google Play Services no disponible");
-      } else if (error.message?.includes("GoogleService-Info.plist") || 
-                 error.message?.includes("DEVELOPER_ERROR") ||
-                 error.code === 'DEVELOPER_ERROR') {
+      } else if (error.message?.includes("GoogleService-Info.plist") || error.message?.includes("DEVELOPER_ERROR") || error.code === "DEVELOPER_ERROR") {
         console.error("Developer error - likely configuration issue:", error);
         throw new Error("Google Sign-In no está disponible en este momento. Por favor usa email/contraseña para iniciar sesión.");
       } else {

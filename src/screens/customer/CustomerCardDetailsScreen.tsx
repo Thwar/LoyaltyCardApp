@@ -67,13 +67,16 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
 
   // Memoize card props to prevent unnecessary re-renders of AnimatedLoyaltyCard
   const cardProps = useMemo(
-    () => ({
-      card: card.loyaltyCard,
-      currentStamps: card.currentStamps,
-      cardCode: card.cardCode,
-      showAnimation: true,
-      stampShape: card.loyaltyCard?.stampShape,
-    }),
+    () =>
+      card.loyaltyCard
+        ? {
+            card: card.loyaltyCard,
+            currentStamps: card.currentStamps,
+            cardCode: card.cardCode,
+            showAnimation: true,
+            stampShape: card.loyaltyCard.stampShape,
+          }
+        : null,
     [card.loyaltyCard, card.currentStamps, card.cardCode]
   );
 
@@ -343,9 +346,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
         </View>
         <ScrollView style={styles.scrollView}>
           {/* Card Display */}
-          <View style={styles.cardContainer}>
-            <AnimatedLoyaltyCard {...cardProps} />
-          </View>
+          <View style={styles.cardContainer}>{cardProps ? <AnimatedLoyaltyCard {...cardProps} /> : <LoadingState error="Tarjeta no disponible" onRetry={onClose} />}</View>
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             <Button title="Ver Perfil del Negocio" onPress={handleViewBusiness} variant="outline" size="large" loading={businessLoading} style={styles.businessButton} />

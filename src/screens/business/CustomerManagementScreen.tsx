@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, FlatList } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, FlatList } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";

@@ -232,7 +232,7 @@ export class AuthService {
           displayName: firebaseUser.displayName || "",
           userType: "customer", // Default to customer for SSO users
           createdAt: new Date(),
-          profileImage: firebaseUser.photoURL,
+          profileImage: firebaseUser.photoURL || undefined,
         };
 
         await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);
@@ -298,7 +298,7 @@ export class AuthService {
           displayName: firebaseUser.displayName || "",
           userType: "customer", // Default to customer for SSO users
           createdAt: new Date(),
-          profileImage: firebaseUser.photoURL,
+          profileImage: firebaseUser.photoURL || undefined,
         };
 
         await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);

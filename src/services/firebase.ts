@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, initializeAuth, GoogleAuthProvider, FacebookAuthProvider } from "firebase/auth";
+import { getAuth, initializeAuth, GoogleAuthProvider, FacebookAuthProvider, Auth } from "firebase/auth";
 import { getFirestore, enableNetwork, disableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
@@ -18,7 +18,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize auth based on platform
-let auth;
+let auth: Auth;
 if (Platform.OS === "web") {
   // For web, use the default getAuth which handles persistence automatically
   auth = getAuth(app);
