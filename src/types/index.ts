@@ -5,6 +5,7 @@ export interface User {
   userType: "customer" | "business";
   createdAt: Date;
   profileImage?: string;
+  pushToken?: string; // Expo push token for notifications
 }
 
 export interface Business {

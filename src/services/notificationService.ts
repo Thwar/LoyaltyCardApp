@@ -23,9 +23,15 @@ export interface StampNotificationData {
 }
 
 export class NotificationService {
-  // Register for push notifications
+  // Register for push notifications (only works on mobile devices)
   static async registerForPushNotificationsAsync(): Promise<string | null> {
     try {
+      // Web browsers cannot register for Expo push tokens
+      if (Platform.OS === "web") {
+        console.log("Push token registration not supported on web platform");
+        return null;
+      }
+
       let token: string | null = null;
 
       if (Platform.OS === "android") {
@@ -59,6 +65,15 @@ export class NotificationService {
           })
         ).data;
         console.log("Push notification token:", token);
+        
+        // Save the token to the user's profile for later use
+        try {
+          const { UserService } = await import('./api');
+          await UserService.updatePushToken(token);
+          console.log("Push token saved to user profile");
+        } catch (error) {
+          console.warn("Failed to save push token to user profile:", error);
+        }
       } else {
         console.log("Must use physical device for Push Notifications");
       }
@@ -70,9 +85,112 @@ export class NotificationService {
     }
   }
 
-  // Send a local notification for stamp added
+  // Send push notifications via server (works from web and mobile)
+  static async sendPushNotification(
+    pushTokens: string[],
+    title: string,
+    body: string,
+    data?: any
+  ): Promise<boolean> {
+    try {
+      // This works from any platform - web, iOS, Android
+      const response = await fetch('/api/send-push-notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pushTokens,
+          title,
+          body,
+          data,
+        }),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log('Push notifications sent successfully');
+        return true;
+      } else {
+        console.error('Failed to send push notifications:', result.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error sending push notifications:', error);
+      return false;
+    }
+  }
+
+  // Send stamp notification via push (for cross-platform notifications)
+  static async sendStampNotificationViaPush(
+    pushTokens: string[],
+    data: StampNotificationData
+  ): Promise<boolean> {
+    const { businessName, currentStamps, totalSlots, isCompleted } = data;
+
+    let title: string;
+    let body: string;
+
+    if (isCompleted) {
+      title = "🎉 ¡Tarjeta Completada!";
+      body = `¡Felicidades! Has completado tu tarjeta de ${businessName}. ¡Puedes canjear tu recompensa!`;
+    } else {
+      const stampsNeeded = totalSlots - currentStamps;
+      title = "✅ ¡Sello Agregado!";
+      body = `Sello agregado en ${businessName}. Te ${stampsNeeded === 1 ? "falta" : "faltan"} ${stampsNeeded} sello${stampsNeeded === 1 ? "" : "s"} para tu recompensa.`;
+    }
+
+    return await this.sendPushNotification(pushTokens, title, body, data);
+  }
+
+  // Send push notification from mobile app (works on all platforms)
+  static async sendPushNotificationFromMobile(
+    pushTokens: string[],
+    title: string,
+    body: string,
+    data?: any
+  ): Promise<boolean> {
+    // Mobile apps can send push notifications via the same server API
+    // This works from iOS, Android, and Web
+    return await this.sendPushNotification(pushTokens, title, body, data);
+  }
+
+  // Helper method to send notification to a specific customer by ID
+  static async sendNotificationToCustomer(
+    customerId: string, 
+    title: string, 
+    body: string, 
+    data?: any
+  ): Promise<boolean> {
+    try {
+      // Import UserService dynamically to avoid circular imports
+      const { UserService } = await import('./api');
+      
+      // Get customer's push token
+      const customerUser = await UserService.getUser(customerId);
+      if (!customerUser?.pushToken) {
+        console.log("Customer has no push token, cannot send notification");
+        return false;
+      }
+
+      // Send push notification
+      return await this.sendPushNotification([customerUser.pushToken], title, body, data);
+    } catch (error) {
+      console.error("Error sending notification to customer:", error);
+      return false;
+    }
+  }
+
+  // Send a local notification for stamp added (mobile only)
   static async sendStampAddedNotification(data: StampNotificationData): Promise<void> {
     try {
+      // Check if we're on web platform - local notifications are not supported
+      if (Platform.OS === "web") {
+        console.log("Local notifications not supported on web platform");
+        return;
+      }
+
       const { customerName, businessName, currentStamps, totalSlots, isCompleted } = data;
 
       let title: string;
@@ -112,6 +230,12 @@ export class NotificationService {
   // Send a notification when reward is redeemed
   static async sendRewardRedeemedNotification(businessName: string): Promise<void> {
     try {
+      // Check if we're on web platform - notifications are not supported
+      if (Platform.OS === "web") {
+        console.log("Notifications not supported on web platform");
+        return;
+      }
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title: "🎁 ¡Recompensa Canjeada!",
@@ -134,6 +258,12 @@ export class NotificationService {
   // Clear all notifications
   static async clearAllNotifications(): Promise<void> {
     try {
+      // Check if we're on web platform - notifications are not supported
+      if (Platform.OS === "web") {
+        console.log("Clear notifications not supported on web platform");
+        return;
+      }
+
       await Notifications.dismissAllNotificationsAsync();
     } catch (error) {
       console.error("Error clearing notifications:", error);
@@ -143,6 +273,12 @@ export class NotificationService {
   // Get notification permissions status
   static async getPermissionStatus(): Promise<string> {
     try {
+      // Check if we're on web platform - return a default status
+      if (Platform.OS === "web") {
+        console.log("Notification permissions not supported on web platform");
+        return "undetermined";
+      }
+
       const { status } = await Notifications.getPermissionsAsync();
       return status;
     } catch (error) {

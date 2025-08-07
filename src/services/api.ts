@@ -376,10 +376,34 @@ export class UserService {
         userType: userData.userType,
         createdAt: userData.createdAt.toDate(),
         profileImage: userData.profileImage,
+        pushToken: userData.pushToken,
       };
     } catch (error) {
       console.error("Error getting user:", error);
       return null;
+    }
+  }
+
+  static async updatePushToken(pushToken: string): Promise<void> {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("User not authenticated");
+      }
+
+      console.log("Updating push token for user:", currentUser.uid);
+      
+      // Update user document in Firestore
+      const userRef = doc(db, FIREBASE_COLLECTIONS.USERS, currentUser.uid);
+      await updateDoc(userRef, {
+        pushToken: pushToken,
+        pushTokenUpdatedAt: new Date(),
+      });
+
+      console.log("Push token updated successfully");
+    } catch (error) {
+      console.error("Error updating push token:", error);
+      throw new Error("Error al actualizar el token de notificaciones");
     }
   }
 }
@@ -1141,9 +1165,25 @@ export class CustomerCardService {
           isCompleted,
         };
 
-        // Send local notification
+        // Send local notification (for mobile app immediate feedback)
         await NotificationService.sendStampAddedNotification(notificationData);
-        console.log("addStamp: Notification sent successfully");
+        console.log("addStamp: Local notification sent successfully");
+
+        // Send push notification to customer (cross-platform)
+        try {
+          // Get customer's push token
+          const customerUser = await UserService.getUser(customerId);
+          if (customerUser?.pushToken) {
+            console.log("addStamp: Sending push notification to customer");
+            await NotificationService.sendStampNotificationViaPush([customerUser.pushToken], notificationData);
+            console.log("addStamp: Push notification sent successfully");
+          } else {
+            console.log("addStamp: Customer has no push token, skipping push notification");
+          }
+        } catch (pushError) {
+          console.warn("addStamp: Error sending push notification:", pushError);
+          // Don't fail the stamp addition if push notification fails
+        }
 
         // Play appropriate sound
         if (isCompleted) {
@@ -1431,7 +1471,28 @@ export class CustomerCardService {
 
       // Send notification and play sound for reward redemption
       try {
+        // Send local notification (for mobile app immediate feedback)
         await NotificationService.sendRewardRedeemedNotification(businessName);
+        
+        // Send push notification to customer (cross-platform)
+        try {
+          const customerUser = await UserService.getUser(customerCard.customerId);
+          if (customerUser?.pushToken) {
+            console.log("Sending push notification for reward redemption to customer");
+            await NotificationService.sendPushNotification(
+              [customerUser.pushToken],
+              "🎁 ¡Recompensa Canjeada!",
+              `¡Has canjeado exitosamente tu recompensa en ${businessName}! ¡Gracias por tu lealtad!`,
+              { businessName, type: "reward_redeemed" }
+            );
+            console.log("Reward redemption push notification sent successfully");
+          } else {
+            console.log("Customer has no push token, skipping push notification");
+          }
+        } catch (pushError) {
+          console.warn("Error sending reward redemption push notification:", pushError);
+        }
+        
         await SoundService.playCompleteSound();
         console.log("Reward redemption notification and sound sent successfully");
       } catch (notificationError) {

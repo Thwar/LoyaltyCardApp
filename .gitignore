@@ -10,7 +10,10 @@ web-build/
 expo-env.d.ts
 
 # Native
-.kotlin/
+android/app/build/
+android/build/
+android/.gradle/
+android/app/src/main/res/drawable-*/
 *.orig.*
 *.jks
 *.p8

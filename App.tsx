@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import Constants from "expo-constants";
 import { AuthProvider } from "./src/context/AuthContext";
 import { AlertProvider } from "./src/components";
 import { AppNavigator } from "./src/navigation/AppNavigator";
@@ -20,13 +21,21 @@ export default function App() {
     // Initialize notification and sound services
     const initializeServices = async () => {
       try {
-        // Initialize push notifications
-        await NotificationService.registerForPushNotificationsAsync();
+        // Check if we're in a development client (not Expo Go)
+        const isExpoGo = Constants.appOwnership === 'expo';
+        
+        if (!isExpoGo) {
+          // Initialize push notifications only in development builds
+          await NotificationService.registerForPushNotificationsAsync();
+          console.log("Push notifications initialized successfully");
+        } else {
+          console.log("Running in Expo Go - skipping push notification registration");
+        }
 
         // Initialize and preload sounds
         await SoundService.preloadSounds();
 
-        console.log("Notification and sound services initialized successfully");
+        console.log("Services initialized successfully");
       } catch (error) {
         console.error("Error initializing services:", error);
       }
