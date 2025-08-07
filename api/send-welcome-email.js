@@ -11,14 +11,16 @@ const getBusinessWelcomeTemplate = (displayName) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bienvenido a CaseroApp</title>
         <style>
+            @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap');
+            
             body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: 'Baloo Bhaijaan 2', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 line-height: 1.6;
                 color: #333;
                 max-width: 600px;
                 margin: 0 auto;
                 padding: 20px;
-                background-color: #f8f9fa;
+                background-color: #E53935;
             }
             .container {
                 background-color: #ffffff;
@@ -30,28 +32,36 @@ const getBusinessWelcomeTemplate = (displayName) => {
                 text-align: center;
                 margin-bottom: 30px;
                 padding-bottom: 20px;
-                border-bottom: 3px solid #007bff;
+                border-bottom: 3px solid #E53935;
+            }
+            .logo-img {
+                max-width: 120px;
+                height: auto;
+                margin-bottom: 15px;
             }
             .logo {
                 font-size: 28px;
-                font-weight: bold;
-                color: #007bff;
+                font-weight: 700;
+                color: #E53935;
                 margin-bottom: 10px;
+                font-family: 'Baloo Bhaijaan 2', sans-serif;
             }
             .welcome-title {
                 color: #2c3e50;
                 font-size: 24px;
                 margin-bottom: 20px;
                 text-align: center;
+                font-family: 'Baloo Bhaijaan 2', sans-serif;
+                font-weight: 600;
             }
             .content {
                 margin-bottom: 30px;
             }
             .highlight {
-                background-color: #e3f2fd;
+                background-color: #ffebee;
                 padding: 20px;
                 border-radius: 8px;
-                border-left: 4px solid #007bff;
+                border-left: 4px solid #E53935;
                 margin: 20px 0;
             }
             .features {
@@ -83,7 +93,8 @@ const getBusinessWelcomeTemplate = (displayName) => {
     <body>
         <div class="container">
             <div class="header">
-                <div class="logo">🎯 CaseroApp</div>
+                <img src="https://caseroapp-thomas-projects-09adf0ba.vercel.app/assets/logo-red.png" alt="CaseroApp Logo" class="logo-img" />
+                <div class="logo">CaseroApp</div>
                 <p style="color: #666; margin: 0;">Plataforma Empresarial de Fidelización</p>
             </div>
 
@@ -97,7 +108,7 @@ const getBusinessWelcomeTemplate = (displayName) => {
                     <p>Ahora puedes crear programas de fidelización que transformarán visitantes ocasionales en clientes leales.</p>
                 </div>
 
-                <h3 style="color: #007bff;">🚀 Lo que puedes hacer ahora:</h3>
+                <h3 style="color: #E53935; font-family: 'Baloo Bhaijaan 2', sans-serif; font-weight: 600;">🚀 Lo que puedes hacer ahora:</h3>
                 <ul class="features">
                     <li><strong>Crear tarjetas de fidelización personalizadas</strong> con tu marca y colores</li>
                     <li><strong>Gestionar recompensas atractivas</strong> que incentiven el regreso de tus clientes</li>
@@ -130,14 +141,16 @@ const getCustomerWelcomeTemplate = (displayName) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Bienvenido a CaseroApp</title>
         <style>
+            @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap');
+            
             body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: 'Baloo Bhaijaan 2', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
                 line-height: 1.6;
                 color: #333;
                 max-width: 600px;
                 margin: 0 auto;
                 padding: 20px;
-                background-color: #f8f9fa;
+                background-color: #E53935;
             }
             .container {
                 background-color: #ffffff;
@@ -149,28 +162,36 @@ const getCustomerWelcomeTemplate = (displayName) => {
                 text-align: center;
                 margin-bottom: 30px;
                 padding-bottom: 20px;
-                border-bottom: 3px solid #28a745;
+                border-bottom: 3px solid #E53935;
+            }
+            .logo-img {
+                max-width: 120px;
+                height: auto;
+                margin-bottom: 15px;
             }
             .logo {
                 font-size: 28px;
-                font-weight: bold;
-                color: #28a745;
+                font-weight: 700;
+                color: #E53935;
                 margin-bottom: 10px;
+                font-family: 'Baloo Bhaijaan 2', sans-serif;
             }
             .welcome-title {
                 color: #2c3e50;
                 font-size: 24px;
                 margin-bottom: 20px;
                 text-align: center;
+                font-family: 'Baloo Bhaijaan 2', sans-serif;
+                font-weight: 600;
             }
             .content {
                 margin-bottom: 30px;
             }
             .highlight {
-                background-color: #e8f5e8;
+                background-color: #ffebee;
                 padding: 20px;
                 border-radius: 8px;
-                border-left: 4px solid #28a745;
+                border-left: 4px solid #E53935;
                 margin: 20px 0;
             }
             .features {
@@ -202,7 +223,8 @@ const getCustomerWelcomeTemplate = (displayName) => {
     <body>
         <div class="container">
             <div class="header">
-                <div class="logo">🎁 CaseroApp</div>
+                <img src="https://caseroapp-thomas-projects-09adf0ba.vercel.app/assets/logo-red.png" alt="CaseroApp Logo" class="logo-img" />
+                <div class="logo">CaseroApp</div>
                 <p style="color: #666; margin: 0;">Tu Pasaporte a Increíbles Recompensas</p>
             </div>
 
@@ -216,7 +238,7 @@ const getCustomerWelcomeTemplate = (displayName) => {
                     <p>Cada visita a tus restaurantes, cafeterías y tiendas favoritas te acerca más a obtener increíbles premios.</p>
                 </div>
 
-                <h3 style="color: #28a745;">🌟 Descubre lo que puedes hacer:</h3>
+                <h3 style="color: #E53935; font-family: 'Baloo Bhaijaan 2', sans-serif; font-weight: 600;">🌟 Descubre lo que puedes hacer:</h3>
                 <ul class="features">
                     <li><strong>Explora negocios cercanos</strong> que ofrecen programas de fidelización</li>
                     <li><strong>Únete a programas</strong> de tus lugares favoritos con un simple toque</li>

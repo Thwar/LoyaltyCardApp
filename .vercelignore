@@ -1,0 +1,100 @@
+# Vercel Ignore File
+# Files and directories specified here will be excluded from Vercel deployment
+
+# Dependencies - these are installed during build
+node_modules/
+
+# Development and build artifacts (keep dist/ as it's the output directory)
+.expo/
+web-build/
+
+# Git and version control
+.git/
+.gitignore
+
+# Android build artifacts - not needed for web deployment
+android/
+
+# iOS build artifacts - not needed for web deployment
+ios/
+
+# Development tools and configs
+.vscode/
+.idea/
+
+# Logs and debugging
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+.metro-health-check*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Documentation (not needed for deployment)
+*.md
+FONT_SETUP_GUIDE.md
+SSO_SETUP_GUIDE.md
+BUSINESS_DISCOVERY_OPTIMIZATIONS.md
+LOYALTY_CARD_IMPROVEMENTS.md
+NOTIFICATIONS_SOUND_DOCUMENTATION.md
+STAMPS_GRID_DOCUMENTATION.md
+
+# Development scripts
+get-sha1.bat
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Environment files (should be handled via Vercel environment variables)
+.env*
+!.env.example
+
+# Test files
+**/*.test.*
+**/*.spec.*
+__tests__/
+coverage/
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# EAS specific files (not needed for web deployment)
+.easignore
+eas.json
+
+# Mobile specific files (not needed for web deployment)
+GoogleService-Info.plist
+google-services.json
+
+# Expo mobile specific configurations
+expo/
+
+# Firebase mobile configurations that aren't needed for web
+firestore.rules
+storage.rules
+
+# Package manager lock files (let Vercel handle this)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
