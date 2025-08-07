@@ -5,6 +5,8 @@ import { FIREBASE_COLLECTIONS } from "../constants";
 import { User, Business, LoyaltyCard, CustomerCard, Stamp, Reward, StampActivity } from "../types";
 import EmailService from "./emailService";
 import { SSOService } from "./ssoService";
+import { NotificationService, StampNotificationData } from "./notificationService";
+import { SoundService } from "./soundService";
 
 // Auth Service
 export class AuthService {
@@ -1093,6 +1095,20 @@ export class CustomerCardService {
       const newStampCount = customerCardData.currentStamps + 1;
       console.log("addStamp: Current stamps:", customerCardData.currentStamps, "New count:", newStampCount);
 
+      // Get loyalty card details for notification
+      const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, loyaltyCardId));
+      if (!loyaltyCardDoc.exists()) {
+        throw new Error("Tarjeta de lealtad no encontrada");
+      }
+
+      const loyaltyCardData = loyaltyCardDoc.data();
+      const totalSlots = loyaltyCardData.totalSlots;
+      const isCompleted = newStampCount >= totalSlots;
+
+      // Get business details for notification
+      const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
+      const businessName = businessDoc.exists() ? businessDoc.data().name : "el negocio";
+
       // Add stamp record
       await addDoc(collection(db, FIREBASE_COLLECTIONS.STAMPS), {
         customerCardId,
@@ -1114,6 +1130,32 @@ export class CustomerCardService {
       console.log("addStamp: Creating stamp activity...");
       await StampActivityService.createStampActivity(customerCardId, customerId, businessId, loyaltyCardId, newStampCount, "Sello agregado");
       console.log("addStamp: Stamp activity created successfully");
+
+      // Send notification and play sound
+      try {
+        const notificationData: StampNotificationData = {
+          customerName: customerCardData.customerName || "",
+          businessName,
+          currentStamps: newStampCount,
+          totalSlots,
+          isCompleted,
+        };
+
+        // Send local notification
+        await NotificationService.sendStampAddedNotification(notificationData);
+        console.log("addStamp: Notification sent successfully");
+
+        // Play appropriate sound
+        if (isCompleted) {
+          await SoundService.playCompleteSound();
+        } else {
+          await SoundService.playSuccessSound();
+        }
+        console.log("addStamp: Sound played successfully");
+      } catch (notificationError) {
+        console.warn("addStamp: Error with notification/sound:", notificationError);
+        // Don't throw here - notification failure shouldn't prevent stamp addition
+      }
     } catch (error: any) {
       console.error("addStamp: Error occurred:", error);
       throw new Error(error.message || "Error al agregar sello");
@@ -1340,7 +1382,7 @@ export class CustomerCardService {
         throw new Error("Tarjeta de cliente no encontrada con este código para este negocio");
       }
 
-      // Add stamp
+      // Add stamp with notification and sound
       await this.addStamp(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId);
     } catch (error: any) {
       throw new Error(error.message || "Error al agregar sello por código de tarjeta y negocio");
@@ -1364,6 +1406,10 @@ export class CustomerCardService {
         throw new Error("La tarjeta no tiene suficientes sellos para canjear la recompensa");
       }
 
+      // Get business name for notification
+      const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
+      const businessName = businessDoc.exists() ? businessDoc.data().name : "el negocio";
+
       // Mark reward as claimed
       await updateDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCard.id), {
         isRewardClaimed: true,
@@ -1382,6 +1428,16 @@ export class CustomerCardService {
 
       // Create stamp activity record for reward claiming
       await StampActivityService.createStampActivity(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId, customerCard.loyaltyCard.totalSlots, "Recompensa canjeada");
+
+      // Send notification and play sound for reward redemption
+      try {
+        await NotificationService.sendRewardRedeemedNotification(businessName);
+        await SoundService.playCompleteSound();
+        console.log("Reward redemption notification and sound sent successfully");
+      } catch (notificationError) {
+        console.warn("Error with reward redemption notification/sound:", notificationError);
+        // Don't throw here - notification failure shouldn't prevent reward redemption
+      }
     } catch (error: any) {
       throw new Error(error.message || "Error al canjear recompensa por código de tarjeta y negocio");
     }

@@ -7,7 +7,18 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "plugins": ["expo-dev-client", "@react-native-google-signin/google-signin"],
+    "plugins": [
+      "expo-dev-client",
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#ffffff",
+          "defaultChannel": "default"
+        }
+      ]
+    ],
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -19,6 +30,7 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Esta aplicación necesita acceso a la cámara para tomar fotos del logo de tu negocio.",
         "NSPhotoLibraryUsageDescription": "Esta aplicación necesita acceso a tu galería de fotos para seleccionar el logo de tu negocio.",
+        "NSUserNotificationsUsageDescription": "Esta aplicación necesita enviar notificaciones para informarte sobre sellos agregados a tus tarjetas de lealtad.",
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleURLTypes": [
           {
@@ -40,7 +52,13 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.CAMERA", "android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ],
       "package": "com.thwar077.LoyaltyCardApp",
       "googleServicesFile": "./google-services.json",
       "intentFilters": [

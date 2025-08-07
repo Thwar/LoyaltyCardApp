@@ -57,7 +57,14 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
         console.log("Getting customer cards for loyalty card:", loyaltyCard.id);
         const customerCards = await CustomerCardService.getActiveCustomerCardsWithUnclaimedRewards(loyaltyCard.id);
         console.log("Found customer cards:", customerCards.length);
-        allCustomerCards.push(...customerCards);
+
+        // Ensure each customer card has the correct loyalty card information
+        const customerCardsWithLoyaltyCard = customerCards.map((card) => ({
+          ...card,
+          loyaltyCard: loyaltyCard,
+        }));
+
+        allCustomerCards.push(...customerCardsWithLoyaltyCard);
       }
 
       console.log("Total customer cards found:", allCustomerCards.length);
@@ -69,30 +76,32 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
       setLoading(false);
     }
   };
-  const CustomerCard: React.FC<{ customer: CustomerCard }> = ({ customer }) => (
-    <View style={styles.customerCard}>
-      <View style={styles.customerInfo}>
-        <Text style={styles.customerName}>{customer.customerName || `Cliente #${customer.cardCode || customer.id.slice(-6)}`}</Text>
-        {customer.cardCode && <Text style={styles.customerDetail}>Código: {customer.cardCode}</Text>}
-        <Text style={styles.customerDetail}>
-          {customer.currentStamps} / {customer.loyaltyCard?.totalSlots || 0}
-          sellos
-        </Text>
-        <Text style={[styles.customerDetail, customer.isRewardClaimed ? styles.rewardClaimed : styles.active]}>{customer.isRewardClaimed ? "🎁 Recompensa reclamada" : "✅ Activo"}</Text>
+  const CustomerCard: React.FC<{ customer: CustomerCard }> = ({ customer }) => {
+    // Get the loyalty card info either from the customer or from the loyaltyCards state
+    const loyaltyCardInfo = customer.loyaltyCard || loyaltyCards.find((lc) => lc.id === customer.loyaltyCardId);
+    const totalSlots = loyaltyCardInfo?.totalSlots || 10; // Fallback to 10 if not found
+
+    // Format the start date
+    const startDate = new Date(customer.createdAt).toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    return (
+      <View style={styles.customerCard}>
+        <View style={styles.customerInfo}>
+          <Text style={styles.customerName}>{customer.customerName || `Cliente #${customer.cardCode || customer.id.slice(-6)}`}</Text>
+          {customer.cardCode && <Text style={styles.customerDetail}>Código: {customer.cardCode}</Text>}
+          <Text style={styles.customerDetail}>
+            {customer.currentStamps} / {totalSlots} sellos
+          </Text>
+          <Text style={styles.customerDetail}>Acumulando desde: {startDate}</Text>
+          {customer.isRewardClaimed && <Text style={[styles.customerDetail, styles.rewardClaimed]}>🎁 Recompensa reclamada</Text>}
+        </View>
       </View>
-      <Button
-        title="Gestionar"
-        onPress={() =>
-          navigation.navigate("AddStamp", {
-            loyaltyCardId: customer.loyaltyCardId,
-            businessId: businessId || "",
-          })
-        }
-        size="small"
-        style={styles.addStampButton}
-      />
-    </View>
-  );
+    );
+  };
 
   const handleRetry = () => {
     loadCustomers();
@@ -109,8 +118,8 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Gestión de Clientes</Text>
-        <Text style={styles.subtitle}>Gestiona los clientes de tu programa de lealtad</Text>
+        <Text style={styles.title}>Clientes Activos</Text>
+        <Text style={styles.subtitle}>Vista informativa de todos los clientes acumulando puntos</Text>
       </View>
       {customers.length === 0 ? (
         <EmptyState
@@ -123,23 +132,6 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
       ) : (
         <FlatList data={customers} renderItem={({ item }) => <CustomerCard customer={item} />} keyExtractor={(item) => item.id} contentContainerStyle={styles.customersList} />
       )}
-      <View style={styles.actionContainer}>
-        <Button
-          title="Gestionar Tarjetas de Clientes"
-          onPress={() => {
-            if (loyaltyCards.length > 0 && businessId) {
-              navigation.navigate("AddStamp", {
-                loyaltyCardId: loyaltyCards[0].id,
-                businessId: businessId,
-              });
-            } else {
-              alert("Primero debe crear una tarjeta de lealtad");
-            }
-          }}
-          size="large"
-          style={styles.actionButton}
-        />
-      </View>
 
       {/* Modal */}
       <CreateLoyaltyCardModal visible={createModalVisible} onClose={() => setCreateModalVisible(false)} onSuccess={() => loadCustomers()} />
@@ -177,9 +169,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: SPACING.lg,
     marginBottom: SPACING.md,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
     ...SHADOWS.small,
   },
   customerInfo: {
@@ -196,24 +185,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginBottom: 2,
   },
-  active: {
-    color: COLORS.success,
-    fontWeight: "500",
-  },
   rewardClaimed: {
     color: COLORS.primary,
     fontWeight: "500",
-  },
-  addStampButton: {
-    minWidth: 100,
-  },
-  actionContainer: {
-    padding: SPACING.lg,
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.inputBorder,
-  },
-  actionButton: {
-    width: "100%",
   },
 });

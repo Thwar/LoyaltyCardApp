@@ -92,8 +92,10 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
 
       if (willCompleteCard) {
         showAlert({
-          title: "¡Tarjeta Completada!",
-          message: `Tarjeta completada exitosamente para ${customerCard.customerName || "el cliente"}. Ahora puede canjear su recompensa en la próxima visita.`,
+          title: "🎉 ¡Tarjeta Completada!",
+          message: `¡Tarjeta completada exitosamente para ${
+            customerCard.customerName || "el cliente"
+          }! Se ha enviado una notificación al cliente informándole que puede canjear su recompensa en la próxima visita.`,
           buttons: [
             {
               text: "Ok",
@@ -102,9 +104,12 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
           ],
         });
       } else {
+        const stampsNeeded = customerCard.loyaltyCard ? customerCard.loyaltyCard.totalSlots - (customerCard.currentStamps + 1) : 0;
         showAlert({
-          title: "¡Sello Agregado!",
-          message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}.`,
+          title: "✅ ¡Sello Agregado!",
+          message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}. Se ha enviado una notificación al cliente informándole que ${
+            stampsNeeded === 1 ? "le falta" : "le faltan"
+          } ${stampsNeeded} sello${stampsNeeded === 1 ? "" : "s"} para completar su tarjeta.`,
           buttons: [
             {
               text: "Ok",
@@ -141,8 +146,10 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
       setCustomerCard(null);
 
       showAlert({
-        title: "¡Recompensa Canjeada!",
-        message: `Recompensa canjeada exitosamente para ${customerCard.customerName || "el cliente"}. ¡Gracias por su lealtad!`,
+        title: "🎁 ¡Recompensa Canjeada!",
+        message: `Recompensa canjeada exitosamente para ${
+          customerCard.customerName || "el cliente"
+        }. Se ha enviado una notificación al cliente confirmando el canje de su recompensa. ¡Gracias por su lealtad!`,
         buttons: [
           {
             text: "Ok",
@@ -197,24 +204,27 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
               3. Confirma los detalles y agrega sello o canjea recompensa según corresponda
             </Text>
           </View>
-          <Button title="Buscar Tarjeta" onPress={handleFindCustomerCard} loading={loading} size="large" style={styles.addButton} />
+          <View style={styles.buttonRow}>
+            <Button title="Buscar Tarjeta" onPress={handleFindCustomerCard} loading={loading} size="large" style={styles.findButton} />
+            <Button
+              title="Escanear QR"
+              onPress={() => {
+                // TODO: Implement QR code scanning
+                showAlert({
+                  title: "Próximamente",
+                  message: "El escaneo de códigos QR estará disponible en una futura actualización",
+                });
+              }}
+              variant="outline"
+              size="large"
+              style={styles.scanButton}
+            />
+          </View>
         </View>
         {/* Quick Actions */}
         <View style={styles.quickActions}>
           <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>
-          <Button
-            title="Escanear Código QR"
-            onPress={() => {
-              // TODO: Implement QR code scanning
-              showAlert({
-                title: "Próximamente",
-                message: "El escaneo de códigos QR estará disponible en una futura actualización",
-              });
-            }}
-            variant="outline"
-            size="large"
-            style={styles.quickActionButton}
-          />
+          <Button title="Ir al Dashboard" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
           <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
         </View>
       </View>
@@ -273,8 +283,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 20,
   },
-  addButton: {
+  buttonRow: {
+    flexDirection: "row",
+    gap: SPACING.md,
     marginTop: SPACING.md,
+  },
+  findButton: {
+    flex: 1,
+  },
+  scanButton: {
+    flex: 1,
   },
   quickActions: {
     backgroundColor: COLORS.white,

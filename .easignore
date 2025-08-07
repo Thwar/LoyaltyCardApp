@@ -1,0 +1,128 @@
+# EAS Build Ignore File
+
+# Files and directories specified here will be excluded from the build archive
+
+# Learn more: https://docs.expo.dev/build-reference/how-tos/#exclude-files-from-the-upload-archive-easignore
+
+# Dependencies - these are installed during build
+
+node_modules/
+
+# Development and build artifacts
+
+.expo/
+dist/
+web-build/
+.vercel/
+
+# Git and version control
+
+.git/
+.gitignore
+
+# Android build artifacts
+
+android/build/
+android/app/build/
+android/.gradle/
+android/local.properties
+
+# iOS build artifacts (if any in future)
+
+ios/build/
+ios/Pods/
+ios/_.xcworkspace/xcuserdata/
+ios/_.xcodeproj/xcuserdata/
+
+# Development tools and configs
+
+.vscode/
+.idea/
+
+# Logs and debugging
+
+npm-debug._
+yarn-debug._
+yarn-error.\*
+_.log
+.metro-health-check_
+
+# OS generated files
+
+.DS*Store
+.DS_Store?
+.*\*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+
+_.tmp
+_.temp
+.tmp/
+.temp/
+
+# Documentation (not needed for build)
+
+\*.md
+FONT_SETUP_GUIDE.md
+SSO_SETUP_GUIDE.md
+BUSINESS_DISCOVERY_OPTIMIZATIONS.md
+LOYALTY_CARD_IMPROVEMENTS.md
+NOTIFICATIONS_SOUND_DOCUMENTATION.md
+STAMPS_GRID_DOCUMENTATION.md
+
+# Development scripts
+
+get-sha1.bat
+
+# TypeScript build info
+
+\*.tsbuildinfo
+
+# Environment files (should be handled via EAS secrets)
+
+.env\*
+!.env.example
+
+# Test files (if any)
+
+**/_.test._
+**/_.spec._
+**tests**/
+coverage/
+
+# Backup files
+
+_.bak
+_.backup
+\*.orig
+
+# Editor files
+
+_.swp
+_.swo
+\*~
+
+# Package manager lock files (will be regenerated)
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# API deployment files (if separate deployment)
+
+api/package.json
+api/package-lock.json
+
+# Functions deployment files (if separate deployment)
+
+functions/package.json
+functions/package-lock.json
+
+# Vercel specific
+
+vercel.json
+.vercel/
