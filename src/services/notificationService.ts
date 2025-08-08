@@ -23,6 +23,11 @@ export interface StampNotificationData {
 }
 
 export class NotificationService {
+  private static readonly API_BASE_URL =
+    process.env.NODE_ENV === "production"
+      ? "" // Use same origin in production to avoid CORS issues
+      : "https://caseroapp-thomas-projects-09adf0ba.vercel.app"; // Use deployed Vercel app for development
+
   // Register for push notifications (only works on mobile devices)
   static async registerForPushNotificationsAsync(): Promise<string | null> {
     try {
@@ -89,7 +94,7 @@ export class NotificationService {
   static async sendPushNotification(pushTokens: string[], title: string, body: string, data?: any): Promise<boolean> {
     try {
       // This works from any platform - web, iOS, Android
-      const response = await fetch("/api/send-push-notification", {
+      const response = await fetch(`${this.API_BASE_URL}/api/send-push-notification`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,6 +107,10 @@ export class NotificationService {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const result = await response.json();
 
       if (result.success) {
@@ -113,6 +122,7 @@ export class NotificationService {
       }
     } catch (error) {
       console.error("Error sending push notifications:", error);
+
       return false;
     }
   }

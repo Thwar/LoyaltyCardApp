@@ -19,8 +19,6 @@ interface StampsGridProps {
   specialStampColorOutline?: string;
 }
 
-const { width } = Dimensions.get("window");
-
 export const StampsGrid: React.FC<StampsGridProps> = ({
   totalSlots,
   currentStamps = 0,
@@ -249,7 +247,6 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
 
 const styles = StyleSheet.create({
   stampsContainer: {
-    flex: 1,
     marginBottom: SPACING.md,
     justifyContent: "center",
     alignItems: "center",

@@ -39,7 +39,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
             <View style={styles.iconContainer}>
               <Ionicons
                 name={canRedeem ? "gift" : isAlreadyRedeemed ? "checkmark-done-circle" : willCompleteCard ? "star" : "checkmark-circle"}
-                size={64}
+                size={48}
                 color={canRedeem ? COLORS.primary : isAlreadyRedeemed ? COLORS.success : willCompleteCard ? COLORS.warning : COLORS.success}
               />
             </View>
@@ -56,15 +56,17 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                 : "Revisa los detalles antes de agregar el sello"}
             </Text>
           </View>
-          <View style={styles.customerInfoSection}>
-            <Text style={styles.sectionTitle}>Información del Cliente</Text>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nombre:</Text>
-              <Text style={styles.infoValue}>{customerCard.customerName || "Cliente"}</Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Código de Tarjeta:</Text>
-              <Text style={styles.infoValue}>{customerCard.cardCode}</Text>
+          <View style={styles.loyaltyCardSection}>
+            <View style={styles.cardContainer}>
+              <Text style={styles.sectionTitle}>Información del Cliente</Text>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Nombre:</Text>
+                <Text style={styles.infoValue}>{customerCard.customerName || "Cliente"}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Código de Tarjeta:</Text>
+                <Text style={styles.infoValue}>{customerCard.cardCode}</Text>
+              </View>
             </View>
           </View>
           {loyaltyCard && (
@@ -133,7 +135,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
                   <>
-                    <Ionicons name={canRedeem ? "gift" : willCompleteCard ? "star" : "add-circle"} size={20} color={COLORS.white} />
+                    <Ionicons name={canRedeem ? "gift" : willCompleteCard ? "star" : "add-circle"} size={24} color={COLORS.white} />
                     <Text style={styles.confirmButtonText}>{canRedeem ? "Canjear Recompensa" : willCompleteCard ? "Completar Tarjeta" : "Agregar Sello"}</Text>
                   </>
                 )}
@@ -141,7 +143,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
             )}
             {isAlreadyRedeemed && (
               <View style={[styles.actionButton, styles.redeemedButton]}>
-                <Ionicons name="checkmark-done-circle" size={20} color={COLORS.success} />
+                <Ionicons name="checkmark-done-circle" size={24} color={COLORS.success} />
                 <Text style={styles.redeemedButtonText}>Recompensa Ya Canjeada</Text>
               </View>
             )}
@@ -186,22 +188,22 @@ const styles = StyleSheet.create({
   },
   confirmationSection: {
     backgroundColor: COLORS.white,
-    padding: SPACING.xl,
+    padding: SPACING.md,
     alignItems: "center",
     marginBottom: SPACING.xs,
   },
   iconContainer: {
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   confirmationTitle: {
-    fontSize: FONT_SIZES.xl,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "bold",
     color: COLORS.textPrimary,
     textAlign: "center",
     marginBottom: SPACING.xs,
   },
   confirmationSubtitle: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     textAlign: "center",
   },
@@ -210,8 +212,9 @@ const styles = StyleSheet.create({
     marginRight: SPACING.lg,
     marginLeft: SPACING.lg,
     borderRadius: 12,
-    padding: SPACING.lg,
     ...SHADOWS.small,
+    padding: SPACING.lg,
+    marginBottom: SPACING.sm,
   },
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
@@ -239,17 +242,17 @@ const styles = StyleSheet.create({
   },
   loyaltyCardSection: {
     backgroundColor: COLORS.white,
-    padding: SPACING.lg,
-    marginBottom: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   cardContainer: {
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
-    padding: SPACING.lg,
+    padding: SPACING.md,
     ...SHADOWS.small,
   },
   cardHeader: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   cardTitle: {
     fontSize: FONT_SIZES.lg,
@@ -272,7 +275,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   stampsGrid: {
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   nextStampPreview: {
     backgroundColor: COLORS.white,
@@ -301,16 +304,18 @@ const styles = StyleSheet.create({
   },
   actionSection: {
     backgroundColor: COLORS.white,
-    padding: SPACING.lg,
-    paddingBottom: SPACING.xl,
+    padding: SPACING.md,
+    paddingBottom: SPACING.lg,
   },
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: SPACING.md,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.md,
     borderRadius: 8,
     marginBottom: SPACING.md,
+    minHeight: 56,
   },
   confirmButton: {
     backgroundColor: COLORS.primary,
@@ -321,7 +326,7 @@ const styles = StyleSheet.create({
     ...SHADOWS.small,
   },
   confirmButtonText: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.lg,
     fontWeight: "bold",
     color: COLORS.white,
     marginLeft: SPACING.xs,
