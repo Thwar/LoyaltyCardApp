@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, SafeAreaView, Modal, Alert, ActivityIndicator, RefreshControl } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -43,6 +43,9 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   const [newCardCode, setNewCardCode] = useState<string>("");
   const [successModalKey, setSuccessModalKey] = useState<number>(0); // Force re-render of success modal
 
+  // Timeout management
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+
   // Memoized customer cards to avoid redundant calculations
   const [customerCardsCache, setCustomerCardsCache] = useState<{
     allCards: CustomerCard[];
@@ -54,6 +57,12 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   const clearCustomerCardsCache = useCallback(() => {
     console.log("🗑️ Clearing customer cards cache");
     setCustomerCardsCache(null);
+  }, []);
+
+  // Function to clear all timeouts
+  const clearAllTimeouts = useCallback(() => {
+    timeoutRefs.current.forEach((timeout: NodeJS.Timeout) => clearTimeout(timeout));
+    timeoutRefs.current = [];
   }, []);
 
   // Reset modal state - useful for debugging
@@ -92,9 +101,10 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
           setCustomerCardsCache(null);
           setHasMoreData(true);
           // Use a timeout to ensure the state updates are applied
-          setTimeout(async () => {
+          const timeout = setTimeout(async () => {
             await loadBusinessesWithCards(true, 0);
           }, 100);
+          timeoutRefs.current.push(timeout);
         }
       };
 
@@ -109,9 +119,10 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       if (shouldRefresh) {
         console.log("🔄 Resetting modal state due to refresh request");
         // Use setTimeout to ensure this happens after the focus effect completes
-        setTimeout(() => {
+        const timeout = setTimeout(() => {
           resetModalState();
         }, 100);
+        timeoutRefs.current.push(timeout);
       }
     }, [clearCustomerCardsCache, resetModalState, route?.params])
   );
@@ -348,10 +359,11 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       console.log("🎉 About to show success modal with code:", cardCode);
 
       // Small delay to ensure loading modal is fully hidden before showing success modal
-      setTimeout(() => {
+      const timeout = setTimeout(() => {
         setModalVisible(true);
         console.log("✅ Success modal should now be visible");
       }, 200);
+      timeoutRefs.current.push(timeout);
 
       // Update the business state optimistically with the real customer card
       updateBusinessAfterJoining(loyaltyCard, newCustomerCard);
@@ -475,6 +487,11 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
 
     return unsubscribe;
   }, [navigation, modalVisible, joiningCard]);
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return clearAllTimeouts;
+  }, [clearAllTimeouts]);
 
   if (loading) {
     return <LoadingState loading={true} />;

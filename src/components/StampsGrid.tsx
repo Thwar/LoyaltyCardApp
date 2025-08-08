@@ -32,29 +32,46 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
   specialStampColorOutline = "rgba(255, 255, 255, 0.7)",
 }) => {
   const stampAnimations = useRef<Animated.Value[]>([]).current;
+  const activeAnimations = useRef<Animated.CompositeAnimation[]>([]);
 
   // Initialize animations array when totalSlots changes
   useEffect(() => {
+    // Stop any running animations first
+    activeAnimations.current.forEach(animation => animation.stop());
+    activeAnimations.current = [];
+
+    // Adjust animations array size
     while (stampAnimations.length < totalSlots) {
       stampAnimations.push(new Animated.Value(0));
     }
     if (stampAnimations.length > totalSlots) {
-      stampAnimations.splice(totalSlots);
+      // Clean up extra animations
+      const removedAnimations = stampAnimations.splice(totalSlots);
+      removedAnimations.forEach(animation => {
+        // Reset value to prevent memory leaks
+        animation.setValue(0);
+      });
     }
   }, [totalSlots, stampAnimations]);
 
   useEffect(() => {
+    // Stop previous animations
+    activeAnimations.current.forEach(animation => animation.stop());
+    activeAnimations.current = [];
+
     if (showAnimation) {
       // Animate stamps one by one
       stampAnimations.forEach((animation, index) => {
         if (index < currentStamps) {
           // Filled stamps get the full animation
-          Animated.timing(animation, {
+          const animationInstance = Animated.timing(animation, {
             toValue: 1,
             duration: 300,
             delay: index * 150,
             useNativeDriver: false,
-          }).start();
+          });
+          activeAnimations.current.push(animationInstance);
+          animationInstance.start();
         } else {
           // Empty stamps should be visible but not animated
           animation.setValue(1);
@@ -67,6 +84,16 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
       });
     }
   }, [currentStamps, showAnimation, stampAnimations]);
+
+  // Cleanup animations on unmount
+  useEffect(() => {
+    return () => {
+      activeAnimations.current.forEach(animation => animation.stop());
+      activeAnimations.current = [];
+      // Reset all animation values
+      stampAnimations.forEach(animation => animation.setValue(0));
+    };
+  }, [stampAnimations]);
 
   const getStampSize = () => {
     switch (size) {

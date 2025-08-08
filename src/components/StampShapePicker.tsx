@@ -56,18 +56,31 @@ const STAMP_SHAPES = [
 export const StampShapePicker: React.FC<StampShapePickerProps> = ({ label, selectedShape, onShapeSelect, error }) => {
   const carouselRef = useRef<any>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
 
   // Find the index of the selected shape
   const selectedIndex = STAMP_SHAPES.findIndex((shape) => shape.value === selectedShape);
 
+  // Cleanup function for timeouts
+  const clearAllTimeouts = () => {
+    timeoutRefs.current.forEach(timeout => clearTimeout(timeout));
+    timeoutRefs.current = [];
+  };
+
   // Auto-scroll to selected shape when component mounts or selectedShape changes (only if user isn't manually scrolling)
   useEffect(() => {
     if (carouselRef.current && selectedIndex !== -1 && !isUserScrolling) {
-      setTimeout(() => {
-        carouselRef.current.scrollTo({ index: selectedIndex, animated: true });
+      const timeout = setTimeout(() => {
+        carouselRef.current?.scrollTo({ index: selectedIndex, animated: true });
       }, 100); // Small delay to ensure carousel is ready
+      timeoutRefs.current.push(timeout);
     }
   }, [selectedShape, selectedIndex, isUserScrolling]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return clearAllTimeouts;
+  }, []);
 
   // Handle when user manually scrolls the carousel
   const handleSnapToItem = (index: number) => {
@@ -76,7 +89,8 @@ export const StampShapePicker: React.FC<StampShapePickerProps> = ({ label, selec
       onShapeSelect(shape.value);
     }
     // Reset the scrolling flag after a short delay
-    setTimeout(() => setIsUserScrolling(false), 300);
+    const timeout = setTimeout(() => setIsUserScrolling(false), 300);
+    timeoutRefs.current.push(timeout);
   };
 
   // Handle shape selection by touch
@@ -91,11 +105,13 @@ export const StampShapePicker: React.FC<StampShapePickerProps> = ({ label, selec
 
     // Scroll to the selected shape
     if (carouselRef.current && shapeIndex !== -1) {
-      setTimeout(() => {
-        carouselRef.current.scrollTo({ index: shapeIndex, animated: true });
+      const timeout1 = setTimeout(() => {
+        carouselRef.current?.scrollTo({ index: shapeIndex, animated: true });
         // Reset scrolling flag after animation
-        setTimeout(() => setIsUserScrolling(false), 400);
+        const timeout2 = setTimeout(() => setIsUserScrolling(false), 400);
+        timeoutRefs.current.push(timeout2);
       }, 50);
+      timeoutRefs.current.push(timeout1);
     }
   };
   const renderShapeItem = ({ item }: { item: (typeof STAMP_SHAPES)[0] }) => (

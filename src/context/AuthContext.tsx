@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState, ReactNode, useRef, useCallback } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { AuthService } from "../services/api";
@@ -38,6 +38,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginHasFailed, setLoginHasFailed] = useState(false);
+  
+  // Timeout management
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+
+  // Function to clear all timeouts
+  const clearAllTimeouts = useCallback(() => {
+    timeoutRefs.current.forEach((timeout: NodeJS.Timeout) => clearTimeout(timeout));
+    timeoutRefs.current = [];
+  }, []);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       console.log("Auth state changed:", firebaseUser?.email || "no user");
@@ -93,6 +102,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     return () => unsubscribe();
   }, [loginHasFailed]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return clearAllTimeouts;
+  }, [clearAllTimeouts]);
   const login = async (email: string, password: string): Promise<void> => {
     setIsLoggingIn(true);
     setLoginHasFailed(false);
@@ -102,7 +116,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log("AuthService.login completed successfully");
 
       // Wait a moment to ensure Firebase auth state has stabilized
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      const timeout = setTimeout(() => {
+        // Timeout completion - this is just for timing, no action needed
+      }, 100);
+      timeoutRefs.current.push(timeout);
     } catch (error) {
       console.error("Login failed in AuthContext:", error);
       setLoginHasFailed(true);
@@ -174,7 +191,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log("Google Sign-In completed successfully");
 
       // Wait a moment to ensure Firebase auth state has stabilized
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      const timeout = setTimeout(() => {
+        // Timeout completion - this is just for timing, no action needed
+      }, 100);
+      timeoutRefs.current.push(timeout);
     } catch (error) {
       console.error("Google Sign-In failed in AuthContext:", error);
       setLoginHasFailed(true);
@@ -200,7 +220,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.log("Facebook Sign-In completed successfully");
 
       // Wait a moment to ensure Firebase auth state has stabilized
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      const timeout = setTimeout(() => {
+        // Timeout completion - this is just for timing, no action needed
+      }, 100);
+      timeoutRefs.current.push(timeout);
     } catch (error) {
       console.error("Facebook Sign-In failed in AuthContext:", error);
       setLoginHasFailed(true);

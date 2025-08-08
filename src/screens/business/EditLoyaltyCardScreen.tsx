@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -29,6 +29,15 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // Timeout management
+  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
+
+  // Function to clear all timeouts
+  const clearAllTimeouts = useCallback(() => {
+    timeoutRefs.current.forEach((timeout: NodeJS.Timeout) => clearTimeout(timeout));
+    timeoutRefs.current = [];
+  }, []);
 
   // Create dropdown options for stamps from 3 to 20
   const stampOptions = Array.from({ length: 18 }, (_, i) => ({
@@ -48,6 +57,12 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       });
     }
   }, [cardData, visible]);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return clearAllTimeouts;
+  }, [clearAllTimeouts]);
+
   const updateFormData = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -144,7 +159,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     onClose();
 
     // Use a small delay to ensure the modal is fully closed before showing the alert
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       showAlert({
         title: "Desactivar Tarjeta de Lealtad",
         message: "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando.",
@@ -165,6 +180,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
         ],
       });
     }, 100);
+    timeoutRefs.current.push(timeout);
   };
 
   const confirmDeactivateCard = async () => {
@@ -201,7 +217,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     onClose();
 
     // Use a small delay to ensure the modal is fully closed before showing the alert
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       showAlert({
         title: "Eliminar Tarjeta de Lealtad",
         message:
@@ -223,6 +239,7 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
         ],
       });
     }, 100);
+    timeoutRefs.current.push(timeout);
   };
   const confirmDeleteCard = async () => {
     if (!loyaltyCard) return;

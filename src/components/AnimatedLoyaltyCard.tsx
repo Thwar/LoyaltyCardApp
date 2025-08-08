@@ -76,97 +76,112 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     const tiltScale = useRef(new Animated.Value(1)).current;
     const borderGlow = useRef(new Animated.Value(0.5)).current;
 
-    // Animation cleanup ref
-    const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
+  // Animation cleanup ref
+  const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
+  const glowAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
 
-    // Track animation state to prevent unnecessary restarts
-    const animationState = useRef({ isCompleted: false, showAnimation: false });
+  // Track animation state to prevent unnecessary restarts
+  const animationState = useRef({ isCompleted: false, showAnimation: false });
 
-    useEffect(() => {
-      const currentState = { isCompleted, showAnimation };
+  // Cleanup function to stop all animations
+  const cleanupAnimations = () => {
+    animationsRef.current.forEach((anim) => anim.stop());
+    animationsRef.current = [];
+    if (glowAnimationRef.current) {
+      glowAnimationRef.current.stop();
+      glowAnimationRef.current = null;
+    }
+  };
 
-      // Only restart animations if the relevant state has actually changed
-      if (animationState.current.isCompleted === currentState.isCompleted && animationState.current.showAnimation === currentState.showAnimation) {
-        return;
-      }
+  useEffect(() => {
+    const currentState = { isCompleted, showAnimation };
 
-      // Update tracked state
-      animationState.current = currentState;
+    // Only restart animations if the relevant state has actually changed
+    if (animationState.current.isCompleted === currentState.isCompleted && animationState.current.showAnimation === currentState.showAnimation) {
+      return;
+    }
 
-      // Clear previous animations
-      animationsRef.current.forEach((anim) => anim.stop());
-      animationsRef.current = [];
+    // Update tracked state
+    animationState.current = currentState;
 
-      if (showAnimation && isCompleted) {
-        // Reset shine position to start position
-        shinePosition.setValue(-width);
+    // Clear previous animations
+    cleanupAnimations();
 
-        // Pulse animation for completed cards
-        const pulseAnimation = Animated.loop(
-          Animated.sequence([
-            Animated.timing(pulseValue, {
-              toValue: 1.05,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseValue, {
-              toValue: 1,
-              duration: 800,
-              useNativeDriver: true,
-            }),
-          ])
-        );
+    if (showAnimation && isCompleted) {
+      // Reset shine position to start position
+      shinePosition.setValue(-width);
 
-        // Shine effect for completed cards only
-        const shineAnimation = Animated.loop(
-          Animated.timing(shinePosition, {
-            toValue: width,
-            duration: 2000,
-            useNativeDriver: false,
-          }),
-          { iterations: -1 }
-        );
-
-        animationsRef.current.push(pulseAnimation, shineAnimation);
-        pulseAnimation.start();
-        shineAnimation.start();
-      } else {
-        // Reset shine position when animation is disabled or card is not completed
-        shinePosition.setValue(-width);
-      }
-
-      // Cleanup function
-      return () => {
-        animationsRef.current.forEach((anim) => anim.stop());
-      };
-    }, [isCompleted, showAnimation]);
-
-    // Separate effect for border glow that doesn't depend on card completion
-    useEffect(() => {
-      // Subtle glass border glow animation - always run this
-      const glowAnimation = Animated.loop(
+      // Pulse animation for completed cards
+      const pulseAnimation = Animated.loop(
         Animated.sequence([
-          Animated.timing(borderGlow, {
-            toValue: 0.8,
-            duration: 2000,
-            useNativeDriver: false,
+          Animated.timing(pulseValue, {
+            toValue: 1.05,
+            duration: 800,
+            useNativeDriver: true,
           }),
-          Animated.timing(borderGlow, {
-            toValue: 0.5,
-            duration: 2000,
-            useNativeDriver: false,
+          Animated.timing(pulseValue, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
           }),
         ])
       );
 
-      glowAnimation.start();
+      // Shine effect for completed cards only
+      const shineAnimation = Animated.loop(
+        Animated.timing(shinePosition, {
+          toValue: width,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        { iterations: -1 }
+      );
 
-      return () => {
-        glowAnimation.stop();
-      };
-    }, []); // Only run once
+      animationsRef.current.push(pulseAnimation, shineAnimation);
+      pulseAnimation.start();
+      shineAnimation.start();
+    } else {
+      // Reset shine position when animation is disabled or card is not completed
+      shinePosition.setValue(-width);
+    }
 
-    // Touch handlers for scale effect only (no tilt)
+    // Cleanup function
+    return cleanupAnimations;
+  }, [isCompleted, showAnimation]);
+
+  // Separate effect for border glow that doesn't depend on card completion
+  useEffect(() => {
+    // Subtle glass border glow animation - always run this
+    const glowAnimation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(borderGlow, {
+          toValue: 0.8,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(borderGlow, {
+          toValue: 0.5,
+          duration: 2000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+
+    glowAnimationRef.current = glowAnimation;
+    glowAnimation.start();
+
+    return () => {
+      if (glowAnimationRef.current) {
+        glowAnimationRef.current.stop();
+        glowAnimationRef.current = null;
+      }
+    };
+  }, []); // Only run once
+
+  // Cleanup all animations on unmount
+  useEffect(() => {
+    return cleanupAnimations;
+  }, []);    // Touch handlers for scale effect only (no tilt)
     const handleTouchStart = () => {
       Animated.spring(tiltScale, {
         toValue: scaleOnHover,
