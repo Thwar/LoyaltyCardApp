@@ -9,7 +9,12 @@
     "newArchEnabled": true,
     "plugins": [
       "expo-dev-client",
-      "@react-native-google-signin/google-signin",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba"
+        }
+      ],
       [
         "expo-notifications",
         {

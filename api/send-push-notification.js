@@ -1,11 +1,11 @@
-const { Expo } = require('expo-server-sdk');
+const { Expo } = require("expo-server-sdk");
 
 // Create a new Expo SDK client
 const expo = new Expo();
 
 module.exports = async (req, res) => {
   // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return res.status(200).json({});
   }
 
@@ -15,14 +15,14 @@ module.exports = async (req, res) => {
     if (!pushTokens || !Array.isArray(pushTokens) || pushTokens.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'pushTokens array is required'
+        error: "pushTokens array is required",
       });
     }
 
     if (!title || !body) {
       return res.status(400).json({
         success: false,
-        error: 'title and body are required'
+        error: "title and body are required",
       });
     }
 
@@ -38,11 +38,11 @@ module.exports = async (req, res) => {
       // Construct a message
       messages.push({
         to: pushToken,
-        sound: 'default',
+        sound: "default",
         title: title,
         body: body,
         data: data || {},
-        priority: 'high',
+        priority: "high",
         ttl: 3600, // 1 hour
       });
     }
@@ -50,7 +50,7 @@ module.exports = async (req, res) => {
     if (messages.length === 0) {
       return res.status(400).json({
         success: false,
-        error: 'No valid push tokens found'
+        error: "No valid push tokens found",
       });
     }
 
@@ -63,23 +63,22 @@ module.exports = async (req, res) => {
         const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
         tickets.push(...ticketChunk);
       } catch (error) {
-        console.error('Error sending push notification chunk:', error);
+        console.error("Error sending push notification chunk:", error);
       }
     }
 
     return res.status(200).json({
       success: true,
       tickets: tickets,
-      message: 'Push notifications sent successfully',
-      sentCount: messages.length
+      message: "Push notifications sent successfully",
+      sentCount: messages.length,
     });
-
   } catch (error) {
-    console.error('Error in push notification function:', error);
-    
+    console.error("Error in push notification function:", error);
+
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 };

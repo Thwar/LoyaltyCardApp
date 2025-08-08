@@ -22,8 +22,8 @@ export default function App() {
     const initializeServices = async () => {
       try {
         // Check if we're in a development client (not Expo Go)
-        const isExpoGo = Constants.appOwnership === 'expo';
-        
+        const isExpoGo = Constants.appOwnership === "expo";
+
         if (!isExpoGo) {
           // Initialize push notifications only in development builds
           await NotificationService.registerForPushNotificationsAsync();

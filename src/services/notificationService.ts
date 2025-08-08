@@ -65,10 +65,10 @@ export class NotificationService {
           })
         ).data;
         console.log("Push notification token:", token);
-        
+
         // Save the token to the user's profile for later use
         try {
-          const { UserService } = await import('./api');
+          const { UserService } = await import("./api");
           await UserService.updatePushToken(token);
           console.log("Push token saved to user profile");
         } catch (error) {
@@ -86,18 +86,13 @@ export class NotificationService {
   }
 
   // Send push notifications via server (works from web and mobile)
-  static async sendPushNotification(
-    pushTokens: string[],
-    title: string,
-    body: string,
-    data?: any
-  ): Promise<boolean> {
+  static async sendPushNotification(pushTokens: string[], title: string, body: string, data?: any): Promise<boolean> {
     try {
       // This works from any platform - web, iOS, Android
-      const response = await fetch('/api/send-push-notification', {
-        method: 'POST',
+      const response = await fetch("/api/send-push-notification", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           pushTokens,
@@ -108,25 +103,22 @@ export class NotificationService {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
-        console.log('Push notifications sent successfully');
+        console.log("Push notifications sent successfully");
         return true;
       } else {
-        console.error('Failed to send push notifications:', result.error);
+        console.error("Failed to send push notifications:", result.error);
         return false;
       }
     } catch (error) {
-      console.error('Error sending push notifications:', error);
+      console.error("Error sending push notifications:", error);
       return false;
     }
   }
 
   // Send stamp notification via push (for cross-platform notifications)
-  static async sendStampNotificationViaPush(
-    pushTokens: string[],
-    data: StampNotificationData
-  ): Promise<boolean> {
+  static async sendStampNotificationViaPush(pushTokens: string[], data: StampNotificationData): Promise<boolean> {
     const { businessName, currentStamps, totalSlots, isCompleted } = data;
 
     let title: string;
@@ -145,28 +137,18 @@ export class NotificationService {
   }
 
   // Send push notification from mobile app (works on all platforms)
-  static async sendPushNotificationFromMobile(
-    pushTokens: string[],
-    title: string,
-    body: string,
-    data?: any
-  ): Promise<boolean> {
+  static async sendPushNotificationFromMobile(pushTokens: string[], title: string, body: string, data?: any): Promise<boolean> {
     // Mobile apps can send push notifications via the same server API
     // This works from iOS, Android, and Web
     return await this.sendPushNotification(pushTokens, title, body, data);
   }
 
   // Helper method to send notification to a specific customer by ID
-  static async sendNotificationToCustomer(
-    customerId: string, 
-    title: string, 
-    body: string, 
-    data?: any
-  ): Promise<boolean> {
+  static async sendNotificationToCustomer(customerId: string, title: string, body: string, data?: any): Promise<boolean> {
     try {
       // Import UserService dynamically to avoid circular imports
-      const { UserService } = await import('./api');
-      
+      const { UserService } = await import("./api");
+
       // Get customer's push token
       const customerUser = await UserService.getUser(customerId);
       if (!customerUser?.pushToken) {

@@ -11,7 +11,7 @@ import { SoundService } from "./soundService";
 // Enhanced error handling for Firestore operations
 const handleFirestoreError = (error: any, operation: string) => {
   console.error(`Firestore ${operation} error:`, error);
-  
+
   if (error.code) {
     switch (error.code) {
       case "permission-denied":
@@ -36,7 +36,7 @@ const handleFirestoreError = (error: any, operation: string) => {
         throw new Error(`Error de Firestore (${error.code}): ${error.message}`);
     }
   }
-  
+
   throw new Error(error.message || `Error al realizar ${operation}`);
 };
 
@@ -425,7 +425,7 @@ export class UserService {
       }
 
       console.log("Updating push token for user:", currentUser.uid);
-      
+
       // Update user document in Firestore
       const userRef = doc(db, FIREBASE_COLLECTIONS.USERS, currentUser.uid);
       await updateDoc(userRef, {
@@ -1494,7 +1494,7 @@ export class CustomerCardService {
       try {
         // Send local notification (for mobile app immediate feedback)
         await NotificationService.sendRewardRedeemedNotification(businessName);
-        
+
         // Send push notification to customer (cross-platform)
         try {
           const customerUser = await UserService.getUser(customerCard.customerId);
@@ -1513,7 +1513,7 @@ export class CustomerCardService {
         } catch (pushError) {
           console.warn("Error sending reward redemption push notification:", pushError);
         }
-        
+
         await SoundService.playCompleteSound();
         console.log("Reward redemption notification and sound sent successfully");
       } catch (notificationError) {

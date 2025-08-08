@@ -55,21 +55,21 @@ if (Platform.OS === "web") {
   // Monitor Firestore connection state
   import("firebase/firestore").then(({ enableNetwork, disableNetwork }) => {
     // Handle online/offline events
-    window.addEventListener('online', async () => {
-      console.log('Network online - enabling Firestore network');
+    window.addEventListener("online", async () => {
+      console.log("Network online - enabling Firestore network");
       try {
         await enableNetwork(db);
       } catch (error) {
-        console.warn('Failed to enable Firestore network:', error);
+        console.warn("Failed to enable Firestore network:", error);
       }
     });
 
-    window.addEventListener('offline', async () => {
-      console.log('Network offline - disabling Firestore network');
+    window.addEventListener("offline", async () => {
+      console.log("Network offline - disabling Firestore network");
       try {
         await disableNetwork(db);
       } catch (error) {
-        console.warn('Failed to disable Firestore network:', error);
+        console.warn("Failed to disable Firestore network:", error);
       }
     });
   });

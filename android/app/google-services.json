@@ -14,11 +14,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "853612097033-ff3988li4hlsbvlsemnslko7n8idsirv.apps.googleusercontent.com",
+          "client_id": "853612097033-c14lg164nqpb27ikaoef88q397d80nho.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.thwar077.LoyaltyCardApp",
-            "certificate_hash": "a0a478e8377fa32e5d13d20b129553b67b85670a"
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
           }
         },
         {
