@@ -194,7 +194,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
           {loyaltyCards.length === 0 && <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => setCreateModalVisible(true)} size="large" style={styles.actionButton} />}
-          <Button title="Gestionar Tarjetas de Clientes" onPress={handleNavigateToAddStamp} variant="outline" size="large" style={styles.actionButton} />
+          <Button title="Agregar Sello" onPress={handleNavigateToAddStamp} size="large" style={styles.actionButton} />
           <Button title="Ver Todos los Clientes" onPress={handleNavigateToCustomers} variant="outline" size="large" style={styles.actionButton} />
         </View>
         {/* Business Setup */}

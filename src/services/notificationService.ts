@@ -40,13 +40,33 @@ export class NotificationService {
       let token: string | null = null;
 
       if (Platform.OS === "android") {
+        // Create notification channel for Android
         await Notifications.setNotificationChannelAsync("default", {
-          name: "default",
+          name: "Default Notifications",
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF231F7C",
           sound: "default",
+          enableLights: true,
+          enableVibrate: true,
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+          bypassDnd: true,
         });
+
+        // Create a high priority channel for stamp notifications
+        await Notifications.setNotificationChannelAsync("stamps", {
+          name: "Stamp Notifications",
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+          sound: "default",
+          enableLights: true,
+          enableVibrate: true,
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+          bypassDnd: true,
+        });
+
+        console.log("Android notification channels created");
       }
 
       if (Device.isDevice) {
@@ -209,11 +229,16 @@ export class NotificationService {
             customerName,
           },
           sound: true,
-          priority: Notifications.AndroidNotificationPriority.HIGH,
+          priority: Notifications.AndroidNotificationPriority.MAX,
           vibrate: [0, 250, 250, 250],
+          categoryIdentifier: "stamp_notification",
+          autoDismiss: false,
         },
         trigger: null, // Show immediately
+        identifier: `stamp_${Date.now()}`,
       });
+
+      console.log("Local notification scheduled successfully");
     } catch (error) {
       console.error("Error sending stamp notification:", error);
     }
@@ -244,6 +269,52 @@ export class NotificationService {
       });
     } catch (error) {
       console.error("Error sending reward redeemed notification:", error);
+    }
+  }
+
+  // Test notification function for debugging
+  static async sendTestNotification(): Promise<void> {
+    try {
+      console.log("🧪 Testing notification...");
+
+      // Check platform
+      console.log("Platform:", Platform.OS);
+
+      // Check permissions
+      const permissions = await Notifications.getPermissionsAsync();
+      console.log("Current permissions:", permissions);
+
+      if (permissions.status !== "granted") {
+        console.log("Requesting permissions...");
+        const newPermissions = await Notifications.requestPermissionsAsync();
+        console.log("New permissions:", newPermissions);
+      }
+
+      // Check if we're on a physical device
+      console.log("Is physical device:", Device.isDevice);
+      console.log("Device type:", Device.deviceType);
+
+      if (Platform.OS === "web") {
+        console.log("❌ Notifications not supported on web");
+        return;
+      }
+
+      // Send test notification
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "🧪 Test Notification",
+          body: "If you see this, notifications are working!",
+          sound: true,
+          priority: Notifications.AndroidNotificationPriority.MAX,
+          vibrate: [0, 250, 250, 250],
+        },
+        trigger: null,
+        identifier: `test_${Date.now()}`,
+      });
+
+      console.log("✅ Test notification sent!");
+    } catch (error) {
+      console.error("❌ Test notification failed:", error);
     }
   }
 

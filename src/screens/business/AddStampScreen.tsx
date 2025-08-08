@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 
@@ -180,9 +180,8 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Gestionar Tarjeta</Text>
           <Text style={styles.subtitle}>Agrega sellos o canjea recompensas de las tarjetas de lealtad</Text>
         </View>
         <View style={styles.form}>
@@ -227,7 +226,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
           <Button title="Ir al Dashboard" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
           <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
         </View>
-      </View>
+      </ScrollView>
 
       <StampConfirmationModal
         customerCard={customerCard}
@@ -245,6 +244,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  contentContainer: {
+    flexGrow: 1,
+    padding: SPACING.lg,
   },
   content: {
     flex: 1,
