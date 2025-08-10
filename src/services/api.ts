@@ -717,8 +717,9 @@ export class BusinessService {
         // Cursor encodes the doc ID (opaque to callers). Fetch snapshot for startAfter.
         try {
           const docRef = doc(db, FIREBASE_COLLECTIONS.BUSINESSES, cursor);
-            const snap = await getDoc(docRef);
-          if (snap.exists()) startAfterSnap = snap; else console.warn("getBusinessesPage: cursor doc not found, falling back to first page");
+          const snap = await getDoc(docRef);
+          if (snap.exists()) startAfterSnap = snap;
+          else console.warn("getBusinessesPage: cursor doc not found, falling back to first page");
         } catch (e) {
           console.warn("getBusinessesPage: failed to resolve cursor", e);
         }
@@ -733,13 +734,7 @@ export class BusinessService {
       );
       if (startAfterSnap) {
         // Use snapshot for startAfter to include same ordering context
-        qBase = query(
-          collection(db, FIREBASE_COLLECTIONS.BUSINESSES),
-          where("isActive", "==", true),
-          orderBy("name"),
-          startAfter(startAfterSnap),
-          limit(pageSize + 1)
-        );
+        qBase = query(collection(db, FIREBASE_COLLECTIONS.BUSINESSES), where("isActive", "==", true), orderBy("name"), startAfter(startAfterSnap), limit(pageSize + 1));
       }
 
       const snapshot = await getDocs(qBase);
@@ -1182,7 +1177,7 @@ export class CustomerCardService {
           loyaltyCardId: data.loyaltyCardId,
           businessId: (data.businessId || loyaltyRaw?.businessId || "") as string,
           currentStamps: data.currentStamps,
-            isRewardClaimed: data.isRewardClaimed,
+          isRewardClaimed: data.isRewardClaimed,
           createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
           lastStampDate: data.lastStampDate?.toDate ? data.lastStampDate.toDate() : undefined,
           cardCode: data.cardCode,
@@ -1406,15 +1401,12 @@ export class CustomerCardService {
       try {
         // If customerCard already has businessId we can parallelize
         if (customerCard.businessId) {
-          const [loyaltySnap, businessObj] = await Promise.all([
-            getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, customerCard.loyaltyCardId)),
-            BusinessService.getBusiness(customerCard.businessId),
-          ]);
+          const [loyaltySnap, businessObj] = await Promise.all([getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, customerCard.loyaltyCardId)), BusinessService.getBusiness(customerCard.businessId)]);
           if (loyaltySnap.exists()) loyaltyData = loyaltySnap.data();
           business = businessObj;
         } else {
           // Need loyalty card first to learn businessId
-            const loyaltySnap = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, customerCard.loyaltyCardId));
+          const loyaltySnap = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, customerCard.loyaltyCardId));
           if (loyaltySnap.exists()) {
             loyaltyData = loyaltySnap.data();
             customerCard.businessId = loyaltyData.businessId;
