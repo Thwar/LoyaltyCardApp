@@ -22,8 +22,8 @@ export default function App() {
     const initializeServices = async () => {
       try {
         // Small delay to ensure Firebase initialization completes
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
+        await new Promise((resolve) => setTimeout(resolve, 100));
+
         // Check if we're in a development client (not Expo Go)
         const isExpoGo = Constants.appOwnership === "expo";
 

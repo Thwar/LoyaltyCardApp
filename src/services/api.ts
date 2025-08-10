@@ -1,5 +1,23 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, User as FirebaseUser, UserCredential } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, orderBy, limit, onSnapshot, Timestamp, runTransaction, serverTimestamp, increment } from "firebase/firestore";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  where,
+  getDocs,
+  orderBy,
+  limit,
+  onSnapshot,
+  Timestamp,
+  runTransaction,
+  serverTimestamp,
+  increment,
+} from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { FIREBASE_COLLECTIONS } from "../constants";
 import { User, Business, LoyaltyCard, CustomerCard, Stamp, Reward, StampActivity } from "../types";
@@ -269,10 +287,10 @@ export class AuthService {
         console.log("New Google user, creating account");
         const userData: Omit<User, "id"> = {
           email: firebaseUser.email || "",
-            displayName: firebaseUser.displayName || "",
-            userType: "customer", // Default to customer for SSO users
-            createdAt: new Date(),
-            profileImage: firebaseUser.photoURL || undefined,
+          displayName: firebaseUser.displayName || "",
+          userType: "customer", // Default to customer for SSO users
+          createdAt: new Date(),
+          profileImage: firebaseUser.photoURL || undefined,
         };
 
         await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
@@ -1162,11 +1180,7 @@ export class CustomerCardService {
         const loyaltyCardRef = doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, loyaltyCardId);
         const businessRef = doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId);
 
-        const [cardSnap, loyaltySnap, businessSnap] = await Promise.all([
-          tx.get(cardRef),
-          tx.get(loyaltyCardRef),
-          tx.get(businessRef),
-        ]);
+        const [cardSnap, loyaltySnap, businessSnap] = await Promise.all([tx.get(cardRef), tx.get(loyaltyCardRef), tx.get(businessRef)]);
 
         if (!cardSnap.exists()) throw new Error("Tarjeta de cliente no encontrada");
         if (!loyaltySnap.exists()) throw new Error("Tarjeta de lealtad no encontrada");
@@ -1503,14 +1517,7 @@ export class CustomerCardService {
       });
 
       // Activity + notifications outside transaction
-      await StampActivityService.createStampActivity(
-        customerCard.id,
-        customerCard.customerId,
-        businessId,
-        customerCard.loyaltyCardId,
-        customerCard.loyaltyCard.totalSlots,
-        "Recompensa canjeada"
-      );
+      await StampActivityService.createStampActivity(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId, customerCard.loyaltyCard.totalSlots, "Recompensa canjeada");
 
       try {
         const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));

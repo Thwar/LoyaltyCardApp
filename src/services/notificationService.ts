@@ -33,11 +33,11 @@ export class NotificationService {
     try {
       // Add diagnostic logging
       console.log("registerForPushNotificationsAsync: Starting registration");
-      
+
       // Import and check Firebase initialization
       const { getApps } = await import("firebase/app");
       console.log("Firebase apps initialized:", getApps().length);
-      
+
       if (getApps().length === 0) {
         console.warn("Firebase not initialized yet, importing firebase service to ensure init...");
         await import("../services/firebase");

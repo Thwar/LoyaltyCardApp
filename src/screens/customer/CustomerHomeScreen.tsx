@@ -74,22 +74,22 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   useFocusEffect(
     useCallback(() => {
       console.log("🏠 CustomerHomeScreen focused - refreshing cards, timestamp:", route?.params?.timestamp);
-      
+
       // Check for success modal parameters from navigation
       if (route?.params?.showSuccessModal && route?.params?.cardCode) {
         console.log("🎉 Showing success modal from navigation params with code:", route.params.cardCode);
         setNewCardCode(route.params.cardCode);
         setSuccessModalKey((prev) => prev + 1);
-        
+
         // Small delay to ensure the screen is fully loaded before showing modal
         setTimeout(() => {
           setSuccessModalVisible(true);
         }, 300);
-        
+
         // Clear the params to prevent showing modal again when returning to this screen
         navigation.setParams({ showSuccessModal: undefined, cardCode: undefined });
       }
-      
+
       // Always load cards when screen comes into focus to ensure fresh data
       loadCards();
       hasLoadedInitially.current = true;
@@ -122,21 +122,16 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
 
   const handleJoinSuccess = (cardCode: string) => {
     console.log("🎉 Join success callback triggered with cardCode:", cardCode);
-    
+
     // Use Alert instead of modal to avoid conflicts
-    Alert.alert(
-      "¡Bienvenido al Programa!",
-      `¡Te has unido exitosamente al programa de lealtad!\n\nTu código de identificación: ${cardCode}\n\nAhora puedes empezar a ganar sellos y recompensas.`,
-      [
-        {
-          text: "¡Perfecto!",
-          onPress: () => {
-            console.log("✅ Alert dismissed, refreshing cards");
-            loadCards(); // Refresh to show the new card
-          }
-        }
-      ]
-    );
+    Alert.alert("¡Bienvenido al Programa!", `¡Te has unido exitosamente al programa de lealtad!\n\nTu código de identificación: ${cardCode}\n\nAhora puedes empezar a ganar sellos y recompensas.`, [
+      {
+        text: "¡Perfecto!",
+        onPress: () => {
+          console.log("✅ Alert dismissed");
+        },
+      },
+    ]);
   };
 
   const navigateToBusinessDiscovery = () => {
@@ -204,13 +199,13 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
 
       {/* Card Details Modal */}
       {selectedCard && <CustomerCardDetailsModal visible={modalVisible} customerCard={selectedCard} onClose={handleModalClose} navigation={navigation as any} onJoinSuccess={handleJoinSuccess} />}
-      
+
       {/* Success Modal for Join Loyalty Program */}
       {successModalVisible && newCardCode && (
-        <Modal 
-          animationType="fade" 
-          transparent={true} 
-          visible={successModalVisible} 
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={successModalVisible}
           onRequestClose={() => {
             console.log("🚫 Modal onRequestClose called");
             handleCloseSuccessModal();

@@ -232,6 +232,9 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
       console.log("✅ Successfully joined loyalty program with card ID:", newCustomerCard.id);
       console.log("✅ Generated card code:", newCustomerCard.cardCode);
 
+      // Set refresh flags to trigger fresh data fetch in both screens
+      await refreshFlags.setRefreshForBothScreens();
+
       // Clear joining state
       setJoiningCard(null);
 
@@ -239,7 +242,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
       if (onJoinSuccess) {
         console.log("📞 Calling onJoinSuccess callback with cardCode:", newCustomerCard.cardCode);
         onClose(); // Close this modal first
-        
+
         // Wait for modal to close before showing success modal
         setTimeout(() => {
           onJoinSuccess(newCustomerCard.cardCode);
@@ -247,13 +250,13 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
       } else if (navigation) {
         console.log("🚀 Navigating to Home with success modal params, cardCode:", newCustomerCard.cardCode);
         onClose(); // Close this modal first
-        
+
         // Navigate directly to Home within current navigator with success modal params
         (navigation as any).navigate("Home", {
-          refresh: true, 
+          refresh: true,
           timestamp: Date.now(),
           showSuccessModal: true,
-          cardCode: newCustomerCard.cardCode
+          cardCode: newCustomerCard.cardCode,
         });
       } else {
         // Fallback if neither callback nor navigation available

@@ -332,11 +332,11 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       console.log("📱 Navigating to CustomerTabs with success modal parameters");
       navigation.navigate("CustomerTabs", {
         screen: "Home",
-        params: { 
-          refresh: true, 
+        params: {
+          refresh: true,
           timestamp: Date.now(),
           showSuccessModal: true,
-          cardCode: newCustomerCard.cardCode // Use the generated card code from the response
+          cardCode: newCustomerCard.cardCode, // Use the generated card code from the response
         },
       });
 
