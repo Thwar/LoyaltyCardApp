@@ -17,6 +17,7 @@ import {
   runTransaction,
   serverTimestamp,
   increment,
+  startAfter,
 } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { FIREBASE_COLLECTIONS } from "../constants";
@@ -479,6 +480,28 @@ export class UserService {
 
 // Business Service
 export class BusinessService {
+  // Generic pagination result type
+  // Using a lightweight shape to avoid coupling API consumers to Firestore internals
+  static mapBusinessDoc(docSnap: any): Business {
+    const data = docSnap.data();
+    return {
+      id: docSnap.id,
+      name: data.name,
+      description: data.description,
+      ownerId: data.ownerId,
+      logoUrl: data.logoUrl,
+      address: data.address,
+      phone: data.phone,
+      city: data.city,
+      instagram: data.instagram,
+      facebook: data.facebook,
+      tiktok: data.tiktok,
+      categories: data.categories,
+      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+      isActive: data.isActive,
+    };
+  }
+
   static async createBusiness(businessData: Omit<Business, "id" | "createdAt">): Promise<Business> {
     try {
       console.log("Creating business with data:", businessData); // Check if user is authenticated
@@ -602,42 +625,22 @@ export class BusinessService {
   }
   // Paginated businesses for better performance
   static async getPaginatedBusinesses(page: number = 0, pageSize: number = 10): Promise<Business[]> {
-    try {
-      const offset = page * pageSize;
-      const q = query(
-        collection(db, FIREBASE_COLLECTIONS.BUSINESSES),
-        where("isActive", "==", true),
-        orderBy("name"),
-        limit(pageSize + offset) // Get all items up to the current page
-      );
-      const querySnapshot = await getDocs(q);
-
-      // Skip the items before the current page
-      const allResults = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.name,
-          description: data.description,
-          ownerId: data.ownerId,
-          logoUrl: data.logoUrl,
-          address: data.address,
-          phone: data.phone,
-          city: data.city,
-          instagram: data.instagram,
-          facebook: data.facebook,
-          tiktok: data.tiktok,
-          categories: data.categories,
-          createdAt: data.createdAt.toDate(),
-          isActive: data.isActive,
-        };
-      });
-
-      // Return only the current page results
-      return allResults.slice(offset, offset + pageSize);
-    } catch (error: any) {
-      throw new Error(error.message || "Error al obtener los negocios");
+    console.warn("getPaginatedBusinesses (offset-based) is deprecated. Switch to getBusinessesPage(cursor-based). Simulating offset via naive slicing.");
+    // Fallback: internally call cursor pagination repeatedly until reaching desired page (inefficient but keeps backward compatibility)
+    if (page <= 0) {
+      const first = await this.getBusinessesPage(pageSize);
+      return first.items;
     }
+    let cursor: string | undefined = undefined;
+    let collected: Business[] = [];
+    for (let p = 0; p <= page; p++) {
+      const res = await this.getBusinessesPage(pageSize, cursor);
+      if (p === page) return res.items;
+      if (!res.hasMore) return [];
+      cursor = res.nextCursor;
+      collected = collected.concat(res.items); // only needed to advance cursor
+    }
+    return [];
   }
   static async getBusiness(businessId: string): Promise<Business | null> {
     try {
@@ -695,6 +698,60 @@ export class BusinessService {
       });
     } catch (error: any) {
       throw new Error(error.message || "Error al obtener los negocios del propietario");
+    }
+  }
+
+  /**
+   * Cursor-based pagination for active businesses ordered by name.
+   * @param pageSize Number of items to return (default 20)
+   * @param cursor Encoded cursor string from previous page (opaque). If omitted returns first page.
+   * @returns { items, nextCursor, hasMore }
+   */
+  static async getBusinessesPage(pageSize: number = 20, cursor?: string): Promise<{ items: Business[]; nextCursor?: string; hasMore: boolean }> {
+    try {
+      if (pageSize <= 0) pageSize = 1;
+      if (pageSize > 50) pageSize = 50; // hard cap to control read costs
+
+      let startAfterSnap: any = null;
+      if (cursor) {
+        // Cursor encodes the doc ID (opaque to callers). Fetch snapshot for startAfter.
+        try {
+          const docRef = doc(db, FIREBASE_COLLECTIONS.BUSINESSES, cursor);
+            const snap = await getDoc(docRef);
+          if (snap.exists()) startAfterSnap = snap; else console.warn("getBusinessesPage: cursor doc not found, falling back to first page");
+        } catch (e) {
+          console.warn("getBusinessesPage: failed to resolve cursor", e);
+        }
+      }
+
+      // Build query with ordering by name then document id for deterministic ordering
+      let qBase: any = query(
+        collection(db, FIREBASE_COLLECTIONS.BUSINESSES),
+        where("isActive", "==", true),
+        orderBy("name"),
+        limit(pageSize + 1) // over-fetch one to detect next page
+      );
+      if (startAfterSnap) {
+        // Use snapshot for startAfter to include same ordering context
+        qBase = query(
+          collection(db, FIREBASE_COLLECTIONS.BUSINESSES),
+          where("isActive", "==", true),
+          orderBy("name"),
+          startAfter(startAfterSnap),
+          limit(pageSize + 1)
+        );
+      }
+
+      const snapshot = await getDocs(qBase);
+      const docs = snapshot.docs;
+      const hasMore = docs.length > pageSize;
+      const slice = hasMore ? docs.slice(0, pageSize) : docs;
+      const items = slice.map(this.mapBusinessDoc);
+      const lastDoc = slice[slice.length - 1];
+      const nextCursor = hasMore && lastDoc ? lastDoc.id : undefined;
+      return { items, nextCursor, hasMore };
+    } catch (error: any) {
+      throw new Error(error.message || "Error al paginar los negocios");
     }
   }
 }
@@ -783,16 +840,20 @@ export class LoyaltyCardService {
   static async getAllActiveLoyaltyCards(): Promise<LoyaltyCard[]> {
     try {
       const q = query(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), where("isActive", "==", true), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q); // Get all business IDs and fetch business information
-      const businessIds = Array.from(new Set(querySnapshot.docs.map((doc) => doc.data().businessId)));
+      const querySnapshot = await getDocs(q);
+      // Collect unique business IDs first (avoid per-card fetch => N+1)
+      const businessIds = Array.from(new Set(querySnapshot.docs.map((d) => d.data().businessId))).filter(Boolean);
       const businessesMap = new Map<string, Business>();
-
-      for (const businessId of businessIds) {
-        const business = await this.getBusiness(businessId);
-        if (business) {
-          businessesMap.set(businessId, business);
-        }
-      }
+      await Promise.all(
+        businessIds.map(async (bid) => {
+          try {
+            const biz = await this.getBusiness(bid);
+            if (biz) businessesMap.set(bid, biz);
+          } catch (e) {
+            console.warn("getAllActiveLoyaltyCards: failed to fetch business", bid, e);
+          }
+        })
+      );
 
       return querySnapshot.docs.map((doc) => {
         const data = doc.data();
@@ -1071,46 +1132,79 @@ export class CustomerCardService {
       const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("customerId", "==", customerId), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
 
-      const customerCards = await Promise.all(
-        querySnapshot.docs.map(async (docSnapshot) => {
-          const data = docSnapshot.data();
-          const customerCard: CustomerCard = {
-            id: docSnapshot.id,
-            customerId: data.customerId,
-            loyaltyCardId: data.loyaltyCardId,
-            businessId: data.businessId || "", // Handle existing records without businessId
-            currentStamps: data.currentStamps,
-            isRewardClaimed: data.isRewardClaimed,
-            createdAt: data.createdAt.toDate(),
-            lastStampDate: data.lastStampDate?.toDate(),
-            cardCode: data.cardCode,
-            customerName: data.customerName, // Get stored customer name
-          }; // Get loyalty card details
-          const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
-          if (loyaltyCardDoc.exists()) {
-            const loyaltyCardData = loyaltyCardDoc.data();
+      // Collect loyaltyCardIds & businessIds (from stored field if present)
+      const loyaltyCardIds = new Set<string>();
+      const businessIds = new Set<string>();
+      querySnapshot.docs.forEach((d) => {
+        const data: any = d.data();
+        if (data.loyaltyCardId) loyaltyCardIds.add(data.loyaltyCardId);
+        if (data.businessId) businessIds.add(data.businessId);
+      });
 
-            // Get business information from Business collection
-            const business = await BusinessService.getBusiness(loyaltyCardData.businessId);
-
-            customerCard.loyaltyCard = {
-              id: loyaltyCardDoc.id,
-              businessId: loyaltyCardData.businessId,
-              businessName: business?.name || "",
-              businessLogo: business?.logoUrl,
-              totalSlots: loyaltyCardData.totalSlots,
-              rewardDescription: loyaltyCardData.rewardDescription,
-              cardColor: loyaltyCardData.cardColor,
-              stampShape: loyaltyCardData.stampShape,
-              backgroundImage: loyaltyCardData.backgroundImage,
-              createdAt: loyaltyCardData.createdAt.toDate(),
-              isActive: loyaltyCardData.isActive,
-            };
+      // Fetch loyalty cards in parallel
+      const loyaltyCardsMap = new Map<string, any>();
+      await Promise.all(
+        Array.from(loyaltyCardIds).map(async (lid) => {
+          try {
+            const snap = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, lid));
+            if (snap.exists()) {
+              const ld = snap.data();
+              loyaltyCardsMap.set(lid, ld);
+              if (!businessIds.has(ld.businessId)) businessIds.add(ld.businessId);
+            }
+          } catch (e) {
+            console.warn("getAllCustomerCards: failed loyaltyCard fetch", lid, e);
           }
-
-          return customerCard;
         })
       );
+
+      // Fetch businesses in parallel
+      const businessesMap = new Map<string, Business>();
+      await Promise.all(
+        Array.from(businessIds).map(async (bid) => {
+          try {
+            const biz = await BusinessService.getBusiness(bid);
+            if (biz) businessesMap.set(bid, biz);
+          } catch (e) {
+            console.warn("getAllCustomerCards: failed business fetch", bid, e);
+          }
+        })
+      );
+
+      // Assemble customer cards
+      const customerCards: CustomerCard[] = querySnapshot.docs.map((docSnapshot) => {
+        const data: any = docSnapshot.data();
+        const loyaltyRaw = loyaltyCardsMap.get(data.loyaltyCardId);
+        const business: Business | undefined = loyaltyRaw ? businessesMap.get(loyaltyRaw.businessId) : businessesMap.get(data.businessId);
+        const customerCard: CustomerCard = {
+          id: docSnapshot.id,
+          customerId: data.customerId,
+          loyaltyCardId: data.loyaltyCardId,
+          businessId: (data.businessId || loyaltyRaw?.businessId || "") as string,
+          currentStamps: data.currentStamps,
+            isRewardClaimed: data.isRewardClaimed,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          lastStampDate: data.lastStampDate?.toDate ? data.lastStampDate.toDate() : undefined,
+          cardCode: data.cardCode,
+          customerName: data.customerName,
+        };
+        if (loyaltyRaw) {
+          customerCard.loyaltyCard = {
+            id: data.loyaltyCardId,
+            businessId: loyaltyRaw.businessId,
+            businessName: business?.name || "",
+            businessLogo: business?.logoUrl,
+            totalSlots: loyaltyRaw.totalSlots,
+            rewardDescription: loyaltyRaw.rewardDescription,
+            cardColor: loyaltyRaw.cardColor,
+            stampShape: loyaltyRaw.stampShape,
+            backgroundImage: loyaltyRaw.backgroundImage,
+            createdAt: loyaltyRaw.createdAt?.toDate ? loyaltyRaw.createdAt.toDate() : new Date(),
+            isActive: loyaltyRaw.isActive,
+          };
+        }
+        return customerCard;
+      });
 
       return customerCards;
     } catch (error: any) {
@@ -1125,46 +1219,76 @@ export class CustomerCardService {
       const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("customerId", "==", customerId), where("isRewardClaimed", "==", false), orderBy("createdAt", "desc"));
       const querySnapshot = await getDocs(q);
 
-      const customerCards = await Promise.all(
-        querySnapshot.docs.map(async (docSnapshot) => {
-          const data = docSnapshot.data();
-          const customerCard: CustomerCard = {
-            id: docSnapshot.id,
-            customerId: data.customerId,
-            loyaltyCardId: data.loyaltyCardId,
-            businessId: data.businessId || "", // Handle existing records without businessId
-            currentStamps: data.currentStamps,
-            isRewardClaimed: data.isRewardClaimed,
-            createdAt: data.createdAt.toDate(),
-            lastStampDate: data.lastStampDate?.toDate(),
-            cardCode: data.cardCode,
-            customerName: data.customerName, // Get stored customer name
-          }; // Get loyalty card details
-          const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
-          if (loyaltyCardDoc.exists()) {
-            const loyaltyCardData = loyaltyCardDoc.data();
+      // Collect loyaltyCardIds & businessIds
+      const loyaltyCardIds = new Set<string>();
+      const businessIds = new Set<string>();
+      querySnapshot.docs.forEach((d) => {
+        const data: any = d.data();
+        if (data.loyaltyCardId) loyaltyCardIds.add(data.loyaltyCardId);
+        if (data.businessId) businessIds.add(data.businessId);
+      });
 
-            // Get business information from Business collection
-            const business = await BusinessService.getBusiness(loyaltyCardData.businessId);
-
-            customerCard.loyaltyCard = {
-              id: loyaltyCardDoc.id,
-              businessId: loyaltyCardData.businessId,
-              businessName: business?.name || "",
-              businessLogo: business?.logoUrl,
-              totalSlots: loyaltyCardData.totalSlots,
-              rewardDescription: loyaltyCardData.rewardDescription,
-              cardColor: loyaltyCardData.cardColor,
-              stampShape: loyaltyCardData.stampShape,
-              backgroundImage: loyaltyCardData.backgroundImage,
-              createdAt: loyaltyCardData.createdAt.toDate(),
-              isActive: loyaltyCardData.isActive,
-            };
+      const loyaltyCardsMap = new Map<string, any>();
+      await Promise.all(
+        Array.from(loyaltyCardIds).map(async (lid) => {
+          try {
+            const snap = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, lid));
+            if (snap.exists()) {
+              const ld = snap.data();
+              loyaltyCardsMap.set(lid, ld);
+              if (!businessIds.has(ld.businessId)) businessIds.add(ld.businessId);
+            }
+          } catch (e) {
+            console.warn("getUnclaimedRewardCustomerCards: failed loyaltyCard fetch", lid, e);
           }
-
-          return customerCard;
         })
       );
+
+      const businessesMap = new Map<string, Business>();
+      await Promise.all(
+        Array.from(businessIds).map(async (bid) => {
+          try {
+            const biz = await BusinessService.getBusiness(bid);
+            if (biz) businessesMap.set(bid, biz);
+          } catch (e) {
+            console.warn("getUnclaimedRewardCustomerCards: failed business fetch", bid, e);
+          }
+        })
+      );
+
+      const customerCards: CustomerCard[] = querySnapshot.docs.map((docSnapshot) => {
+        const data: any = docSnapshot.data();
+        const loyaltyRaw = loyaltyCardsMap.get(data.loyaltyCardId);
+        const business: Business | undefined = loyaltyRaw ? businessesMap.get(loyaltyRaw.businessId) : businessesMap.get(data.businessId);
+        const customerCard: CustomerCard = {
+          id: docSnapshot.id,
+          customerId: data.customerId,
+          loyaltyCardId: data.loyaltyCardId,
+          businessId: (data.businessId || loyaltyRaw?.businessId || "") as string,
+          currentStamps: data.currentStamps,
+          isRewardClaimed: data.isRewardClaimed,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          lastStampDate: data.lastStampDate?.toDate ? data.lastStampDate.toDate() : undefined,
+          cardCode: data.cardCode,
+          customerName: data.customerName,
+        };
+        if (loyaltyRaw) {
+          customerCard.loyaltyCard = {
+            id: data.loyaltyCardId,
+            businessId: loyaltyRaw.businessId,
+            businessName: business?.name || "",
+            businessLogo: business?.logoUrl,
+            totalSlots: loyaltyRaw.totalSlots,
+            rewardDescription: loyaltyRaw.rewardDescription,
+            cardColor: loyaltyRaw.cardColor,
+            stampShape: loyaltyRaw.stampShape,
+            backgroundImage: loyaltyRaw.backgroundImage,
+            createdAt: loyaltyRaw.createdAt?.toDate ? loyaltyRaw.createdAt.toDate() : new Date(),
+            isActive: loyaltyRaw.isActive,
+          };
+        }
+        return customerCard;
+      });
 
       return customerCards;
     } catch (error: any) {
@@ -1276,31 +1400,44 @@ export class CustomerCardService {
         customerName: data.customerName, // Get stored customer name
       };
 
-      // Get loyalty card details
-      const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, data.loyaltyCardId));
-      if (loyaltyCardDoc.exists()) {
-        const loyaltyCardData = loyaltyCardDoc.data();
-
-        // Set businessId if it's missing from the customer card (for backward compatibility)
-        if (!customerCard.businessId) {
-          customerCard.businessId = loyaltyCardData.businessId;
+      // Fetch loyalty card + business efficiently
+      let loyaltyData: any | null = null;
+      let business: Business | null | undefined = null;
+      try {
+        // If customerCard already has businessId we can parallelize
+        if (customerCard.businessId) {
+          const [loyaltySnap, businessObj] = await Promise.all([
+            getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, customerCard.loyaltyCardId)),
+            BusinessService.getBusiness(customerCard.businessId),
+          ]);
+          if (loyaltySnap.exists()) loyaltyData = loyaltySnap.data();
+          business = businessObj;
+        } else {
+          // Need loyalty card first to learn businessId
+            const loyaltySnap = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, customerCard.loyaltyCardId));
+          if (loyaltySnap.exists()) {
+            loyaltyData = loyaltySnap.data();
+            customerCard.businessId = loyaltyData.businessId;
+            business = await BusinessService.getBusiness(loyaltyData.businessId);
+          }
         }
+      } catch (e) {
+        console.warn("getCustomerCard: enrichment failed", e);
+      }
 
-        // Get business information from Business collection
-        const business = await BusinessService.getBusiness(loyaltyCardData.businessId);
-
+      if (loyaltyData) {
         customerCard.loyaltyCard = {
-          id: loyaltyCardDoc.id,
-          businessId: loyaltyCardData.businessId,
+          id: customerCard.loyaltyCardId,
+          businessId: loyaltyData.businessId,
           businessName: business?.name || "",
           businessLogo: business?.logoUrl,
-          totalSlots: loyaltyCardData.totalSlots,
-          rewardDescription: loyaltyCardData.rewardDescription,
-          cardColor: loyaltyCardData.cardColor,
-          stampShape: loyaltyCardData.stampShape,
-          backgroundImage: loyaltyCardData.backgroundImage,
-          createdAt: loyaltyCardData.createdAt.toDate(),
-          isActive: loyaltyCardData.isActive,
+          totalSlots: loyaltyData.totalSlots,
+          rewardDescription: loyaltyData.rewardDescription,
+          cardColor: loyaltyData.cardColor,
+          stampShape: loyaltyData.stampShape,
+          backgroundImage: loyaltyData.backgroundImage,
+          createdAt: loyaltyData.createdAt?.toDate ? loyaltyData.createdAt.toDate() : new Date(),
+          isActive: loyaltyData.isActive,
         };
       }
 
@@ -1335,44 +1472,42 @@ export class CustomerCardService {
       // Get business info once
       const business = await BusinessService.getBusiness(businessId);
 
-      const customerCards = await Promise.all(
-        customerCardsSnapshot.docs.map(async (docSnapshot) => {
-          const data = docSnapshot.data();
-          const customerCard: CustomerCard = {
-            id: docSnapshot.id,
-            customerId: data.customerId,
-            loyaltyCardId: data.loyaltyCardId,
-            businessId: data.businessId || businessId, // Use provided businessId as fallback
-            currentStamps: data.currentStamps,
-            isRewardClaimed: data.isRewardClaimed,
-            createdAt: data.createdAt.toDate(),
-            lastStampDate: data.lastStampDate?.toDate(),
-            cardCode: data.cardCode,
-            customerName: data.customerName,
+      // Build a map for O(1) lookup instead of find() per card
+      const loyaltyMap = new Map<string, any>();
+      loyaltyCardsSnapshot.docs.forEach((d) => loyaltyMap.set(d.id, d.data()));
+
+      const customerCards: CustomerCard[] = customerCardsSnapshot.docs.map((docSnapshot) => {
+        const data = docSnapshot.data();
+        const base: CustomerCard = {
+          id: docSnapshot.id,
+          customerId: data.customerId,
+          loyaltyCardId: data.loyaltyCardId,
+          businessId: data.businessId || businessId,
+          currentStamps: data.currentStamps,
+          isRewardClaimed: data.isRewardClaimed,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          lastStampDate: data.lastStampDate?.toDate ? data.lastStampDate.toDate() : undefined,
+          cardCode: data.cardCode,
+          customerName: data.customerName,
+        };
+        const loyaltyRaw = loyaltyMap.get(data.loyaltyCardId);
+        if (loyaltyRaw) {
+          base.loyaltyCard = {
+            id: data.loyaltyCardId,
+            businessId: loyaltyRaw.businessId,
+            businessName: business?.name || "",
+            businessLogo: business?.logoUrl,
+            totalSlots: loyaltyRaw.totalSlots,
+            rewardDescription: loyaltyRaw.rewardDescription,
+            cardColor: loyaltyRaw.cardColor,
+            stampShape: loyaltyRaw.stampShape,
+            backgroundImage: loyaltyRaw.backgroundImage,
+            createdAt: loyaltyRaw.createdAt?.toDate ? loyaltyRaw.createdAt.toDate() : new Date(),
+            isActive: loyaltyRaw.isActive,
           };
-
-          // Get loyalty card details (already have it from the first query)
-          const loyaltyCardDoc = loyaltyCardsSnapshot.docs.find((doc) => doc.id === data.loyaltyCardId);
-          if (loyaltyCardDoc) {
-            const loyaltyCardData = loyaltyCardDoc.data();
-            customerCard.loyaltyCard = {
-              id: loyaltyCardDoc.id,
-              businessId: loyaltyCardData.businessId,
-              businessName: business?.name || "",
-              businessLogo: business?.logoUrl,
-              totalSlots: loyaltyCardData.totalSlots,
-              rewardDescription: loyaltyCardData.rewardDescription,
-              cardColor: loyaltyCardData.cardColor,
-              stampShape: loyaltyCardData.stampShape,
-              backgroundImage: loyaltyCardData.backgroundImage,
-              createdAt: loyaltyCardData.createdAt.toDate(),
-              isActive: loyaltyCardData.isActive,
-            };
-          }
-
-          return customerCard;
-        })
-      );
+        }
+        return base;
+      });
 
       console.log(`getCustomerCardsByBusiness: Found ${customerCards.length} cards`);
       return customerCards;
