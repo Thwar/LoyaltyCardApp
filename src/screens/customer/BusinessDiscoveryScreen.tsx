@@ -25,10 +25,6 @@ interface BusinessWithCards extends Business {
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const BUSINESSES_PER_PAGE = 10;
-const MAX_CODE_GENERATION_ATTEMPTS = 1000;
-
-// Helper function for generating card codes
-const generateRandomCode = (): string => Math.floor(100 + Math.random() * 900).toString();
 
 export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = ({ navigation, route }) => {
   const { user } = useAuth();
@@ -293,24 +289,6 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
     [processBusinessWithCards]
   );
 
-  const generateUniqueCardCode = async (businessId: string, customerId: string): Promise<string> => {
-    let attempts = 0;
-
-    do {
-      const code = generateRandomCode();
-      attempts++;
-
-      // Check if this code already exists for this business where reward is not claimed
-      const existingCard = await CustomerCardService.getUnclaimedCustomerCardByCodeAndBusiness(code, businessId);
-
-      if (!existingCard) {
-        return code;
-      }
-    } while (attempts < MAX_CODE_GENERATION_ATTEMPTS);
-
-    throw new Error("Unable to generate unique card code. Please try again.");
-  };
-
   const updateBusinessAfterJoining = useCallback(
     (loyaltyCard: LoyaltyCard, newCustomerCard: CustomerCard) => {
       if (!user) return;
@@ -342,28 +320,25 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
 
     console.log("🔄 Starting to join loyalty program:", loyaltyCard.id);
     try {
-      // Generate unique 3-digit code
-      const cardCode = await generateUniqueCardCode(loyaltyCard.businessId, user.id);
-      console.log("✅ Generated card code:", cardCode);
-
-      // Create the customer card
-      const newCustomerCard = await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id, cardCode);
+      // Create the customer card (card code generation is handled internally)
+      const newCustomerCard = await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id);
       console.log("✅ Successfully joined loyalty program with card ID:", newCustomerCard.id);
+      console.log("✅ Generated card code:", newCustomerCard.cardCode);
 
-      // Clear joining state FIRST to hide loading modal
+      // Clear joining state
       setJoiningCard(null);
 
-      // Then set up success modal
-      setNewCardCode(cardCode);
-      setSuccessModalKey((prev) => prev + 1);
-      console.log("🎉 About to show success modal with code:", cardCode);
-
-      // Small delay to ensure loading modal is fully hidden before showing success modal
-      const timeout = setTimeout(() => {
-        setModalVisible(true);
-        console.log("✅ Success modal should now be visible");
-      }, 200);
-      timeoutRefs.current.push(timeout);
+      // Navigate to Customer Home with success modal parameters
+      console.log("📱 Navigating to CustomerTabs with success modal parameters");
+      navigation.navigate("CustomerTabs", {
+        screen: "Home",
+        params: { 
+          refresh: true, 
+          timestamp: Date.now(),
+          showSuccessModal: true,
+          cardCode: newCustomerCard.cardCode // Use the generated card code from the response
+        },
+      });
 
       // Update the business state optimistically with the real customer card
       updateBusinessAfterJoining(loyaltyCard, newCustomerCard);

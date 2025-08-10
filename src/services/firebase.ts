@@ -1,10 +1,11 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps } from "firebase/app";
 import { getAuth, initializeAuth, GoogleAuthProvider, FacebookAuthProvider, Auth } from "firebase/auth";
 import { getFirestore, enableNetwork, disableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
 
 // Firebase configuration
+// NOTE: storageBucket intentionally kept as provided (custom domain in use); do not modify.
 const firebaseConfig = {
   apiKey: "AIzaSyDFlVbiMMKSOOZHOgFCflsxMOdv-3xvORk",
   authDomain: "casero-app.firebaseapp.com",
@@ -15,7 +16,8 @@ const firebaseConfig = {
   measurementId: "G-VVPKMS0QEH",
 };
 
-const app = initializeApp(firebaseConfig);
+// Guarded initialization to prevent duplicate app errors
+const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
 // Initialize auth based on platform
 let auth: Auth;

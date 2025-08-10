@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Text, StyleSheet, FlatList, RefreshControl, SafeAreaView, TouchableOpacity, Image } from "react-native";
+import { View, Text, StyleSheet, FlatList, RefreshControl, SafeAreaView, TouchableOpacity, Image, Modal, ActivityIndicator, Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
@@ -26,6 +26,11 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   const [error, setError] = useState<string | null>(null);
   const [selectedCard, setSelectedCard] = useState<CustomerCard | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [newCardCode, setNewCardCode] = useState<string>("");
+  const [successModalKey, setSuccessModalKey] = useState<number>(0);
+  const [pendingSuccessModal, setPendingSuccessModal] = useState<string | null>(null);
+  const [isShowingSuccessModal, setIsShowingSuccessModal] = useState(false);
   const hasLoadedInitially = useRef(false);
 
   const loadCards = async (isRefresh = false) => {
@@ -69,10 +74,26 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   useFocusEffect(
     useCallback(() => {
       console.log("🏠 CustomerHomeScreen focused - refreshing cards, timestamp:", route?.params?.timestamp);
+      
+      // Check for success modal parameters from navigation
+      if (route?.params?.showSuccessModal && route?.params?.cardCode) {
+        console.log("🎉 Showing success modal from navigation params with code:", route.params.cardCode);
+        setNewCardCode(route.params.cardCode);
+        setSuccessModalKey((prev) => prev + 1);
+        
+        // Small delay to ensure the screen is fully loaded before showing modal
+        setTimeout(() => {
+          setSuccessModalVisible(true);
+        }, 300);
+        
+        // Clear the params to prevent showing modal again when returning to this screen
+        navigation.setParams({ showSuccessModal: undefined, cardCode: undefined });
+      }
+      
       // Always load cards when screen comes into focus to ensure fresh data
       loadCards();
       hasLoadedInitially.current = true;
-    }, [user, route?.params?.timestamp]) // Include timestamp to trigger refresh when new card is added
+    }, [user, route?.params?.timestamp, route?.params?.showSuccessModal, route?.params?.cardCode, navigation])
   );
 
   const handleCardPress = (card: CustomerCard) => {
@@ -90,6 +111,39 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
 
   const handleRetry = () => {
     loadCards();
+  };
+
+  const handleCloseSuccessModal = () => {
+    console.log("🔴 handleCloseSuccessModal called - current state:", { successModalVisible, newCardCode });
+    setSuccessModalVisible(false);
+    setNewCardCode("");
+    setIsShowingSuccessModal(false);
+  };
+
+  const handleJoinSuccess = (cardCode: string) => {
+    console.log("🎉 Join success callback triggered with cardCode:", cardCode);
+    
+    // Use Alert instead of modal to avoid conflicts
+    Alert.alert(
+      "¡Bienvenido al Programa!",
+      `¡Te has unido exitosamente al programa de lealtad!\n\nTu código de identificación: ${cardCode}\n\nAhora puedes empezar a ganar sellos y recompensas.`,
+      [
+        {
+          text: "¡Perfecto!",
+          onPress: () => {
+            console.log("✅ Alert dismissed, refreshing cards");
+            loadCards(); // Refresh to show the new card
+          }
+        }
+      ]
+    );
+  };
+
+  const navigateToBusinessDiscovery = () => {
+    console.log("📱 Navigating to Business Discovery");
+    setSuccessModalVisible(false);
+    setNewCardCode("");
+    navigation.navigate("Discovery"); // Navigate to Discovery tab instead of BusinessDiscovery stack screen
   };
   const renderCard = ({ item, index }: { item: CustomerCard; index: number }) => {
     // Cycle through different stamp shapes for visual variety
@@ -134,7 +188,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
           message="Comienza a coleccionar tarjetas de lealtad de tus negocios favoritos para seguir tus recompensas y obtener beneficios."
           actionText="Buscar Negocios"
           onAction={() => {
-            navigation.navigate("BusinessDiscovery");
+            navigation.navigate("Discovery");
           }}
         />
       ) : (
@@ -149,7 +203,45 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
       )}
 
       {/* Card Details Modal */}
-      {selectedCard && <CustomerCardDetailsModal visible={modalVisible} customerCard={selectedCard} onClose={handleModalClose} />}
+      {selectedCard && <CustomerCardDetailsModal visible={modalVisible} customerCard={selectedCard} onClose={handleModalClose} navigation={navigation as any} onJoinSuccess={handleJoinSuccess} />}
+      
+      {/* Success Modal for Join Loyalty Program */}
+      {successModalVisible && newCardCode && (
+        <Modal 
+          animationType="fade" 
+          transparent={true} 
+          visible={successModalVisible} 
+          onRequestClose={() => {
+            console.log("🚫 Modal onRequestClose called");
+            handleCloseSuccessModal();
+          }}
+          onShow={() => console.log("🎉 Success modal is now showing with code:", newCardCode)}
+          onDismiss={() => {
+            console.log("🔴 Success modal dismissed - state:", { successModalVisible, newCardCode });
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.successModalContent}>
+              <View style={styles.successIcon}>
+                <Ionicons name="checkmark-circle" size={48} color={COLORS.success} />
+              </View>
+              <Text style={styles.successModalTitle}>¡Bienvenido al Programa!</Text>
+              <Text style={styles.modalMessage}>¡Te has unido exitosamente al programa de lealtad! Ahora puedes empezar a ganar sellos y recompensas.</Text>
+              <View style={styles.cardCodeContainer}>
+                <Text style={styles.cardCodeLabel}>Tu código de identificación:</Text>
+                <Text style={styles.cardCode}>{newCardCode}</Text>
+              </View>
+              <Text style={styles.cardCodeDescription}>Presenta este código al negocio cuando hagas una compra para recibir sellos en tu tarjeta de lealtad.</Text>
+              <TouchableOpacity style={styles.modalButton} onPress={handleCloseSuccessModal}>
+                <Text style={styles.modalButtonText}>¡Perfecto!</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalCloseButton} onPress={navigateToBusinessDiscovery}>
+                <Text style={styles.modalCloseText}>Buscar Más Negocios</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
@@ -202,5 +294,85 @@ const styles = StyleSheet.create({
   },
   cardsList: {
     paddingVertical: SPACING.md,
+  },
+  // Success modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  successModalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    padding: SPACING.xl,
+    alignItems: "center",
+    marginHorizontal: SPACING.lg,
+    minWidth: 300,
+    maxWidth: "90%",
+  },
+  successIcon: {
+    marginBottom: SPACING.lg,
+  },
+  successModalTitle: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: SPACING.lg,
+    lineHeight: 22,
+  },
+  cardCodeContainer: {
+    backgroundColor: COLORS.lightGray,
+    borderRadius: 12,
+    padding: SPACING.lg,
+    alignItems: "center",
+    marginBottom: SPACING.md,
+    minWidth: 200,
+  },
+  cardCodeLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+  cardCode: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: COLORS.primary,
+    fontFamily: "monospace",
+  },
+  cardCodeDescription: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    textAlign: "center",
+    marginBottom: SPACING.lg,
+  },
+  modalButton: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    marginBottom: SPACING.md,
+    minWidth: 150,
+  },
+  modalButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.md,
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  modalCloseButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  modalCloseText: {
+    color: COLORS.textSecondary,
+    fontSize: FONT_SIZES.md,
   },
 });

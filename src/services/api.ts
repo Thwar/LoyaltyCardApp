@@ -1,9 +1,10 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, User as FirebaseUser, UserCredential } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, orderBy, limit, onSnapshot, Timestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, addDoc, updateDoc, deleteDoc, query, where, getDocs, orderBy, limit, onSnapshot, Timestamp, runTransaction, serverTimestamp, increment } from "firebase/firestore";
 import { auth, db } from "./firebase";
 import { FIREBASE_COLLECTIONS } from "../constants";
 import { User, Business, LoyaltyCard, CustomerCard, Stamp, Reward, StampActivity } from "../types";
 import EmailService from "./emailService";
+import { generateUniqueCardCode } from "../utils/cardCodeUtils";
 import { SSOService } from "./ssoService";
 import { NotificationService, StampNotificationData } from "./notificationService";
 import { SoundService } from "./soundService";
@@ -59,10 +60,15 @@ export class AuthService {
         email,
         displayName,
         userType,
-        createdAt: new Date(),
+        createdAt: new Date(), // client-side immediate value; persisted value uses serverTimestamp()
       };
 
-      await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);
+      await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
+        email,
+        displayName,
+        userType,
+        createdAt: serverTimestamp(),
+      });
 
       // Send welcome email in background (don't block registration if email fails)
       EmailService.sendWelcomeEmail({
@@ -263,13 +269,19 @@ export class AuthService {
         console.log("New Google user, creating account");
         const userData: Omit<User, "id"> = {
           email: firebaseUser.email || "",
-          displayName: firebaseUser.displayName || "",
-          userType: "customer", // Default to customer for SSO users
-          createdAt: new Date(),
-          profileImage: firebaseUser.photoURL || undefined,
+            displayName: firebaseUser.displayName || "",
+            userType: "customer", // Default to customer for SSO users
+            createdAt: new Date(),
+            profileImage: firebaseUser.photoURL || undefined,
         };
 
-        await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);
+        await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+          createdAt: serverTimestamp(),
+          profileImage: userData.profileImage,
+        });
 
         // Send welcome email in background
         EmailService.sendWelcomeEmail({
@@ -335,7 +347,13 @@ export class AuthService {
           profileImage: firebaseUser.photoURL || undefined,
         };
 
-        await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), userData);
+        await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+          createdAt: serverTimestamp(),
+          profileImage: userData.profileImage,
+        });
 
         // Send welcome email in background
         EmailService.sendWelcomeEmail({
@@ -376,7 +394,7 @@ export class UserService {
       const userRef = doc(db, FIREBASE_COLLECTIONS.USERS, userId);
       await updateDoc(userRef, {
         ...userData,
-        updatedAt: new Date(),
+        updatedAt: serverTimestamp(),
       });
 
       // If displayName is being updated, also update Firebase Auth profile
@@ -457,7 +475,7 @@ export class BusinessService {
 
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.BUSINESSES), {
         ...cleanData,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
       });
 
       console.log("Business created successfully with ID:", docRef.id);
@@ -511,7 +529,10 @@ export class BusinessService {
 
       console.log("Cleaned update data:", cleanUpdates);
 
-      await updateDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId), cleanUpdates);
+      await updateDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId), {
+        ...cleanUpdates,
+        updatedAt: serverTimestamp(),
+      });
       console.log("Business updated successfully");
     } catch (error: any) {
       console.error("Failed to update business:", error); // Provide more specific error messages
@@ -680,7 +701,7 @@ export class LoyaltyCardService {
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), {
         ...cleanData,
         ownerId: auth.currentUser.uid, // Add the current user's ID as owner
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
       });
 
       console.log("Loyalty card created successfully with ID:", docRef.id);
@@ -779,7 +800,10 @@ export class LoyaltyCardService {
 
   static async updateLoyaltyCard(cardId: string, updates: Partial<LoyaltyCard>): Promise<void> {
     try {
-      await updateDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId), updates);
+      await updateDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId), {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      });
     } catch (error: any) {
       throw new Error(error.message || "Error al actualizar la tarjeta de fidelidad");
     }
@@ -788,6 +812,7 @@ export class LoyaltyCardService {
     try {
       await updateDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId), {
         isActive: false,
+        deactivatedAt: serverTimestamp(),
       });
     } catch (error: any) {
       throw new Error(error.message || "Error al desactivar la tarjeta de fidelidad");
@@ -953,7 +978,7 @@ export class LoyaltyCardService {
 
 // Customer Card Service
 export class CustomerCardService {
-  static async joinLoyaltyProgram(customerId: string, loyaltyCardId: string, cardCode?: string): Promise<CustomerCard> {
+  static async joinLoyaltyProgram(customerId: string, loyaltyCardId: string): Promise<CustomerCard & { cardCode: string }> {
     try {
       // Check if customer already has this card (unclaimed only)
       const q = query(
@@ -976,6 +1001,10 @@ export class CustomerCardService {
       const loyaltyCardData = loyaltyCardDoc.data();
       const businessId = loyaltyCardData.businessId;
 
+      // Generate unique card code
+      const cardCode = await generateUniqueCardCode(businessId, customerId);
+      console.log("✅ Generated card code inside joinLoyaltyProgram:", cardCode);
+
       // Get customer name from the Users collection (customer can read their own data)
       let customerName = "";
       try {
@@ -995,9 +1024,9 @@ export class CustomerCardService {
         businessId, // Add business ID for efficient querying
         currentStamps: 0,
         isRewardClaimed: false,
-        createdAt: Timestamp.now(),
+        createdAt: serverTimestamp(),
         customerName, // Store customer name at creation time
-        ...(cardCode && { cardCode }),
+        cardCode, // Always include the generated card code
       };
 
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), customerCardData);
@@ -1011,7 +1040,7 @@ export class CustomerCardService {
         isRewardClaimed: false,
         createdAt: new Date(),
         customerName,
-        cardCode,
+        cardCode, // Return the generated card code
       };
     } catch (error: any) {
       throw new Error(error.message || "Error al unirse al programa de fidelidad");
@@ -1126,98 +1155,86 @@ export class CustomerCardService {
   }
   static async addStamp(customerCardId: string, customerId: string, businessId: string, loyaltyCardId: string): Promise<void> {
     try {
-      console.log("addStamp: Starting stamp addition process", { customerCardId, customerId, businessId, loyaltyCardId });
+      console.log("addStamp: Starting transactional stamp addition", { customerCardId, customerId, businessId, loyaltyCardId });
 
-      // Get current customer card
-      const customerCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId));
-      if (!customerCardDoc.exists()) {
-        throw new Error("Tarjeta de cliente no encontrada");
-      }
+      const result = await runTransaction(db, async (tx) => {
+        const cardRef = doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId);
+        const loyaltyCardRef = doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, loyaltyCardId);
+        const businessRef = doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId);
 
-      const customerCardData = customerCardDoc.data();
-      const newStampCount = customerCardData.currentStamps + 1;
-      console.log("addStamp: Current stamps:", customerCardData.currentStamps, "New count:", newStampCount);
+        const [cardSnap, loyaltySnap, businessSnap] = await Promise.all([
+          tx.get(cardRef),
+          tx.get(loyaltyCardRef),
+          tx.get(businessRef),
+        ]);
 
-      // Get loyalty card details for notification
-      const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, loyaltyCardId));
-      if (!loyaltyCardDoc.exists()) {
-        throw new Error("Tarjeta de lealtad no encontrada");
-      }
+        if (!cardSnap.exists()) throw new Error("Tarjeta de cliente no encontrada");
+        if (!loyaltySnap.exists()) throw new Error("Tarjeta de lealtad no encontrada");
 
-      const loyaltyCardData = loyaltyCardDoc.data();
-      const totalSlots = loyaltyCardData.totalSlots;
-      const isCompleted = newStampCount >= totalSlots;
+        const cardData: any = cardSnap.data();
+        const loyaltyData: any = loyaltySnap.data();
+        const newStampCount = (cardData.currentStamps || 0) + 1;
+        const totalSlots = loyaltyData.totalSlots;
+        const isCompleted = newStampCount >= totalSlots;
 
-      // Get business details for notification
-      const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
-      const businessName = businessDoc.exists() ? businessDoc.data().name : "el negocio";
+        // Update card atomically
+        tx.update(cardRef, {
+          currentStamps: increment(1),
+          lastStampDate: serverTimestamp(),
+        });
 
-      // Add stamp record
-      await addDoc(collection(db, FIREBASE_COLLECTIONS.STAMPS), {
-        customerCardId,
-        customerId,
-        businessId,
-        loyaltyCardId,
-        timestamp: Timestamp.now(),
-      });
-      console.log("addStamp: Stamp record added");
+        // Add stamp record (pre-generate doc ref)
+        const stampRef = doc(collection(db, FIREBASE_COLLECTIONS.STAMPS));
+        tx.set(stampRef, {
+          customerCardId,
+          customerId,
+          businessId,
+          loyaltyCardId,
+          timestamp: serverTimestamp(),
+        });
 
-      // Update customer card
-      await updateDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId), {
-        currentStamps: newStampCount,
-        lastStampDate: Timestamp.now(),
-      });
-      console.log("addStamp: Customer card updated");
-
-      // Create stamp activity record
-      console.log("addStamp: Creating stamp activity...");
-      await StampActivityService.createStampActivity(customerCardId, customerId, businessId, loyaltyCardId, newStampCount, "Sello agregado");
-      console.log("addStamp: Stamp activity created successfully");
-
-      // Send notification and play sound
-      try {
-        const notificationData: StampNotificationData = {
-          customerName: customerCardData.customerName || "",
-          businessName,
-          currentStamps: newStampCount,
+        return {
+          newStampCount,
           totalSlots,
           isCompleted,
+          customerName: cardData.customerName || "",
+          businessName: businessSnap.exists() ? (businessSnap.data() as any).name : "el negocio",
         };
+      });
 
-        // Send local notification (for mobile app immediate feedback)
+      // Create activity & notifications outside transaction
+      await StampActivityService.createStampActivity(customerCardId, customerId, businessId, loyaltyCardId, result.newStampCount, "Sello agregado");
+
+      const notificationData: StampNotificationData = {
+        customerName: result.customerName,
+        businessName: result.businessName,
+        currentStamps: result.newStampCount,
+        totalSlots: result.totalSlots,
+        isCompleted: result.isCompleted,
+      };
+
+      // Fire and forget notification errors
+      try {
         await NotificationService.sendStampAddedNotification(notificationData);
-        console.log("addStamp: Local notification sent successfully");
-
-        // Send push notification to customer (cross-platform)
         try {
-          // Get customer's push token
           const customerUser = await UserService.getUser(customerId);
           if (customerUser?.pushToken) {
-            console.log("addStamp: Sending push notification to customer");
             await NotificationService.sendStampNotificationViaPush([customerUser.pushToken], notificationData);
-            console.log("addStamp: Push notification sent successfully");
-          } else {
-            console.log("addStamp: Customer has no push token, skipping push notification");
           }
-        } catch (pushError) {
-          console.warn("addStamp: Error sending push notification:", pushError);
-          // Don't fail the stamp addition if push notification fails
+        } catch (pushErr) {
+          console.warn("addStamp: push notification error", pushErr);
         }
 
-        // Play appropriate sound
-        if (isCompleted) {
+        if (result.isCompleted) {
           await SoundService.playCompleteSound();
         } else {
           await SoundService.playSuccessSound();
         }
-        console.log("addStamp: Sound played successfully");
-      } catch (notificationError) {
-        console.warn("addStamp: Error with notification/sound:", notificationError);
-        // Don't throw here - notification failure shouldn't prevent stamp addition
+      } catch (notifErr) {
+        console.warn("addStamp: notification/sound error", notifErr);
       }
     } catch (error: any) {
-      console.error("addStamp: Error occurred:", error);
-      // Use enhanced error handling
+      console.error("addStamp: Transaction failed", error);
       handleFirestoreError(error, "agregar sello");
       throw error;
     }
@@ -1452,73 +1469,69 @@ export class CustomerCardService {
 
   static async claimRewardByCardCodeAndBusiness(cardCode: string, businessId: string): Promise<void> {
     try {
-      // Find customer card by card code and business ID
+      // Fetch the card normally first (query not supported directly in transaction for dynamic constraints)
       const customerCard = await this.getUnclaimedCustomerCardByCodeAndBusiness(cardCode, businessId);
-      if (!customerCard) {
-        throw new Error("Tarjeta de cliente no encontrada con este código para este negocio");
-      }
+      if (!customerCard) throw new Error("Tarjeta de cliente no encontrada con este código para este negocio");
+      if (!customerCard.loyaltyCard) throw new Error("Información de tarjeta de lealtad no encontrada");
 
-      if (!customerCard.loyaltyCard) {
-        throw new Error("Información de tarjeta de lealtad no encontrada");
-      }
+      // Run transaction to atomically verify stamp count and claim reward
+      const result = await runTransaction(db, async (tx) => {
+        const cardRef = doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCard.id);
+        const cardSnap = await tx.get(cardRef);
+        if (!cardSnap.exists()) throw new Error("Tarjeta de cliente no encontrada");
+        const data: any = cardSnap.data();
+        if (data.isRewardClaimed) throw new Error("La recompensa ya fue canjeada");
+        const currentStamps = data.currentStamps || 0;
+        const required = customerCard.loyaltyCard!.totalSlots;
+        if (currentStamps < required) throw new Error("La tarjeta no tiene suficientes sellos para canjear la recompensa");
 
-      // Check if card has enough stamps to claim reward
-      if (customerCard.currentStamps < customerCard.loyaltyCard.totalSlots) {
-        throw new Error("La tarjeta no tiene suficientes sellos para canjear la recompensa");
-      }
+        tx.update(cardRef, { isRewardClaimed: true, rewardClaimedAt: serverTimestamp() });
 
-      // Get business name for notification
-      const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
-      const businessName = businessDoc.exists() ? businessDoc.data().name : "el negocio";
+        // Create reward doc
+        const rewardRef = doc(collection(db, FIREBASE_COLLECTIONS.REWARDS));
+        tx.set(rewardRef, {
+          customerCardId: customerCard.id,
+          customerId: customerCard.customerId,
+          businessId,
+          loyaltyCardId: customerCard.loyaltyCardId,
+          claimedAt: serverTimestamp(),
+          isRedeemed: true,
+          note: "Recompensa canjeada por el negocio",
+        });
 
-      // Mark reward as claimed
-      await updateDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCard.id), {
-        isRewardClaimed: true,
+        return { currentStamps, required };
       });
 
-      // Create reward record
-      await addDoc(collection(db, FIREBASE_COLLECTIONS.REWARDS), {
-        customerCardId: customerCard.id,
-        customerId: customerCard.customerId,
-        businessId: businessId,
-        loyaltyCardId: customerCard.loyaltyCardId,
-        claimedAt: Timestamp.now(),
-        isRedeemed: true,
-        note: "Recompensa canjeada por el negocio",
-      });
+      // Activity + notifications outside transaction
+      await StampActivityService.createStampActivity(
+        customerCard.id,
+        customerCard.customerId,
+        businessId,
+        customerCard.loyaltyCardId,
+        customerCard.loyaltyCard.totalSlots,
+        "Recompensa canjeada"
+      );
 
-      // Create stamp activity record for reward claiming
-      await StampActivityService.createStampActivity(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId, customerCard.loyaltyCard.totalSlots, "Recompensa canjeada");
-
-      // Send notification and play sound for reward redemption
       try {
-        // Send local notification (for mobile app immediate feedback)
+        const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
+        const businessName = businessDoc.exists() ? (businessDoc.data() as any).name : "el negocio";
         await NotificationService.sendRewardRedeemedNotification(businessName);
-
-        // Send push notification to customer (cross-platform)
         try {
           const customerUser = await UserService.getUser(customerCard.customerId);
           if (customerUser?.pushToken) {
-            console.log("Sending push notification for reward redemption to customer");
             await NotificationService.sendPushNotification(
               [customerUser.pushToken],
               "🎁 ¡Recompensa Canjeada!",
               `¡Has canjeado exitosamente tu recompensa en ${businessName}! ¡Gracias por tu lealtad!`,
               { businessName, type: "reward_redeemed" }
             );
-            console.log("Reward redemption push notification sent successfully");
-          } else {
-            console.log("Customer has no push token, skipping push notification");
           }
-        } catch (pushError) {
-          console.warn("Error sending reward redemption push notification:", pushError);
+        } catch (pushErr) {
+          console.warn("claimReward: push notification error", pushErr);
         }
-
         await SoundService.playCompleteSound();
-        console.log("Reward redemption notification and sound sent successfully");
-      } catch (notificationError) {
-        console.warn("Error with reward redemption notification/sound:", notificationError);
-        // Don't throw here - notification failure shouldn't prevent reward redemption
+      } catch (notifErr) {
+        console.warn("claimReward: notification/sound error", notifErr);
       }
     } catch (error: any) {
       throw new Error(error.message || "Error al canjear recompensa por código de tarjeta y negocio");

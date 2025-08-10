@@ -110,7 +110,7 @@ export type AuthStackParamList = {
 };
 
 export type CustomerTabParamList = {
-  Home: { refresh?: boolean; timestamp?: number } | undefined;
+  Home: { refresh?: boolean; timestamp?: number; showSuccessModal?: boolean; cardCode?: string } | undefined;
   Discovery: undefined;
   Profile: undefined;
 };

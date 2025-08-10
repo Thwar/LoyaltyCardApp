@@ -18,9 +18,12 @@ export default function App() {
   const fontsLoaded = useCustomFonts();
 
   useEffect(() => {
-    // Initialize notification and sound services
+    // Initialize notification and sound services with delay to ensure Firebase is ready
     const initializeServices = async () => {
       try {
+        // Small delay to ensure Firebase initialization completes
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         // Check if we're in a development client (not Expo Go)
         const isExpoGo = Constants.appOwnership === "expo";
 

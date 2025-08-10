@@ -31,6 +31,19 @@ export class NotificationService {
   // Register for push notifications (only works on mobile devices)
   static async registerForPushNotificationsAsync(): Promise<string | null> {
     try {
+      // Add diagnostic logging
+      console.log("registerForPushNotificationsAsync: Starting registration");
+      
+      // Import and check Firebase initialization
+      const { getApps } = await import("firebase/app");
+      console.log("Firebase apps initialized:", getApps().length);
+      
+      if (getApps().length === 0) {
+        console.warn("Firebase not initialized yet, importing firebase service to ensure init...");
+        await import("../services/firebase");
+        console.log("After firebase import, apps count:", getApps().length);
+      }
+
       // Web browsers cannot register for Expo push tokens
       if (Platform.OS === "web") {
         console.log("Push token registration not supported on web platform");

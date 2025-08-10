@@ -43,9 +43,10 @@ interface CustomerCardDetailsModalProps {
   customerCard: CustomerCard;
   onClose: () => void;
   navigation?: StackNavigationProp<CustomerStackParamList, any>;
+  onJoinSuccess?: (cardCode: string) => void; // Callback for successful join
 }
 
-const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ visible, customerCard: initialCard, onClose }) => {
+const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ visible, customerCard: initialCard, onClose, navigation, onJoinSuccess }) => {
   const { showAlert } = useAlert();
   const { user } = useAuth();
   const [card, setCard] = useState<CustomerCard>(initialCard);
@@ -226,36 +227,41 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
 
     setJoiningCard(loyaltyCard.id);
     try {
-      await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id);
+      // Create the customer card (card code generation is handled internally)
+      const newCustomerCard = await CustomerCardService.joinLoyaltyProgram(user.id, loyaltyCard.id);
+      console.log("✅ Successfully joined loyalty program with card ID:", newCustomerCard.id);
+      console.log("✅ Generated card code:", newCustomerCard.cardCode);
 
-      showAlert({
-        title: "¡Éxito!",
-        message: `Te has unido al programa de lealtad "${loyaltyCard.rewardDescription}"`,
-      });
+      // Clear joining state
+      setJoiningCard(null);
 
-      // Invalidate cache for this business since customer cards changed
-      if (selectedBusiness) {
-        setBusinessCache((prev) => {
-          const updated = { ...prev };
-          delete updated[selectedBusiness.id];
-          return updated;
+      // Use callback if available (preferred for modal usage), otherwise try navigation
+      if (onJoinSuccess) {
+        console.log("📞 Calling onJoinSuccess callback with cardCode:", newCustomerCard.cardCode);
+        onClose(); // Close this modal first
+        
+        // Wait for modal to close before showing success modal
+        setTimeout(() => {
+          onJoinSuccess(newCustomerCard.cardCode);
+        }, 300); // 300ms delay to ensure card details modal is fully closed
+      } else if (navigation) {
+        console.log("🚀 Navigating to Home with success modal params, cardCode:", newCustomerCard.cardCode);
+        onClose(); // Close this modal first
+        
+        // Navigate directly to Home within current navigator with success modal params
+        (navigation as any).navigate("Home", {
+          refresh: true, 
+          timestamp: Date.now(),
+          showSuccessModal: true,
+          cardCode: newCustomerCard.cardCode
         });
-
-        // Refresh the business data to show the new customer card
-        const allCustomerCards = await CustomerCardService.getUnclaimedRewardCustomerCards(user.id);
-        const customerCards = allCustomerCards.filter((customerCard) => customerCard.loyaltyCard?.businessId === selectedBusiness.id);
-
-        const updatedBusiness = {
-          ...selectedBusiness,
-          customerCards,
-        };
-
-        // Update both the selected business and cache
-        setSelectedBusiness(updatedBusiness);
-        setBusinessCache((prev) => ({
-          ...prev,
-          [selectedBusiness.id]: updatedBusiness,
-        }));
+      } else {
+        // Fallback if neither callback nor navigation available
+        showAlert({
+          title: "¡Éxito!",
+          message: `Te has unido al programa de lealtad "${loyaltyCard.rewardDescription}". Tu código es: ${newCustomerCard.cardCode}`,
+        });
+        onClose();
       }
     } catch (error: any) {
       showAlert({
