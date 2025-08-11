@@ -7,6 +7,9 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "env": {
+        "APP_ENV": "development"
+      },
       "android": {
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug"
@@ -15,11 +18,29 @@
         "buildConfiguration": "Debug"
       }
     },
+    "staging": {
+      "distribution": "internal",
+      "env": {
+        "APP_ENV": "staging"
+      },
+      "android": {
+        "buildType": "apk"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
+      }
+    },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "APP_ENV": "staging"
+      }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "APP_ENV": "production"
+      }
     }
   },
   "submit": {

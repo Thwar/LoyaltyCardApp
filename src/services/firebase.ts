@@ -3,17 +3,17 @@ import { getAuth, initializeAuth, GoogleAuthProvider, FacebookAuthProvider, Auth
 import { getFirestore, enableNetwork, disableNetwork } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { Platform } from "react-native";
+import { env } from "../../config/env";
 
-// Firebase configuration
-// NOTE: storageBucket intentionally kept as provided (custom domain in use); do not modify.
+// Firebase configuration using environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyDFlVbiMMKSOOZHOgFCflsxMOdv-3xvORk",
-  authDomain: "casero-app.firebaseapp.com",
-  projectId: "casero-app",
-  storageBucket: "casero-app.firebasestorage.app",
-  messagingSenderId: "853612097033",
-  appId: "1:853612097033:web:e654a256c23d978fca52d8",
-  measurementId: "G-VVPKMS0QEH",
+  apiKey: env.FIREBASE_API_KEY,
+  authDomain: env.FIREBASE_AUTH_DOMAIN,
+  projectId: env.FIREBASE_PROJECT_ID,
+  storageBucket: env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.FIREBASE_APP_ID,
+  measurementId: env.FIREBASE_MEASUREMENT_ID,
 };
 
 // Guarded initialization to prevent duplicate app errors
