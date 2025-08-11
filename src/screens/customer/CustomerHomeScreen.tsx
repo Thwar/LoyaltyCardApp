@@ -264,12 +264,14 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    borderCurve: "continuous",
     backgroundColor: COLORS.inputBorder,
   },
   defaultProfileIcon: {
     width: 50,
     height: 50,
     borderRadius: 25,
+    borderCurve: "continuous",
     backgroundColor: COLORS.inputBorder,
     justifyContent: "center",
     alignItems: "center",
@@ -300,6 +302,7 @@ const styles = StyleSheet.create({
   successModalContent: {
     backgroundColor: COLORS.white,
     borderRadius: 16,
+    borderCurve: "continuous",
     padding: SPACING.xl,
     alignItems: "center",
     marginHorizontal: SPACING.lg,
@@ -326,6 +329,7 @@ const styles = StyleSheet.create({
   cardCodeContainer: {
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
+    borderCurve: "continuous",
     padding: SPACING.lg,
     alignItems: "center",
     marginBottom: SPACING.md,
@@ -351,6 +355,7 @@ const styles = StyleSheet.create({
   modalButton: {
     backgroundColor: COLORS.primary,
     borderRadius: 8,
+    borderCurve: "continuous",
     paddingVertical: 12,
     paddingHorizontal: 24,
     marginBottom: SPACING.md,

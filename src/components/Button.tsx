@@ -28,6 +28,7 @@ export const Button: React.FC<ButtonProps> = ({ title, onPress, variant = "prima
 const styles = StyleSheet.create({
   base: {
     borderRadius: 8,
+    borderCurve: "continuous",
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",

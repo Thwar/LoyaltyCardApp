@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   businessCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
+    borderCurve: "continuous",
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
@@ -93,6 +94,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 8,
+    borderCurve: "continuous",
   },
   logoPlaceholder: {
     backgroundColor: COLORS.lightGray,
@@ -153,6 +155,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
     borderRadius: 8,
+    borderCurve: "continuous",
     marginTop: SPACING.sm,
     alignSelf: "flex-start",
   },

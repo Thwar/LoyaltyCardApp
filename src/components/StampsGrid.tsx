@@ -34,30 +34,49 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
   const stampAnimations = useRef<Animated.Value[]>([]).current;
   const activeAnimations = useRef<Animated.CompositeAnimation[]>([]);
 
+  // Centralized cleanup function
+  const cleanupAnimations = useRef(() => {
+    // Stop all active animations
+    activeAnimations.current.forEach(animation => {
+      try {
+        animation.stop();
+      } catch (error) {
+        // Ignore errors when stopping already stopped animations
+      }
+    });
+    activeAnimations.current = [];
+  }).current;
+
   // Initialize animations array when totalSlots changes
   useEffect(() => {
     // Stop any running animations first
-    activeAnimations.current.forEach(animation => animation.stop());
-    activeAnimations.current = [];
+    cleanupAnimations();
 
     // Adjust animations array size
     while (stampAnimations.length < totalSlots) {
       stampAnimations.push(new Animated.Value(0));
     }
     if (stampAnimations.length > totalSlots) {
-      // Clean up extra animations
+      // Clean up extra animations properly
       const removedAnimations = stampAnimations.splice(totalSlots);
       removedAnimations.forEach(animation => {
-        // Reset value to prevent memory leaks
-        animation.setValue(0);
+        // Reset value and clear listeners to prevent memory leaks
+        try {
+          animation.setValue(0);
+          animation.removeAllListeners();
+        } catch (error) {
+          // Ignore errors during cleanup
+        }
       });
     }
-  }, [totalSlots, stampAnimations]);
+
+    // Return cleanup function for this effect
+    return cleanupAnimations;
+  }, [totalSlots, cleanupAnimations]);
 
   useEffect(() => {
     // Stop previous animations
-    activeAnimations.current.forEach(animation => animation.stop());
-    activeAnimations.current = [];
+    cleanupAnimations();
 
     if (showAnimation) {
       // Animate stamps one by one
@@ -83,17 +102,26 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
         animation.setValue(1);
       });
     }
-  }, [currentStamps, showAnimation, stampAnimations]);
 
-  // Cleanup animations on unmount
+    // Return cleanup function for this effect
+    return cleanupAnimations;
+  }, [currentStamps, showAnimation, cleanupAnimations]);
+
+  // Cleanup animations on unmount - simplified and more reliable
   useEffect(() => {
     return () => {
-      activeAnimations.current.forEach(animation => animation.stop());
-      activeAnimations.current = [];
-      // Reset all animation values
-      stampAnimations.forEach(animation => animation.setValue(0));
+      cleanupAnimations();
+      // Reset all animation values and remove listeners
+      stampAnimations.forEach(animation => {
+        try {
+          animation.setValue(0);
+          animation.removeAllListeners();
+        } catch (error) {
+          // Ignore errors during unmount cleanup
+        }
+      });
     };
-  }, [stampAnimations]);
+  }, [cleanupAnimations]);
 
   const getStampSize = () => {
     switch (size) {
@@ -129,11 +157,13 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
         return {
           ...baseStyle,
           borderRadius: 4,
+          borderCurve: "continuous",
         };
       case "egg":
         return {
           ...baseStyle,
           borderRadius: stampSize * 0.5,
+          borderCurve: "continuous",
           height: stampSize * 1.3,
           width: stampSize * 0.8,
         };
@@ -149,6 +179,7 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
         return {
           ...baseStyle,
           borderRadius: 4,
+          borderCurve: "continuous",
           width: stampSize * 0.8,
           height: stampSize * 0.8,
         };
@@ -156,12 +187,14 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
         return {
           ...baseStyle,
           borderRadius: stampSize * 0.2,
+          borderCurve: "continuous",
         };
       case "circle":
       default:
         return {
           ...baseStyle,
           borderRadius: stampSize / 2,
+          borderCurve: "continuous",
         };
     }
   };

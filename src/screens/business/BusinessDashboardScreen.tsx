@@ -255,6 +255,7 @@ const styles = StyleSheet.create({
   statCard: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
+    borderCurve: "continuous",
     padding: SPACING.lg,
     alignItems: "center",
     flex: 1,
@@ -287,6 +288,7 @@ const styles = StyleSheet.create({
     margin: SPACING.lg,
     padding: SPACING.lg,
     borderRadius: 12,
+    borderCurve: "continuous",
     alignItems: "center",
     ...SHADOWS.small,
   },

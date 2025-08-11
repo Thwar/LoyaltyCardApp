@@ -1,3 +1,5 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+
 export interface User {
   id: string;
   email: string;
@@ -123,7 +125,7 @@ export type BusinessTabParamList = {
 };
 
 export type CustomerStackParamList = {
-  CustomerTabs: undefined;
+  CustomerTabs: NavigatorScreenParams<CustomerTabParamList> | undefined;
   BusinessProfile: { businessId: string };
   CustomerCardDetails: { customerCard: CustomerCard };
   BusinessDiscovery: undefined;

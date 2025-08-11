@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
   alertContainer: {
     backgroundColor: COLORS.white,
     borderRadius: 12,
+    borderCurve: "continuous",
     padding: SPACING.lg,
     minWidth: Platform.OS === "web" ? 300 : undefined,
     maxWidth: Platform.OS === "web" ? 500 : undefined,
@@ -126,6 +127,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg,
     borderRadius: 8,
+    borderCurve: "continuous",
     alignItems: "center",
     minHeight: 44,
     justifyContent: "center",

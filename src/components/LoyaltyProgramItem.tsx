@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3E8EF",
     borderRadius: 20,
+    borderCurve: "continuous",
     padding: SPACING.lg,
     marginBottom: SPACING.md,
     ...SHADOWS.medium,
@@ -127,6 +128,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
     borderRadius: 12,
+    borderCurve: "continuous",
   },
   joinedText: {
     fontSize: FONT_SIZES.xs,
@@ -144,6 +146,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderRadius: 12,
+    borderCurve: "continuous",
     minWidth: 140,
     justifyContent: "center",
     ...SHADOWS.small,

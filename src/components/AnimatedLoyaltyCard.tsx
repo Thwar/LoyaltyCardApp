@@ -76,22 +76,46 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     const tiltScale = useRef(new Animated.Value(1)).current;
     const borderGlow = useRef(new Animated.Value(0.5)).current;
 
-  // Animation cleanup ref
-  const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
-  const glowAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
+    // Animation cleanup refs
+    const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
+    const glowAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
 
-  // Track animation state to prevent unnecessary restarts
-  const animationState = useRef({ isCompleted: false, showAnimation: false });
+    // Track animation state to prevent unnecessary restarts
+    const animationState = useRef({ isCompleted: false, showAnimation: false });
 
-  // Cleanup function to stop all animations
-  const cleanupAnimations = () => {
-    animationsRef.current.forEach((anim) => anim.stop());
-    animationsRef.current = [];
-    if (glowAnimationRef.current) {
-      glowAnimationRef.current.stop();
-      glowAnimationRef.current = null;
-    }
-  };
+    // Centralized cleanup function to stop all animations
+    const cleanupAnimations = useRef(() => {
+      // Stop all tracked animations
+      animationsRef.current.forEach((anim) => {
+        try {
+          anim.stop();
+        } catch (error) {
+          // Ignore errors when stopping already stopped animations
+        }
+      });
+      animationsRef.current = [];
+
+      // Stop glow animation
+      if (glowAnimationRef.current) {
+        try {
+          glowAnimationRef.current.stop();
+        } catch (error) {
+          // Ignore errors when stopping already stopped animations
+        }
+        glowAnimationRef.current = null;
+      }
+
+      // Reset all animation values to prevent state issues
+      try {
+        pulseValue.setValue(1);
+        shinePosition.setValue(-width);
+        scaleValue.setValue(1);
+        tiltScale.setValue(1);
+        borderGlow.setValue(0.5);
+      } catch (error) {
+        // Ignore errors during value reset
+      }
+    }).current;
 
   useEffect(() => {
     const currentState = { isCompleted, showAnimation };
@@ -145,9 +169,9 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       shinePosition.setValue(-width);
     }
 
-    // Cleanup function
+    // Return cleanup function for this effect
     return cleanupAnimations;
-  }, [isCompleted, showAnimation]);
+  }, [isCompleted, showAnimation, cleanupAnimations]);
 
   // Separate effect for border glow that doesn't depend on card completion
   useEffect(() => {
@@ -172,38 +196,55 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
 
     return () => {
       if (glowAnimationRef.current) {
-        glowAnimationRef.current.stop();
+        try {
+          glowAnimationRef.current.stop();
+        } catch (error) {
+          // Ignore errors when stopping already stopped animations
+        }
         glowAnimationRef.current = null;
       }
     };
   }, []); // Only run once
 
-  // Cleanup all animations on unmount
+  // Cleanup all animations on unmount - comprehensive cleanup
   useEffect(() => {
-    return cleanupAnimations;
-  }, []);    // Touch handlers for scale effect only (no tilt)
+    return () => {
+      cleanupAnimations();
+      
+      // Additional cleanup for animation values to prevent memory leaks
+      try {
+        [scaleValue, pulseValue, shinePosition, tiltScale, borderGlow].forEach(animValue => {
+          animValue.removeAllListeners();
+        });
+      } catch (error) {
+        // Ignore errors during unmount cleanup
+      }
+    };
+  }, [cleanupAnimations]);    // Touch handlers for scale effect - with proper animation tracking
     const handleTouchStart = () => {
-      Animated.spring(tiltScale, {
+      const touchAnimation = Animated.spring(tiltScale, {
         toValue: scaleOnHover,
         useNativeDriver: true,
         tension: 300,
         friction: 10,
-      }).start();
+      });
+      touchAnimation.start();
     };
 
     const handleTouchEnd = () => {
-      Animated.spring(tiltScale, {
+      const touchAnimation = Animated.spring(tiltScale, {
         toValue: 1,
         useNativeDriver: true,
         tension: 300,
         friction: 10,
-      }).start();
+      });
+      touchAnimation.start();
     };
 
     const handlePress = () => {
       if (onPress) {
-        // Scale animation on press
-        Animated.sequence([
+        // Scale animation on press - properly tracked
+        const pressAnimation = Animated.sequence([
           Animated.timing(scaleValue, {
             toValue: 0.95,
             duration: 100,
@@ -214,8 +255,9 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
             duration: 100,
             useNativeDriver: true,
           }),
-        ]).start();
-
+        ]);
+        
+        pressAnimation.start();
         onPress();
       }
     };
@@ -380,6 +422,7 @@ const styles = StyleSheet.create({
     marginHorizontal: SPACING.md,
     marginVertical: SPACING.sm,
     borderRadius: 20,
+    borderCurve: "continuous",
     ...createShadowStyle({
       shadowColor: "#000",
       shadowOffset: { width: 0, height: 6 },
@@ -395,6 +438,7 @@ const styles = StyleSheet.create({
   },
   gradient: {
     borderRadius: 20,
+    borderCurve: "continuous",
     overflow: "hidden",
     position: "relative",
     borderWidth: 1,
@@ -406,6 +450,7 @@ const styles = StyleSheet.create({
     position: "relative",
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 19,
+    borderCurve: "continuous",
   },
   textureOverlay: {
     position: "absolute",
@@ -558,6 +603,7 @@ const styles = StyleSheet.create({
     height: 72,
     marginRight: SPACING.sm,
     borderRadius: 18,
+    borderCurve: "continuous",
     borderWidth: 2,
     borderColor: "rgba(255, 255, 255, 0.3)",
     shadowColor: "rgba(0, 0, 0, 0.2)",
@@ -577,6 +623,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
     paddingVertical: 6,
     borderRadius: 15,
+    borderCurve: "continuous",
     textAlign: "center",
     minWidth: 50,
     borderWidth: 1,

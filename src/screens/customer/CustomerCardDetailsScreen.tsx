@@ -251,12 +251,15 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
         console.log("🚀 Navigating to Home with success modal params, cardCode:", newCustomerCard.cardCode);
         onClose(); // Close this modal first
 
-        // Navigate directly to Home within current navigator with success modal params
-        (navigation as any).navigate("Home", {
-          refresh: true,
-          timestamp: Date.now(),
-          showSuccessModal: true,
-          cardCode: newCustomerCard.cardCode,
+        // Navigate to CustomerTabs and then to Home with success modal params
+        navigation.navigate("CustomerTabs", {
+          screen: "Home",
+          params: {
+            refresh: true,
+            timestamp: Date.now(),
+            showSuccessModal: true,
+            cardCode: newCustomerCard.cardCode,
+          },
         });
       } else {
         // Fallback if neither callback nor navigation available
@@ -571,9 +574,12 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
     setModalVisible(false);
     // Navigate back to the home screen with timestamp to trigger refresh
     navigation.goBack();
-    // Use reset to ensure we're on the home tab and pass the timestamp
-    navigation.getParent()?.navigate("Home", {
-      timestamp: Date.now(), // This will trigger useFocusEffect to refresh the data
+    // Navigate to CustomerTabs and then to Home with refresh parameter
+    navigation.navigate("CustomerTabs", {
+      screen: "Home",
+      params: {
+        timestamp: Date.now(), // This will trigger useFocusEffect to refresh the data
+      },
     });
   };
 

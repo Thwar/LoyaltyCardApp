@@ -212,6 +212,7 @@ const styles = StyleSheet.create({
     marginRight: SPACING.lg,
     marginLeft: SPACING.lg,
     borderRadius: 12,
+    borderCurve: "continuous",
     ...SHADOWS.small,
     padding: SPACING.lg,
     marginBottom: SPACING.sm,
@@ -248,6 +249,7 @@ const styles = StyleSheet.create({
   cardContainer: {
     backgroundColor: COLORS.lightGray,
     borderRadius: 12,
+    borderCurve: "continuous",
     padding: SPACING.md,
     ...SHADOWS.small,
   },
@@ -280,6 +282,7 @@ const styles = StyleSheet.create({
   nextStampPreview: {
     backgroundColor: COLORS.white,
     borderRadius: 8,
+    borderCurve: "continuous",
     padding: SPACING.md,
     alignItems: "center",
     borderWidth: 2,
@@ -314,6 +317,7 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.lg,
     paddingHorizontal: SPACING.md,
     borderRadius: 8,
+    borderCurve: "continuous",
     marginBottom: SPACING.md,
     minHeight: 56,
   },
@@ -344,6 +348,7 @@ const styles = StyleSheet.create({
   redeemSection: {
     backgroundColor: COLORS.primary,
     borderRadius: 8,
+    borderCurve: "continuous",
     padding: SPACING.md,
     alignItems: "center",
     marginTop: SPACING.md,
@@ -357,6 +362,7 @@ const styles = StyleSheet.create({
   rewardBox: {
     backgroundColor: COLORS.white,
     borderRadius: 6,
+    borderCurve: "continuous",
     padding: SPACING.sm,
     minWidth: "80%",
     alignItems: "center",

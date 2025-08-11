@@ -65,6 +65,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
     borderRadius: 8,
+    borderCurve: "continuous",
     paddingHorizontal: SPACING.md,
     minHeight: 48,
   },
