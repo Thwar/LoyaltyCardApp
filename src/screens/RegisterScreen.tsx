@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../context/AuthContext";
@@ -107,7 +107,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     setGoogleLoading(true);
     try {
       console.log("RegisterScreen: Starting Google Sign-In process");
-      await signInWithGoogle();
+      await signInWithGoogle(true);
       console.log("RegisterScreen: Google Sign-In process completed successfully");
     } catch (error) {
       console.error("RegisterScreen: Google Sign-In error caught:", error);
@@ -124,7 +124,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     setFacebookLoading(true);
     try {
       console.log("RegisterScreen: Starting Facebook Sign-In process");
-      await signInWithFacebook();
+      await signInWithFacebook(true);
       console.log("RegisterScreen: Facebook Sign-In process completed successfully");
     } catch (error) {
       console.error("RegisterScreen: Facebook Sign-In error caught:", error);
@@ -159,8 +159,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
+            <Image source={require("../../assets/logo-small-icon.png")} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>Crear Cuenta</Text>
-            <Text style={styles.subtitle}>Únete a TarjetaLealtad hoy</Text>
+            <Text style={styles.subtitle}>Crea tu cuenta para empezar</Text>
           </View>
           <View style={styles.form}>
             <InputField
@@ -262,6 +263,11 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: SPACING.xl,
+  },
+  logo: {
+    width: 82,
+    height: 82,
+    marginBottom: SPACING.md,
   },
   title: {
     fontSize: FONT_SIZES.xxl,

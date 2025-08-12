@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../context/AuthContext";
@@ -144,6 +144,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
+            <Image source={require("../../assets/logo-small-icon.png")} style={styles.logo} resizeMode="contain" />
             <Text style={styles.title}>Bienvenido de Vuelta</Text>
             <Text style={styles.subtitle}>Inicia sesión en tu cuenta</Text>
           </View>
@@ -209,7 +210,12 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: SPACING.xl,
-    marginTop: SPACING.xl,
+    marginTop: SPACING.xs,
+  },
+  logo: {
+    width: 82,
+    height: 82,
+    marginBottom: SPACING.md,
   },
   title: {
     fontSize: FONT_SIZES.xxl,

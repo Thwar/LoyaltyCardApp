@@ -1,3 +1,4 @@
+// Backwards-compatible barrel export
 export * from "./api";
 export * from "./emailService";
 export * from "./firebase";

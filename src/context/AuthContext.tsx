@@ -11,8 +11,8 @@ interface AuthContextType {
   isLoggingIn: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string, userType: "customer" | "business") => Promise<User>;
-  signInWithGoogle: () => Promise<void>;
-  signInWithFacebook: () => Promise<void>;
+  signInWithGoogle: (isRegistering?: boolean) => Promise<void>;
+  signInWithFacebook: (isRegistering?: boolean) => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -210,12 +210,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signInWithGoogle = async (): Promise<void> => {
+  const signInWithGoogle = async (isRegistering: boolean = false): Promise<void> => {
     setIsLoggingIn(true);
     setLoginHasFailed(false);
     try {
       console.log("Attempting Google Sign-In");
-      const userData = await AuthService.signInWithGoogle();
+      const userData = await AuthService.signInWithGoogle(isRegistering);
       console.log("Google Sign-In completed successfully, user created/retrieved:", userData.email);
 
       // Set the user immediately to prevent the auth state change from signing them out
@@ -242,12 +242,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signInWithFacebook = async (): Promise<void> => {
+  const signInWithFacebook = async (isRegistering: boolean = false): Promise<void> => {
     setIsLoggingIn(true);
     setLoginHasFailed(false);
     try {
       console.log("Attempting Facebook Sign-In");
-      const userData = await AuthService.signInWithFacebook();
+      const userData = await AuthService.signInWithFacebook(isRegistering);
       console.log("Facebook Sign-In completed successfully, user created/retrieved:", userData.email);
 
       // Set the user immediately to prevent the auth state change from signing them out
