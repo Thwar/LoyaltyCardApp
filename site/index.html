@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Casero — Digital Loyalty Wallet</title>
+    <meta name="description" content="Collect stamps, earn rewards, and never lose your loyalty cards again with Casero." />
+  <link rel="icon" href="/landing/assets/favicon.png" />
+  <link rel="preload" href="/landing/assets/fonts/BalooBhaijaan2-Regular.ttf" as="font" type="font/ttf" crossorigin>
+    <style>
+      :root{
+        --primary:#E53935; --primaryDark:#C62828; --primaryLight:#EF5350;
+        --text:#2C3E50; --textSecondary:#7F8C8D; --white:#FFFFFF; --light:#F8F9FA;
+      }
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0;height:100%;font-family:'BalooBhaijaan2',system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue','Noto Sans',sans-serif;color:var(--text)}
+  @font-face{font-family:'BalooBhaijaan2';src:url('/landing/assets/fonts/BalooBhaijaan2-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+      .gradient{min-height:100%;background:linear-gradient(135deg,var(--primary),var(--primaryDark));display:flex;align-items:center;}
+      .container{max-width:1100px;margin:0 auto;padding:48px 24px;display:grid;grid-template-columns:1.1fr 1fr;gap:48px;align-items:center}
+      @media (max-width:960px){.container{grid-template-columns:1fr}}
+      .hero{color:var(--white)}
+      .logo{width:260px;max-width:90%;margin:0 0 16px 0}
+      h1{font-size:44px;line-height:1.1;margin:0 0 12px 0}
+      p.lead{font-size:18px;opacity:.9;margin:0 0 24px 0}
+      .cta{display:flex;gap:12px;flex-wrap:wrap;margin-top:16px}
+      .btn{appearance:none;border:0;border-radius:12px;padding:14px 20px;font-weight:700;font-size:16px;cursor:pointer}
+      .btn-primary{background:var(--white);color:var(--primary)}
+      .btn-outline{background:transparent;border:2px solid var(--white);color:var(--white)}
+      .features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+      .feature{background:rgba(255,255,255,.12);border-radius:12px;padding:16px;color:var(--white);text-align:center}
+      .feature .icon{font-size:24px;margin-bottom:8px}
+      .card{background:var(--white);border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.15);padding:28px}
+      .card h3{margin:0 0 8px 0}
+      .footer{color:var(--white);opacity:.85;margin-top:40px}
+      .footer a{color:var(--white)}
+    </style>
+  </head>
+  <body>
+    <div class="gradient">
+      <main class="container">
+        <section class="hero">
+          <img src="/landing/assets/logo.png" alt="Casero" class="logo" />
+          <h1>Tu billetera digital para tarjetas de lealtad</h1>
+          <p class="lead">Colecta sellos, gana recompensas y nunca pierdas tus tarjetas nuevamente. Hecho para clientes y negocios.</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="/web">Ir al Portal Web</a>
+            <a class="btn btn-outline" href="https://apps.apple.com" target="_blank" rel="noreferrer">App Store</a>
+            <a class="btn btn-outline" href="https://play.google.com" target="_blank" rel="noreferrer">Google Play</a>
+          </div>
+          <div class="features">
+            <div class="feature"><div class="icon">📱</div><div>Tarjetas Digitales</div></div>
+            <div class="feature"><div class="icon">🎁</div><div>Recompensas Inmediatas</div></div>
+            <div class="feature"><div class="icon">📊</div><div>Progreso en Tiempo Real</div></div>
+          </div>
+          <div class="footer">¿Eres un negocio? <a href="/web">Crea tu programa de lealtad →</a></div>
+        </section>
+        <aside class="card">
+          <h3>Casero para Negocios</h3>
+          <p>Configura tu programa de sellos en minutos, impulsa retención y entiende a tus clientes con analíticas simples.</p>
+          <ul>
+            <li>Sellos configurables y recompensas</li>
+            <li>Registro fácil con Google</li>
+            <li>Notificaciones a tus clientes</li>
+          </ul>
+          <p><a href="/web">Empezar ahora →</a></p>
+        </aside>
+      </main>
+    </div>
+  </body>
+</html>

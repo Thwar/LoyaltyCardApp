@@ -10,7 +10,7 @@
     }
   },
   "scripts": {
-    "start": "expo start",
+  "start": "expo start",
     "start:clear": "expo start --clear",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -23,7 +23,9 @@
     "submit:android": "eas submit --platform android",
     "submit:all": "eas submit --platform all",
     "env:list": "eas secret:list",
-    "type-check": "tsc --noEmit"
+  "type-check": "tsc --noEmit",
+  "build:web": "node scripts/build-web.cjs",
+  "dev:site": "npx serve site -l 8081"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",

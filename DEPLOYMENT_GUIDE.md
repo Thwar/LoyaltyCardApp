@@ -1,3 +1,10 @@
+# Casero Deployment Guide
+\n+## Landing + Web Portal on Vercel
+This repo is configured so `/` serves a static landing page and `/web` serves the Expo Web portal. Ensure Production Environment Variables are set in Vercel (see `.env.example`), otherwise the portal will crash at runtime (e.g., missing `FIREBASE_API_KEY`). Build command is `node scripts/build-web.cjs`, output dir is `dist`.
+\n+Routes:
+- `/` → `dist/landing/index.html`
+- `/web`, `/web/*` → `dist/web/index.html`
+- `/_expo/*`, `/favicon.ico` → `dist/web`
 # Environment Variables and Deployment Guide
 
 This guide explains how to deploy your LoyaltyCardApp with the environment variables already configured in EAS.
