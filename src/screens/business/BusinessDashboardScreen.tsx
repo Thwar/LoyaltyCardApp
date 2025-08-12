@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, RefreshControl, TouchableOpacity, Image } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 import { useAuth } from "../../context/AuthContext";
 import { Button, LoadingState } from "../../components";
+import { Ionicons } from "@expo/vector-icons";
 import { CreateLoyaltyCardModal } from "./CreateLoyaltyCardScreen";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { BusinessService, LoyaltyCardService, CustomerCardService } from "../../services/api";
@@ -177,8 +178,21 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
       <ScrollView style={styles.scrollView} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[COLORS.primary]} tintColor={COLORS.primary} />}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.welcomeText}>Bienvenido,</Text>
-          <Text style={styles.businessName}>{business?.name || user?.displayName}</Text>
+          <View style={styles.headerContent}>
+            <TouchableOpacity style={styles.profileContainer} activeOpacity={0.7} onPress={handleNavigateToSettings}>
+              {business?.logoUrl ? (
+                <Image source={{ uri: business.logoUrl }} style={styles.profileImage} />
+              ) : (
+                <View style={styles.defaultProfileIcon}>
+                  <Ionicons name="business" size={24} color={COLORS.gray} />
+                </View>
+              )}
+            </TouchableOpacity>
+            <View style={styles.welcomeContainer}>
+              <Text style={styles.welcomeText}>Bienvenido,</Text>
+              <Text style={styles.businessName}>{business?.name || user?.displayName}</Text>
+            </View>
+          </View>
         </View>
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
@@ -227,6 +241,32 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.inputBorder,
+  },
+  headerContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  profileContainer: {
+    marginRight: SPACING.md,
+  },
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderCurve: "continuous",
+    backgroundColor: COLORS.inputBorder,
+  },
+  defaultProfileIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderCurve: "continuous",
+    backgroundColor: COLORS.inputBorder,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  welcomeContainer: {
+    flex: 1,
   },
   welcomeText: {
     fontSize: FONT_SIZES.md,

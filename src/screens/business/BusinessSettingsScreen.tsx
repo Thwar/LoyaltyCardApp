@@ -5,7 +5,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useAuth } from "../../context/AuthContext";
 import { Button, InputField, LoadingState, useAlert, Dropdown, ImagePicker, MultiSelectDropdown } from "../../components";
 import { COLORS, FONT_SIZES, SPACING, BUSINESS_CATEGORIES } from "../../constants";
-import { BusinessService } from "../../services/api";
+import { BusinessService, UserService } from "../../services/api";
 import { ImageUploadService } from "../../services/imageUpload";
 import { Business } from "../../types";
 
@@ -47,6 +47,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   const [saving, setSaving] = useState(false);
   const [reloading, setReloading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadBusiness();
@@ -226,6 +227,69 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
     });
   };
 
+  const handleDeleteAccount = () => {
+    showAlert({
+      title: "⚠️ ELIMINAR CUENTA",
+      message:
+        "Esta acción eliminará PERMANENTEMENTE tu cuenta y TODOS los datos asociados, incluyendo:\n\n• Tu perfil de negocio\n• Todas las tarjetas de lealtad\n• Todos los clientes y sellos\n• Todas las imágenes y archivos\n\nEsta acción NO se puede deshacer.\n\n¿Estás completamente seguro?",
+      buttons: [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "ELIMINAR",
+          style: "destructive",
+          onPress: confirmDeleteAccount,
+        },
+      ],
+    });
+  };
+
+  const confirmDeleteAccount = async () => {
+    setIsDeleting(true);
+    try {
+      await UserService.deleteAccount();
+
+      // If we reach here, the account was deleted successfully
+      // No need to show success message as user will be signed out
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      
+      // Handle the requires-recent-login error specifically
+      if (error instanceof Error && error.message.includes("autenticarte")) {
+        showAlert({
+          title: "Autenticación Requerida",
+          message: "Por seguridad, necesitas volver a iniciar sesión antes de eliminar tu cuenta. ¿Quieres cerrar sesión ahora para volver a autenticarte?",
+          buttons: [
+            {
+              text: "Cancelar",
+              style: "cancel",
+            },
+            {
+              text: "Cerrar Sesión",
+              style: "destructive",
+              onPress: () => {
+                logout();
+                showAlert({
+                  title: "Información",
+                  message: "Después de iniciar sesión nuevamente, podrás eliminar tu cuenta desde la sección de configuración.",
+                });
+              },
+            },
+          ],
+        });
+      } else {
+        showAlert({
+          title: "Error al Eliminar Cuenta",
+          message: error instanceof Error ? error.message : "Ocurrió un error inesperado al eliminar la cuenta. Por favor contacta al soporte técnico.",
+        });
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const updateFormData = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -237,12 +301,13 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   if (loading) {
     return <LoadingState loading={true} />;
   }
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
         <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Configuraciones del Negocio</Text>
+            <Text style={styles.title}>Datos sobre tu Negocio</Text>
             <Text style={styles.subtitle}>{business ? "Actualiza la información de tu negocio" : "Configura el perfil de tu negocio"}</Text>
           </View>
           <View style={styles.form}>
@@ -339,6 +404,19 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
               <Text style={styles.accountValue}>{user?.email}</Text>
             </View>
             <Button title="Cerrar Sesión" onPress={handleLogout} variant="outline" size="large" style={styles.logoutButton} />
+
+            {/* Danger Zone */}
+            <View style={styles.dangerZone}>
+              <Button
+                title={isDeleting ? "Eliminando..." : "Eliminar Cuenta"}
+                onPress={handleDeleteAccount}
+                variant="outline"
+                size="large"
+                style={styles.deleteAccountButton}
+                loading={isDeleting}
+                disabled={isDeleting}
+              />
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -419,6 +497,29 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderColor: COLORS.error,
+  },
+  dangerZone: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+    marginTop: SPACING.xl,
+  },
+  dangerTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.error,
+    marginBottom: SPACING.sm,
+  },
+  dangerDescription: {
+    fontSize: FONT_SIZES.sm,
+    color: "#7F1D1D",
+    marginBottom: SPACING.lg,
+    lineHeight: 20,
+  },
+  deleteAccountButton: {
+    borderColor: COLORS.error,
+    backgroundColor: "transparent",
   },
   testButton: {
     marginBottom: SPACING.md,

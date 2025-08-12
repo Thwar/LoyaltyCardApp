@@ -30,17 +30,20 @@ Your `.env.local` file is already configured with your Firebase settings for loc
 ## 📁 Environment Files
 
 ### `.env.local` (Local Development)
+
 - Contains all your development environment variables
 - **NEVER commit this file to version control**
 - Used for local development only
 - ✅ Already configured with your Firebase settings
 
 ### `.env.template`
+
 - Template file showing required environment variables
 - Safe to commit to version control
 - Used as reference for team members
 
 ### `config/env.ts`
+
 - Centralized environment configuration
 - Handles environment variable loading and validation
 - Provides type safety and fallbacks
@@ -137,6 +140,7 @@ npm run submit:android
 ### Required Variables
 
 #### Firebase Configuration
+
 - `FIREBASE_API_KEY` - Firebase API key
 - `FIREBASE_AUTH_DOMAIN` - Firebase auth domain
 - `FIREBASE_PROJECT_ID` - Firebase project ID
@@ -146,16 +150,19 @@ npm run submit:android
 - `FIREBASE_MEASUREMENT_ID` - Firebase analytics measurement ID
 
 #### App Configuration
+
 - `APP_ENV` - Environment (development/staging/production)
 - `APP_NAME` - Application name
 - `APP_VERSION` - Application version
 - `EXPO_PROJECT_ID` - Expo project ID
 
 #### API Configuration
+
 - `API_BASE_URL` - Base URL for API calls
 - `API_TIMEOUT` - API request timeout
 
 #### Feature Flags
+
 - `ENABLE_DEBUG_LOGS` - Enable debug logging
 - `ENABLE_ANALYTICS` - Enable analytics
 - `ENABLE_CRASH_REPORTING` - Enable crash reporting
@@ -163,14 +170,14 @@ npm run submit:android
 ### Using Environment Variables in Code
 
 ```typescript
-import { env, debugLog, isProduction } from '../config/env';
+import { env, debugLog, isProduction } from "../config/env";
 
 // Use environment variables
 const apiUrl = env.API_BASE_URL;
 const enableAnalytics = env.ENABLE_ANALYTICS;
 
 // Use helper functions
-debugLog('This only logs in development:', someData);
+debugLog("This only logs in development:", someData);
 
 if (isProduction()) {
   // Production-only code
@@ -180,21 +187,25 @@ if (isProduction()) {
 ## 🔒 Security Best Practices
 
 ### 1. Never Commit Sensitive Data
+
 - Add `.env*.local` to `.gitignore`
 - Never hardcode API keys or secrets
 - Use EAS secrets for production builds
 
 ### 2. Environment Separation
+
 - Use different Firebase projects for development/staging/production
 - Separate API endpoints for each environment
 - Different database instances for each environment
 
 ### 3. Access Control
+
 - Limit who can access production environment variables
 - Use EAS organization features for team management
 - Regularly rotate API keys and secrets
 
 ### 4. Validation
+
 - Always validate environment variables exist
 - Provide meaningful error messages for missing variables
 - Use TypeScript for type safety
@@ -202,6 +213,7 @@ if (isProduction()) {
 ## 📝 Commands Reference
 
 ### Local Development
+
 ```bash
 # Start development server
 npm run start:clear
@@ -211,13 +223,14 @@ npm install
 ```
 
 ### EAS Commands
+
 ```bash
 # Login to EAS (if needed)
 eas login
 
 # Build commands (using npm scripts)
 npm run build:dev      # Development build
-npm run build:staging  # Staging build  
+npm run build:staging  # Staging build
 npm run build:prod     # Production build
 npm run build:all      # Production build for all platforms
 
@@ -246,11 +259,13 @@ eas secret:delete --name VAR_NAME
 ### Common Issues
 
 1. **"Environment variable X is not defined"**
+
    - Check if the variable is set in your `.env.local` file
    - Verify the variable name matches exactly
    - For EAS builds, ensure the secret is set with `eas secret:create`
 
 2. **"Firebase configuration error"**
+
    - Verify all Firebase environment variables are set
    - Check that the Firebase project ID matches your actual project
    - Ensure Firebase services are enabled in your project
@@ -263,6 +278,7 @@ eas secret:delete --name VAR_NAME
 ### Getting Help
 
 If you encounter issues:
+
 1. Check the Expo documentation
 2. Verify your EAS configuration
 3. Test locally first before building

@@ -117,110 +117,110 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       }
     }).current;
 
-  useEffect(() => {
-    const currentState = { isCompleted, showAnimation };
+    useEffect(() => {
+      const currentState = { isCompleted, showAnimation };
 
-    // Only restart animations if the relevant state has actually changed
-    if (animationState.current.isCompleted === currentState.isCompleted && animationState.current.showAnimation === currentState.showAnimation) {
-      return;
-    }
+      // Only restart animations if the relevant state has actually changed
+      if (animationState.current.isCompleted === currentState.isCompleted && animationState.current.showAnimation === currentState.showAnimation) {
+        return;
+      }
 
-    // Update tracked state
-    animationState.current = currentState;
+      // Update tracked state
+      animationState.current = currentState;
 
-    // Clear previous animations
-    cleanupAnimations();
+      // Clear previous animations
+      cleanupAnimations();
 
-    if (showAnimation && isCompleted) {
-      // Reset shine position to start position
-      shinePosition.setValue(-width);
+      if (showAnimation && isCompleted) {
+        // Reset shine position to start position
+        shinePosition.setValue(-width);
 
-      // Pulse animation for completed cards
-      const pulseAnimation = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseValue, {
-            toValue: 1.05,
-            duration: 800,
-            useNativeDriver: true,
+        // Pulse animation for completed cards
+        const pulseAnimation = Animated.loop(
+          Animated.sequence([
+            Animated.timing(pulseValue, {
+              toValue: 1.05,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseValue, {
+              toValue: 1,
+              duration: 800,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+
+        // Shine effect for completed cards only
+        const shineAnimation = Animated.loop(
+          Animated.timing(shinePosition, {
+            toValue: width,
+            duration: 2000,
+            useNativeDriver: false,
           }),
-          Animated.timing(pulseValue, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
+          { iterations: -1 }
+        );
+
+        animationsRef.current.push(pulseAnimation, shineAnimation);
+        pulseAnimation.start();
+        shineAnimation.start();
+      } else {
+        // Reset shine position when animation is disabled or card is not completed
+        shinePosition.setValue(-width);
+      }
+
+      // Return cleanup function for this effect
+      return cleanupAnimations;
+    }, [isCompleted, showAnimation, cleanupAnimations]);
+
+    // Separate effect for border glow that doesn't depend on card completion
+    useEffect(() => {
+      // Subtle glass border glow animation - always run this
+      const glowAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(borderGlow, {
+            toValue: 0.8,
+            duration: 2000,
+            useNativeDriver: false,
+          }),
+          Animated.timing(borderGlow, {
+            toValue: 0.5,
+            duration: 2000,
+            useNativeDriver: false,
           }),
         ])
       );
 
-      // Shine effect for completed cards only
-      const shineAnimation = Animated.loop(
-        Animated.timing(shinePosition, {
-          toValue: width,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        { iterations: -1 }
-      );
+      glowAnimationRef.current = glowAnimation;
+      glowAnimation.start();
 
-      animationsRef.current.push(pulseAnimation, shineAnimation);
-      pulseAnimation.start();
-      shineAnimation.start();
-    } else {
-      // Reset shine position when animation is disabled or card is not completed
-      shinePosition.setValue(-width);
-    }
-
-    // Return cleanup function for this effect
-    return cleanupAnimations;
-  }, [isCompleted, showAnimation, cleanupAnimations]);
-
-  // Separate effect for border glow that doesn't depend on card completion
-  useEffect(() => {
-    // Subtle glass border glow animation - always run this
-    const glowAnimation = Animated.loop(
-      Animated.sequence([
-        Animated.timing(borderGlow, {
-          toValue: 0.8,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(borderGlow, {
-          toValue: 0.5,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-      ])
-    );
-
-    glowAnimationRef.current = glowAnimation;
-    glowAnimation.start();
-
-    return () => {
-      if (glowAnimationRef.current) {
-        try {
-          glowAnimationRef.current.stop();
-        } catch (error) {
-          // Ignore errors when stopping already stopped animations
+      return () => {
+        if (glowAnimationRef.current) {
+          try {
+            glowAnimationRef.current.stop();
+          } catch (error) {
+            // Ignore errors when stopping already stopped animations
+          }
+          glowAnimationRef.current = null;
         }
-        glowAnimationRef.current = null;
-      }
-    };
-  }, []); // Only run once
+      };
+    }, []); // Only run once
 
-  // Cleanup all animations on unmount - comprehensive cleanup
-  useEffect(() => {
-    return () => {
-      cleanupAnimations();
-      
-      // Additional cleanup for animation values to prevent memory leaks
-      try {
-        [scaleValue, pulseValue, shinePosition, tiltScale, borderGlow].forEach(animValue => {
-          animValue.removeAllListeners();
-        });
-      } catch (error) {
-        // Ignore errors during unmount cleanup
-      }
-    };
-  }, [cleanupAnimations]);    // Touch handlers for scale effect - with proper animation tracking
+    // Cleanup all animations on unmount - comprehensive cleanup
+    useEffect(() => {
+      return () => {
+        cleanupAnimations();
+
+        // Additional cleanup for animation values to prevent memory leaks
+        try {
+          [scaleValue, pulseValue, shinePosition, tiltScale, borderGlow].forEach((animValue) => {
+            animValue.removeAllListeners();
+          });
+        } catch (error) {
+          // Ignore errors during unmount cleanup
+        }
+      };
+    }, [cleanupAnimations]); // Touch handlers for scale effect - with proper animation tracking
     const handleTouchStart = () => {
       const touchAnimation = Animated.spring(tiltScale, {
         toValue: scaleOnHover,
@@ -256,7 +256,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
             useNativeDriver: true,
           }),
         ]);
-        
+
         pressAnimation.start();
         onPress();
       }

@@ -37,7 +37,7 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
   // Centralized cleanup function
   const cleanupAnimations = useRef(() => {
     // Stop all active animations
-    activeAnimations.current.forEach(animation => {
+    activeAnimations.current.forEach((animation) => {
       try {
         animation.stop();
       } catch (error) {
@@ -59,7 +59,7 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
     if (stampAnimations.length > totalSlots) {
       // Clean up extra animations properly
       const removedAnimations = stampAnimations.splice(totalSlots);
-      removedAnimations.forEach(animation => {
+      removedAnimations.forEach((animation) => {
         // Reset value and clear listeners to prevent memory leaks
         try {
           animation.setValue(0);
@@ -112,7 +112,7 @@ export const StampsGrid: React.FC<StampsGridProps> = ({
     return () => {
       cleanupAnimations();
       // Reset all animation values and remove listeners
-      stampAnimations.forEach(animation => {
+      stampAnimations.forEach((animation) => {
         try {
           animation.setValue(0);
           animation.removeAllListeners();

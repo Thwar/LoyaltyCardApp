@@ -11,7 +11,7 @@ export const LogoHeader: React.FC<LogoHeaderProps> = ({ title }) => {
   return (
     <View style={styles.container}>
       <Image source={require("../../assets/logo-simple.png")} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.dash}> - </Text>
+
       <Text style={styles.title}>{title}</Text>
     </View>
   );

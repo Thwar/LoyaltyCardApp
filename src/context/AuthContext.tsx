@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginHasFailed, setLoginHasFailed] = useState(false);
-  
+
   // Timeout management
   const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
 
@@ -71,13 +71,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             photoURL: firebaseUser.photoURL,
           });
 
-          // Get user data from Firestore
-          const userData = await AuthService.getCurrentUser();
+          // Get user data from Firestore with retry logic for new users
+          let userData = null;
+          let retryCount = 0;
+          const maxRetries = 3;
+
+          while (!userData && retryCount < maxRetries) {
+            try {
+              userData = await AuthService.getCurrentUser();
+              if (userData) {
+                break;
+              }
+
+              // If no user data found and this is a new user, wait a bit and retry
+              if (retryCount < maxRetries - 1) {
+                console.log(`No user data found, retrying in ${(retryCount + 1) * 500}ms... (attempt ${retryCount + 1}/${maxRetries})`);
+                await new Promise((resolve) => setTimeout(resolve, (retryCount + 1) * 500));
+              }
+              retryCount++;
+            } catch (error) {
+              console.warn(`Error getting user data (attempt ${retryCount + 1}/${maxRetries}):`, error);
+              retryCount++;
+              if (retryCount < maxRetries) {
+                await new Promise((resolve) => setTimeout(resolve, (retryCount + 1) * 500));
+              }
+            }
+          }
+
           if (userData) {
             setUser(userData);
             console.log("User data loaded from Firestore:", userData.email);
           } else {
-            console.log("No user data found in Firestore, signing out");
+            console.log("No user data found in Firestore after retries, signing out");
             await AuthService.logout();
           }
         } else {
@@ -100,8 +125,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     });
 
-    return () => unsubscribe();
-  }, [loginHasFailed]);
+    return () => {
+      unsubscribe();
+      clearAllTimeouts();
+    };
+  }, [loginHasFailed, clearAllTimeouts]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -188,7 +216,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log("Attempting Google Sign-In");
       const userData = await AuthService.signInWithGoogle();
-      console.log("Google Sign-In completed successfully");
+      console.log("Google Sign-In completed successfully, user created/retrieved:", userData.email);
+
+      // Set the user immediately to prevent the auth state change from signing them out
+      setUser(userData);
 
       // Wait a moment to ensure Firebase auth state has stabilized
       const timeout = setTimeout(() => {
@@ -217,7 +248,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log("Attempting Facebook Sign-In");
       const userData = await AuthService.signInWithFacebook();
-      console.log("Facebook Sign-In completed successfully");
+      console.log("Facebook Sign-In completed successfully, user created/retrieved:", userData.email);
+
+      // Set the user immediately to prevent the auth state change from signing them out
+      setUser(userData);
 
       // Wait a moment to ensure Firebase auth state has stabilized
       const timeout = setTimeout(() => {
@@ -233,8 +267,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AuthService.logout();
       } catch (logoutError) {
         console.error("Error during cleanup logout:", logoutError);
+        throw error;
       }
-      throw error;
     } finally {
       setIsLoggingIn(false);
     }

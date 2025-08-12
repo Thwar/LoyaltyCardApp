@@ -1,4 +1,4 @@
-import { NavigatorScreenParams } from '@react-navigation/native';
+import { NavigatorScreenParams } from "@react-navigation/native";
 
 export interface User {
   id: string;
@@ -52,6 +52,7 @@ export interface CustomerCard {
   lastStampDate?: Date;
   cardCode?: string; // 3-digit unique identifier for business-customer combination
   customerName?: string; // Customer's display name (populated from Users collection)
+  customerPhotoURL?: string; // Customer's profile image URL (populated from Users collection)
   // Virtual relationship fields (populated from other collections)
   loyaltyCard?: LoyaltyCard;
 }

@@ -82,7 +82,7 @@ const CustomerNavigator = () => {
         component={CustomerHomeScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Mis Tarjetas" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
@@ -91,7 +91,7 @@ const CustomerNavigator = () => {
         component={BusinessDiscoveryScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Descubrir Negocios" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
@@ -100,7 +100,7 @@ const CustomerNavigator = () => {
         component={CustomerProfileScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Perfil" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
@@ -149,7 +149,7 @@ const BusinessNavigator = () => {
         component={BusinessDashboardScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Resumen" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
@@ -158,7 +158,7 @@ const BusinessNavigator = () => {
         component={LoyaltyProgramScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Mi Programa" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
@@ -167,7 +167,7 @@ const BusinessNavigator = () => {
         component={CustomerManagementScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Clientes" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
@@ -176,7 +176,7 @@ const BusinessNavigator = () => {
         component={BusinessSettingsScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Perfil" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
@@ -207,7 +207,7 @@ const CustomerStackNavigator = () => {
         component={CustomerProfileScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Perfil del Negocio" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}
@@ -217,7 +217,7 @@ const CustomerStackNavigator = () => {
         component={BusinessDiscoveryScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Descubrir Negocios" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}
@@ -227,7 +227,7 @@ const CustomerStackNavigator = () => {
         component={CustomerCardDetailsScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Detalles de Tarjeta" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}

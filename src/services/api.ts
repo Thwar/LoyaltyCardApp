@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, User as FirebaseUser, UserCredential } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, updateProfile, User as FirebaseUser, UserCredential, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
 import {
   doc,
   setDoc,
@@ -27,6 +27,18 @@ import { generateUniqueCardCode } from "../utils/cardCodeUtils";
 import { SSOService } from "./ssoService";
 import { NotificationService, StampNotificationData } from "./notificationService";
 import { SoundService } from "./soundService";
+
+// Utility function to safely convert Firestore timestamps to Date objects
+const safeTimestampToDate = (timestamp: any): Date => {
+  if (timestamp && typeof timestamp.toDate === "function") {
+    return timestamp.toDate();
+  } else if (timestamp instanceof Date) {
+    return timestamp;
+  } else {
+    // If timestamp is not available yet (e.g., serverTimestamp), use current time
+    return new Date();
+  }
+};
 
 // Enhanced error handling for Firestore operations
 const handleFirestoreError = (error: any, operation: string) => {
@@ -88,6 +100,9 @@ export class AuthService {
         userType,
         createdAt: serverTimestamp(),
       });
+
+      // Small delay to ensure Firestore consistency
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Send welcome email in background (don't block registration if email fails)
       EmailService.sendWelcomeEmail({
@@ -157,12 +172,16 @@ export class AuthService {
 
       const userData = userDoc.data();
       console.log("User data retrieved successfully:", userData.email);
+
+      // Use utility function to safely convert timestamp
+      const createdAt = safeTimestampToDate(userData.createdAt);
+
       return {
         id: firebaseUser.uid,
         email: userData.email,
         displayName: userData.displayName,
         userType: userData.userType,
-        createdAt: userData.createdAt.toDate(),
+        createdAt,
         profileImage: userData.profileImage,
       };
     } catch (error: any) {
@@ -245,12 +264,16 @@ export class AuthService {
       if (!userDoc.exists()) return null;
 
       const userData = userDoc.data();
+
+      // Use utility function to safely convert timestamp
+      const createdAt = safeTimestampToDate(userData.createdAt);
+
       return {
         id: firebaseUser.uid,
         email: userData.email,
         displayName: userData.displayName,
         userType: userData.userType,
-        createdAt: userData.createdAt.toDate(),
+        createdAt,
         profileImage: userData.profileImage,
       };
     } catch (error) {
@@ -275,12 +298,16 @@ export class AuthService {
         // User exists, return user data
         const userData = userDoc.data();
         console.log("Existing user found:", userData.email);
+
+        // Use utility function to safely convert timestamp
+        const createdAt = safeTimestampToDate(userData.createdAt);
+
         return {
           id: firebaseUser.uid,
           email: userData.email,
           displayName: userData.displayName,
           userType: userData.userType,
-          createdAt: userData.createdAt.toDate(),
+          createdAt,
           profileImage: userData.profileImage,
         };
       } else {
@@ -294,6 +321,13 @@ export class AuthService {
           profileImage: firebaseUser.photoURL || undefined,
         };
 
+        console.log("Creating user document with data:", {
+          uid: firebaseUser.uid,
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+        });
+
         await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
           email: userData.email,
           displayName: userData.displayName,
@@ -301,6 +335,11 @@ export class AuthService {
           createdAt: serverTimestamp(),
           profileImage: userData.profileImage,
         });
+
+        console.log("User document created successfully in Firestore");
+
+        // Small delay to ensure Firestore consistency
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         // Send welcome email in background
         EmailService.sendWelcomeEmail({
@@ -311,10 +350,13 @@ export class AuthService {
           console.error("Failed to send welcome email:", error);
         });
 
-        return {
+        const createdUser = {
           id: firebaseUser.uid,
           ...userData,
         };
+
+        console.log("Returning created user:", createdUser);
+        return createdUser;
       }
     } catch (error: any) {
       console.error("Google Sign-In error:", error);
@@ -347,12 +389,16 @@ export class AuthService {
         // User exists, return user data
         const userData = userDoc.data();
         console.log("Existing user found:", userData.email);
+
+        // Use utility function to safely convert timestamp
+        const createdAt = safeTimestampToDate(userData.createdAt);
+
         return {
           id: firebaseUser.uid,
           email: userData.email,
           displayName: userData.displayName,
           userType: userData.userType,
-          createdAt: userData.createdAt.toDate(),
+          createdAt,
           profileImage: userData.profileImage,
         };
       } else {
@@ -438,12 +484,16 @@ export class UserService {
       }
 
       const userData = userDoc.data();
+
+      // Use utility function to safely convert timestamp
+      const createdAt = safeTimestampToDate(userData.createdAt);
+
       return {
         id: userDoc.id,
         email: userData.email,
         displayName: userData.displayName,
         userType: userData.userType,
-        createdAt: userData.createdAt.toDate(),
+        createdAt,
         profileImage: userData.profileImage,
         pushToken: userData.pushToken,
       };
@@ -476,6 +526,100 @@ export class UserService {
       throw new Error("Error al actualizar el token de notificaciones");
     }
   }
+
+  static async deleteAccount(): Promise<void> {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        throw new Error("Usuario no autenticado");
+      }
+
+      console.log("🗑️ Starting account deletion for user:", currentUser.uid);
+
+      const userId = currentUser.uid;
+
+      // 1. Delete all businesses owned by the user
+      console.log("🏢 Deleting businesses owned by user...");
+      const businesses = await BusinessService.getBusinessesByOwner(userId);
+      
+      for (const business of businesses) {
+        console.log(`🏢 Deleting business: ${business.name} (${business.id})`);
+        
+        // Get all loyalty cards for this business
+        const loyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusinessId(business.id);
+        
+        // Delete each loyalty card (this will cascade delete customer cards, stamps, etc.)
+        for (const loyaltyCard of loyaltyCards) {
+          console.log(`💳 Deleting loyalty card: ${loyaltyCard.businessName} (${loyaltyCard.id})`);
+          await LoyaltyCardService.deleteLoyaltyCard(loyaltyCard.id);
+        }
+        
+        // Delete business logo if it exists
+        if (business.logoUrl && business.logoUrl.startsWith("https://")) {
+          try {
+            const { ImageUploadService } = await import("./imageUpload");
+            await ImageUploadService.deleteBusinessLogo(business.logoUrl);
+            console.log(`🖼️ Business logo deleted for ${business.name}`);
+          } catch (logoError) {
+            console.warn(`⚠️ Could not delete business logo for ${business.name}:`, logoError);
+            // Don't fail the entire deletion if logo cleanup fails
+          }
+        }
+        
+        // Delete the business document
+        await deleteDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, business.id));
+        console.log(`✅ Business deleted: ${business.name}`);
+      }
+
+      // 2. Delete all customer cards for this user
+      console.log("🎫 Deleting customer cards for user...");
+      const customerCards = await CustomerCardService.getAllCustomerCards(userId);
+      
+      for (const customerCard of customerCards) {
+        console.log(`🎫 Deleting customer card: ${customerCard.id}`);
+        await CustomerCardService.deleteCustomerCard(customerCard.id);
+      }
+
+      // 3. Delete user profile image if it exists
+      console.log("🖼️ Deleting user profile image...");
+      const userData = await this.getUser(userId);
+      if (userData?.profileImage && userData.profileImage.startsWith("https://")) {
+        try {
+          const { ImageUploadService } = await import("./imageUpload");
+          await ImageUploadService.deleteUserProfileImage(userData.profileImage);
+          console.log("✅ User profile image deleted");
+        } catch (imageError) {
+          console.warn("⚠️ Could not delete user profile image:", imageError);
+          // Don't fail the entire deletion if image cleanup fails
+        }
+      }
+
+      // 4. Delete user document from Firestore
+      console.log("👤 Deleting user document from Firestore...");
+      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
+      console.log("✅ User document deleted from Firestore");
+
+      // 5. Finally, delete the Firebase Auth user account
+      console.log("🔥 Deleting Firebase Auth user account...");
+      await deleteUser(currentUser);
+      console.log("✅ Firebase Auth user account deleted");
+
+      console.log("🎉 Account deletion completed successfully!");
+    } catch (error: any) {
+      console.error("💥 Error during account deletion:", error);
+      
+      // Provide more specific error messages
+      if (error.code === "auth/requires-recent-login") {
+        throw new Error("Por seguridad, necesitas volver a autenticarte. Por favor cierra sesión e inicia sesión nuevamente antes de eliminar tu cuenta.");
+      } else if (error.code === "auth/user-not-found") {
+        throw new Error("Usuario no encontrado. Es posible que la cuenta ya haya sido eliminada.");
+      } else if (error.code === "auth/network-request-failed") {
+        throw new Error("Error de conexión. Por favor verifica tu conexión a internet e intenta de nuevo.");
+      }
+      
+      throw new Error(error.message || "Error al eliminar la cuenta. Por favor contacta al soporte técnico.");
+    }
+  }
 }
 
 // Business Service
@@ -497,7 +641,7 @@ export class BusinessService {
       facebook: data.facebook,
       tiktok: data.tiktok,
       categories: data.categories,
-      createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+      createdAt: safeTimestampToDate(data.createdAt),
       isActive: data.isActive,
     };
   }
@@ -553,7 +697,7 @@ export class BusinessService {
         facebook: data.facebook,
         tiktok: data.tiktok,
         categories: data.categories,
-        createdAt: data.createdAt.toDate(),
+        createdAt: safeTimestampToDate(data.createdAt),
         isActive: data.isActive,
       };
     } catch (error: any) {
@@ -615,7 +759,7 @@ export class BusinessService {
           facebook: data.facebook,
           tiktok: data.tiktok,
           categories: data.categories,
-          createdAt: data.createdAt.toDate(),
+          createdAt: safeTimestampToDate(data.createdAt),
           isActive: data.isActive,
         };
       });
