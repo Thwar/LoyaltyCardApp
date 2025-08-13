@@ -20,7 +20,7 @@ const GOOGLE_CONFIG = {
 
 // Facebook App Configuration
 const FACEBOOK_CONFIG = {
-  appId: "YOUR_FACEBOOK_APP_ID", // Replace with your Facebook App ID
+  appId: "4032038193686268",
   appName: "CaseroApp",
 };
 
@@ -97,7 +97,7 @@ export class SSOService {
         }
 
         console.log("Attempting Google Sign-In...");
-        
+
         // Clear any cached auth state first
         try {
           await GoogleSignin.signOut();
@@ -172,6 +172,7 @@ export class SSOService {
         clientId: FACEBOOK_CONFIG.appId,
         scopes: ["public_profile", "email"],
         responseType: AuthSession.ResponseType.Token,
+
         redirectUri: AuthSession.makeRedirectUri({}),
       });
 
