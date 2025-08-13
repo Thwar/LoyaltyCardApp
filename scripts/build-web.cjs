@@ -82,6 +82,9 @@ function copyDirSync(srcDir, destDir) {
     ["assets/logo.png", "assets/logo.png"],
     ["assets/logo-small-icon.png", "assets/logo-small-icon.png"],
     ["assets/favicon.png", "assets/favicon.png"],
+    ["assets/apple.png", "assets/apple.png"],
+    ["assets/google.png", "assets/google.png"],
+    ["assets/landing.mp4", "assets/landing.mp4"],
     ["assets/fonts/BalooBhaijaan2-Regular.ttf", "assets/fonts/BalooBhaijaan2-Regular.ttf"],
   ];
   for (const [srcRel, destRel] of assetsToCopy) {
@@ -90,6 +93,8 @@ function copyDirSync(srcDir, destDir) {
     if (fs.existsSync(src)) {
       console.log(`[build] Copy ${srcRel} -> landing/${destRel}`);
       copyFileSync(src, dest);
+    } else {
+      console.warn(`[build] WARN: Missing asset ${srcRel}, skipping.`);
     }
   }
 

@@ -257,7 +257,7 @@ const BusinessStackNavigator = () => {
         component={AddStampScreen}
         options={{
           headerTitle: "",
-          headerLeft: () => <LogoHeader title="Agregar Sello" />,
+          headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           headerBackTitle: "Atrás",
         }}
