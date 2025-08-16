@@ -133,7 +133,18 @@ export class AuthService {
   }
 
   static async logout(): Promise<void> {
-    await signOut(auth);
+    try {
+      // Sign out from all providers
+      await Promise.all([
+        signOut(auth),
+        SSOService.signOutGoogle(),
+        // For Facebook logout, we'll handle it in the UI layer since it requires different handling
+      ]);
+    } catch (error) {
+      console.error("Error during logout:", error);
+      // Force sign out from Firebase even if SSO logout fails
+      await signOut(auth);
+    }
   }
 
   static async resetPassword(email: string): Promise<void> {
@@ -208,22 +219,57 @@ export class AuthService {
 
   static async signInWithFacebook(isRegistering: boolean = false): Promise<User> {
     try {
-      const userCredential = await SSOService.signInWithFacebook();
-      const firebaseUser = userCredential.user;
+      const userCredentialWithProfile = await SSOService.signInWithFacebook();
+      const firebaseUser = userCredentialWithProfile.user;
+      const facebookProfile = (userCredentialWithProfile as any).facebookProfile;
+      
+      console.log("Facebook sign-in completed:", {
+        firebaseEmail: firebaseUser.email,
+        firebaseDisplayName: firebaseUser.displayName,
+        facebookEmail: facebookProfile?.email,
+        facebookName: facebookProfile?.name,
+      });
+      
       const userDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid));
+      
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const createdAt = safeTimestampToDate(userData.createdAt);
-        return { id: firebaseUser.uid, email: userData.email, displayName: userData.displayName, userType: userData.userType, createdAt, profileImage: userData.profileImage };
+        return { 
+          id: firebaseUser.uid, 
+          email: userData.email, 
+          displayName: userData.displayName, 
+          userType: userData.userType, 
+          createdAt, 
+          profileImage: userData.profileImage 
+        };
       } else {
         if (isRegistering) {
+          // Use Facebook profile data as fallback if Firebase user doesn't have the info
+          const email = firebaseUser.email || facebookProfile?.email || "";
+          const displayName = firebaseUser.displayName || facebookProfile?.name || "";
+          const profileImage = firebaseUser.photoURL || facebookProfile?.picture || undefined;
+          
+          console.log("Creating new user with Facebook data:", {
+            email,
+            displayName,
+            hasProfileImage: !!profileImage,
+          });
+          
+          if (!email || !displayName) {
+            console.error("Missing required user data:", { email, displayName });
+            await signOut(auth);
+            throw new Error("No se pudo obtener la información completa del perfil de Facebook. Por favor intenta de nuevo.");
+          }
+          
           const userData: Omit<User, "id"> = {
-            email: firebaseUser.email || "",
-            displayName: firebaseUser.displayName || "",
+            email,
+            displayName,
             userType: "customer",
             createdAt: new Date(),
-            profileImage: firebaseUser.photoURL || undefined,
+            profileImage,
           };
+          
           await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
             email: userData.email,
             displayName: userData.displayName,
@@ -231,7 +277,16 @@ export class AuthService {
             createdAt: serverTimestamp(),
             profileImage: userData.profileImage,
           });
-          EmailService.sendWelcomeEmail({ email: userData.email, displayName: userData.displayName, userType: userData.userType }).catch(() => {});
+          
+          // Send welcome email with the profile data
+          EmailService.sendWelcomeEmail({ 
+            email: userData.email, 
+            displayName: userData.displayName, 
+            userType: userData.userType 
+          }).catch((emailError) => {
+            console.error("Failed to send welcome email:", emailError);
+          });
+          
           return { id: firebaseUser.uid, ...userData };
         } else {
           await signOut(auth);

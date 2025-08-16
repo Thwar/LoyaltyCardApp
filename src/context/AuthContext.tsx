@@ -267,8 +267,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await AuthService.logout();
       } catch (logoutError) {
         console.error("Error during cleanup logout:", logoutError);
-        throw error;
       }
+      throw error;
     } finally {
       setIsLoggingIn(false);
     }

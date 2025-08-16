@@ -20,8 +20,9 @@ const GOOGLE_CONFIG = {
 
 // Facebook App Configuration
 const FACEBOOK_CONFIG = {
-  appId: "4032038193686268",
-  appName: "CaseroApp",
+  appId: "1119577610065940",
+  clientToken: "1c3d3fd5ca4c067a37377d3de3fb583f",
+  appName: "LoyaltyCardApp",
 };
 
 export class SSOService {
@@ -164,75 +165,162 @@ export class SSOService {
     }
   }
 
-  // Facebook Sign-In for Web
-  static async signInWithFacebookWeb(): Promise<UserCredential> {
+  // Fetch Facebook user profile
+  static async fetchFacebookProfile(accessToken: string): Promise<{ email?: string; name?: string; picture?: string }> {
     try {
-      // Create auth request
+      const response = await fetch(
+        `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`Facebook API error: ${response.status}`);
+      }
+      
+      const profile = await response.json();
+      console.log("Facebook profile fetched:", {
+        hasEmail: !!profile.email,
+        hasName: !!profile.name,
+        hasPicture: !!profile.picture?.data?.url,
+      });
+      
+      return {
+        email: profile.email,
+        name: profile.name,
+        picture: profile.picture?.data?.url,
+      };
+    } catch (error) {
+      console.error("Error fetching Facebook profile:", error);
+      throw error;
+    }
+  }
+
+  // Facebook Sign-In for Web
+  static async signInWithFacebookWeb(): Promise<UserCredential & { facebookProfile?: any }> {
+    try {
+      console.log("Starting Facebook Web Sign-In");
+
+      // Create specific redirect URI for web
+      const redirectUri = AuthSession.makeRedirectUri({
+        preferLocalhost: true,
+        scheme: undefined, // Let it use the default web scheme
+      });
+
+      console.log("Facebook Web Redirect URI:", redirectUri);
+
+      // Create auth request with proper configuration
       const request = new AuthSession.AuthRequest({
         clientId: FACEBOOK_CONFIG.appId,
         scopes: ["public_profile", "email"],
         responseType: AuthSession.ResponseType.Token,
-
-        redirectUri: AuthSession.makeRedirectUri({}),
+        redirectUri,
+        // Add additional parameters for web
+        extraParams: {},
+        prompt: AuthSession.Prompt.SelectAccount,
       });
 
       const discovery = {
-        authorizationEndpoint: "https://www.facebook.com/v18.0/dialog/oauth",
+        authorizationEndpoint: "https://www.facebook.com/v19.0/dialog/oauth",
       };
 
+      console.log("Prompting Facebook login...");
       const result = await request.promptAsync(discovery);
 
+      console.log("Facebook auth result:", result.type);
+
       if (result.type === "success" && result.params.access_token) {
+        console.log("Facebook login successful, fetching user profile");
+        
+        // Fetch user profile from Facebook
+        const facebookProfile = await this.fetchFacebookProfile(result.params.access_token);
+        
         // Create Firebase credential
         const facebookCredential = FacebookAuthProvider.credential(result.params.access_token);
 
         // Sign in with Firebase
         const firebaseResult = await signInWithCredential(auth, facebookCredential);
-        return firebaseResult;
-      } else {
+        console.log("Firebase sign-in successful");
+        
+        // Attach the profile data for later use
+        (firebaseResult as any).facebookProfile = facebookProfile;
+        
+        return firebaseResult as UserCredential & { facebookProfile?: any };
+      } else if (result.type === "cancel") {
         throw new Error("Inicio de sesión con Facebook cancelado");
+      } else {
+        console.error("Facebook login failed:", result);
+        throw new Error("Error en el inicio de sesión con Facebook");
       }
     } catch (error: any) {
-      console.error("Facebook Sign-In error:", error);
+      console.error("Facebook Sign-In Web error:", error);
       throw new Error(error.message || "Error al iniciar sesión con Facebook");
     }
   }
 
   // Facebook Sign-In for React Native
-  static async signInWithFacebookNative(): Promise<UserCredential> {
+  static async signInWithFacebookNative(): Promise<UserCredential & { facebookProfile?: any }> {
     try {
+      console.log("Starting Facebook Native Sign-In");
+
+      // Create platform-specific redirect URI for native
+      const redirectUri = AuthSession.makeRedirectUri({
+        scheme: `fb${FACEBOOK_CONFIG.appId}`,
+        path: "authorize",
+      });
+
+      console.log("Facebook Native Redirect URI:", redirectUri);
+
       // For React Native, we'll use expo-auth-session with Facebook
       const request = new AuthSession.AuthRequest({
         clientId: FACEBOOK_CONFIG.appId,
         scopes: ["public_profile", "email"],
         responseType: AuthSession.ResponseType.Token,
-        redirectUri: AuthSession.makeRedirectUri({}),
+        redirectUri,
+        // Add additional parameters for better compatibility
+        extraParams: {
+          display: "popup",
+        },
       });
 
       const discovery = {
-        authorizationEndpoint: "https://www.facebook.com/v18.0/dialog/oauth",
+        authorizationEndpoint: "https://www.facebook.com/v19.0/dialog/oauth",
       };
 
+      console.log("Prompting Facebook native login...");
       const result = await request.promptAsync(discovery);
 
+      console.log("Facebook native auth result:", result.type);
+
       if (result.type === "success" && result.params.access_token) {
+        console.log("Facebook native login successful, fetching user profile");
+        
+        // Fetch user profile from Facebook
+        const facebookProfile = await this.fetchFacebookProfile(result.params.access_token);
+        
         // Create Firebase credential
         const facebookCredential = FacebookAuthProvider.credential(result.params.access_token);
 
         // Sign in with Firebase
         const firebaseResult = await signInWithCredential(auth, facebookCredential);
-        return firebaseResult;
-      } else {
+        console.log("Firebase sign-in successful");
+        
+        // Attach the profile data for later use
+        (firebaseResult as any).facebookProfile = facebookProfile;
+        
+        return firebaseResult as UserCredential & { facebookProfile?: any };
+      } else if (result.type === "cancel") {
         throw new Error("Inicio de sesión con Facebook cancelado");
+      } else {
+        console.error("Facebook native login failed:", result);
+        throw new Error("Error en el inicio de sesión con Facebook");
       }
     } catch (error: any) {
-      console.error("Facebook Sign-In error:", error);
+      console.error("Facebook Sign-In Native error:", error);
       throw new Error(error.message || "Error al iniciar sesión con Facebook");
     }
   }
 
   // Unified Facebook Sign-In
-  static async signInWithFacebook(): Promise<UserCredential> {
+  static async signInWithFacebook(): Promise<UserCredential & { facebookProfile?: any }> {
     if (Platform.OS === "web") {
       return await this.signInWithFacebookWeb();
     } else {

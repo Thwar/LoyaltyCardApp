@@ -39,6 +39,7 @@ export interface EnvConfig {
   // Social Auth (if using)
   GOOGLE_WEB_CLIENT_ID?: string;
   FACEBOOK_APP_ID?: string;
+  FACEBOOK_CLIENT_TOKEN?: string;
 }
 
 // Get environment from Expo Constants or fallback to development
@@ -166,8 +167,9 @@ const buildConfig = (): EnvConfig => {
     EXPO_PROJECT_ID: getEnvValue("EXPO_PROJECT_ID"),
 
     // Social Auth
-    GOOGLE_WEB_CLIENT_ID: getEnvValue("GOOGLE_WEB_CLIENT_ID", ""),
-    FACEBOOK_APP_ID: getEnvValue("FACEBOOK_APP_ID", ""),
+    GOOGLE_WEB_CLIENT_ID: getEnvValue("GOOGLE_WEB_CLIENT_ID", "853612097033-6nqf00qv5ei37ggspu0g1abqauposvb0.apps.googleusercontent.com"),
+    FACEBOOK_APP_ID: getEnvValue("FACEBOOK_APP_ID", "1119577610065940"),
+    FACEBOOK_CLIENT_TOKEN: getEnvValue("FACEBOOK_CLIENT_TOKEN", "1c3d3fd5ca4c067a37377d3de3fb583f"),
   };
 };
 
