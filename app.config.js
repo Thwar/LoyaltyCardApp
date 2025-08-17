@@ -48,10 +48,7 @@ export default ({ config }) => {
           icon: "./assets/icon.png",
           color: "#ffffff",
           defaultChannel: "default",
-          sounds: [
-            "./assets/sounds/success.mp3",
-            "./assets/sounds/complete.mp3"
-          ]
+          sounds: ["./assets/sounds/success.mp3", "./assets/sounds/complete.mp3"],
         },
       ],
     ],

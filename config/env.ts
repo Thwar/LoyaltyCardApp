@@ -155,10 +155,7 @@ const buildConfig = (): EnvConfig => {
     FIREBASE_MEASUREMENT_ID: getEnvValue("FIREBASE_MEASUREMENT_ID", ""),
 
     // API Configuration
-    API_BASE_URL:
-      envConfig.API_BASE_URL ||
-      (Constants.expoConfig?.extra?.API_BASE_URL as string) ||
-      getEnvValue("API_BASE_URL", ""),
+    API_BASE_URL: envConfig.API_BASE_URL || (Constants.expoConfig?.extra?.API_BASE_URL as string) || getEnvValue("API_BASE_URL", ""),
     API_TIMEOUT: getNumberEnvValue("API_TIMEOUT", 10000),
 
     // Features
@@ -170,9 +167,9 @@ const buildConfig = (): EnvConfig => {
     EXPO_PROJECT_ID: getEnvValue("EXPO_PROJECT_ID"),
 
     // Social Auth
-  GOOGLE_WEB_CLIENT_ID: getEnvValue("GOOGLE_WEB_CLIENT_ID", ""),
-  FACEBOOK_APP_ID: getEnvValue("FACEBOOK_APP_ID", ""),
-  FACEBOOK_CLIENT_TOKEN: getEnvValue("FACEBOOK_CLIENT_TOKEN", ""),
+    GOOGLE_WEB_CLIENT_ID: getEnvValue("GOOGLE_WEB_CLIENT_ID", ""),
+    FACEBOOK_APP_ID: getEnvValue("FACEBOOK_APP_ID", ""),
+    FACEBOOK_CLIENT_TOKEN: getEnvValue("FACEBOOK_CLIENT_TOKEN", ""),
   };
 };
 

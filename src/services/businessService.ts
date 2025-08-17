@@ -28,9 +28,12 @@ export class BusinessService {
   static async createBusiness(businessData: Omit<Business, "id" | "createdAt">): Promise<Business> {
     try {
       if (!auth.currentUser) throw new Error("El usuario debe estar autenticado para crear un negocio");
-      const cleanData = Object.fromEntries(Object.entries(businessData).filter(([_, v]) => v !== undefined && v !== ""));
-      const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.BUSINESSES), { ...cleanData, createdAt: serverTimestamp() });
-      return { id: docRef.id, ...businessData, createdAt: new Date() };
+      const cleanData = Object.fromEntries(Object.entries(businessData).filter(([_, v]) => v !== undefined && v !== "")) as Partial<Business>;
+      // Enforce ownerId to match current user to satisfy security rules
+      const ownerId = auth.currentUser.uid;
+      const payload = { ...cleanData, ownerId, createdAt: serverTimestamp() } as any;
+      const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.BUSINESSES), payload);
+      return { id: docRef.id, ...(cleanData as any), ownerId, createdAt: new Date() } as Business;
     } catch (error: any) {
       handleFirestoreError(error, "crear negocio");
       throw error;

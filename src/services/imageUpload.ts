@@ -10,6 +10,8 @@ export class ImageUploadService {
    * @param fileName Optional custom filename
    * @returns Promise<string> Download URL of uploaded image
    */ static async uploadImage(imageUri: string, folder: string, fileName?: string): Promise<string> {
+    let storageRef: any; // Declare early for error logging
+
     try {
       // Check if user is authenticated and wait for auth state to be ready
       if (!auth.currentUser) {
@@ -34,8 +36,27 @@ export class ImageUploadService {
         fileName = `${timestamp}.${extension}`;
       }
 
-      // Create storage reference
-      const storageRef = ref(storage, `${folder}/${fileName}`);
+      // Create storage reference honoring secured folder structure
+      let path = `${folder}/${fileName}`;
+      // Map legacy flat folders to secured nested paths
+      if (folder === "business-logos") {
+        // Expect fileName like `${businessId}_logo.jpg` or pass businessId in caller to construct path
+        // Prefer a businessId directory, infer from fileName prefix when present
+        const inferredBusinessId = fileName.split("_")[0];
+        path = `business-logos/${inferredBusinessId}/${fileName}`;
+
+        console.log("Business logo upload - inferred business ID:", inferredBusinessId);
+        console.log("Full storage path:", path);
+      } else if (folder === "user-profiles") {
+        const uid = auth.currentUser.uid;
+        path = `user-profiles/${uid}/${fileName}`;
+      } else if (folder === "loyalty-card-backgrounds") {
+        // Expect fileName `${loyaltyCardId}_background.jpg`
+        const inferredCardId = fileName.split("_")[0];
+        path = `loyalty-card-backgrounds/${inferredCardId}/${fileName}`;
+      }
+
+      storageRef = ref(storage, path);
 
       // Convert image to blob based on platform
       let blob: Blob;
@@ -69,7 +90,7 @@ export class ImageUploadService {
       }
 
       // Upload the blob
-      console.log("Uploading image to:", `${folder}/${fileName}`);
+      console.log("Uploading image to:", path);
       const snapshot = await uploadBytes(storageRef, blob);
 
       // Get download URL
@@ -79,7 +100,25 @@ export class ImageUploadService {
       return downloadURL;
     } catch (error) {
       console.error("Error uploading image:", error);
+
+      // Enhanced error logging for debugging storage permission issues
       if (error instanceof Error) {
+        console.error("Error details:", {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        });
+
+        // Check for specific Firebase Storage errors
+        if (error.message.includes("storage/unauthorized")) {
+          console.error("Firebase Storage unauthorized error. Check:");
+          console.error("1. User is authenticated:", !!auth.currentUser);
+          console.error("2. User ID:", auth.currentUser?.uid);
+          console.error("3. Storage path:", storageRef.fullPath);
+          console.error("4. Business document exists in Firestore");
+          console.error("5. Storage rules allow this operation");
+        }
+
         throw new Error(`Failed to upload image: ${error.message}`);
       }
       throw new Error("Failed to upload image");

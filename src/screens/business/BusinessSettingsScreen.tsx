@@ -107,76 +107,77 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
+  // Helper function to handle logo upload errors
+  const handleLogoUploadError = async (uploadError: any, logoUri: string): Promise<string> => {
+    const errorMessage = uploadError instanceof Error ? uploadError.message : String(uploadError);
+
+    if (errorMessage.includes("CORS") || errorMessage.includes("Access-Control")) {
+      showAlert({
+        title: "Error de Configuración",
+        message: "Error de CORS en Firebase Storage. Por favor consulta FIREBASE_CORS_SETUP.md para configurar CORS. Usando imagen temporal.",
+      });
+
+      // For development, allow using the data URL directly (not recommended for production)
+      if (logoUri.startsWith("data:")) {
+        return logoUri;
+      } else {
+        return "";
+      }
+    } else if (errorMessage.includes("unauthorized") || errorMessage.includes("permission")) {
+      showAlert({
+        title: "Error de Permisos",
+        message: "No tienes permisos para subir imágenes. Por favor verifica que estés autenticado y que las reglas de Firebase Storage estén configuradas correctamente.",
+      });
+      return ""; // Save without logo if upload fails
+    } else {
+      showAlert({
+        title: "Error de Subida",
+        message: "No se pudo subir el logo. El negocio se guardará sin logo.",
+      });
+      return ""; // Save without logo if upload fails
+    }
+  };
+
   const handleSave = async () => {
     if (!validateForm() || !user) return;
 
     setSaving(true);
     try {
       let logoUrl = formData.logoUrl;
-
-      // If a new image was selected (local URI), upload it
-      if (formData.logoUrl && !formData.logoUrl.startsWith("http")) {
-        try {
-          // Create a temporary business ID for new businesses
-          const businessId = business?.id || `temp_${user.id}_${Date.now()}`;
-          console.log("Uploading logo for business ID:", businessId);
-          console.log("User ID:", user.id);
-
-          logoUrl = await ImageUploadService.uploadBusinessLogo(formData.logoUrl, businessId);
-        } catch (uploadError) {
-          console.error("Error uploading logo:", uploadError);
-
-          // Check if it's a CORS error
-          const errorMessage = uploadError instanceof Error ? uploadError.message : String(uploadError);
-          if (errorMessage.includes("CORS") || errorMessage.includes("Access-Control")) {
-            showAlert({
-              title: "Error de Configuración",
-              message: "Error de CORS en Firebase Storage. Por favor consulta FIREBASE_CORS_SETUP.md para configurar CORS. Usando imagen temporal.",
-            });
-
-            // For development, allow using the data URL directly (not recommended for production)
-            if (formData.logoUrl.startsWith("data:")) {
-              logoUrl = formData.logoUrl;
-            } else {
-              logoUrl = "";
-            }
-          } else if (errorMessage.includes("unauthorized") || errorMessage.includes("permission")) {
-            showAlert({
-              title: "Error de Permisos",
-              message: "No tienes permisos para subir imágenes. Por favor verifica que estés autenticado y que las reglas de Firebase Storage estén configuradas correctamente.",
-            });
-            logoUrl = ""; // Save without logo if upload fails
-          } else {
-            showAlert({
-              title: "Error de Subida",
-              message: "No se pudo subir el logo. El negocio se guardará sin logo.",
-            });
-            logoUrl = ""; // Save without logo if upload fails
-          }
-        }
-      }
-
-      const businessData = {
-        name: formData.name,
-        description: formData.description,
-        ownerId: user.id,
-        address: formData.address || undefined,
-        phone: formData.phone || undefined,
-        city: formData.city || undefined,
-        logoUrl: logoUrl || undefined,
-        instagram: formData.instagram || undefined,
-        facebook: formData.facebook || undefined,
-        tiktok: formData.tiktok || undefined,
-        categories: formData.categories.length > 0 ? formData.categories : undefined,
-        isActive: true,
-      };
-
-      console.log("Saving business data:", businessData);
-      console.log("Business exists:", !!business);
-      console.log("Business ID:", business?.id);
+      let currentBusinessId = business?.id;
 
       if (business) {
         // Update existing business
+
+        // If a new image was selected (local URI), upload it
+        if (formData.logoUrl && !formData.logoUrl.startsWith("http") && currentBusinessId) {
+          try {
+            console.log("Uploading logo for existing business ID:", currentBusinessId);
+            console.log("User ID:", user.id);
+
+            logoUrl = await ImageUploadService.uploadBusinessLogo(formData.logoUrl, currentBusinessId);
+          } catch (uploadError) {
+            console.error("Error uploading logo:", uploadError);
+            logoUrl = await handleLogoUploadError(uploadError, formData.logoUrl);
+          }
+        }
+
+        const businessData = {
+          name: formData.name,
+          description: formData.description,
+          ownerId: user.id,
+          address: formData.address || undefined,
+          phone: formData.phone || undefined,
+          city: formData.city || undefined,
+          logoUrl: logoUrl || undefined,
+          instagram: formData.instagram || undefined,
+          facebook: formData.facebook || undefined,
+          tiktok: formData.tiktok || undefined,
+          categories: formData.categories.length > 0 ? formData.categories : undefined,
+          isActive: true,
+        };
+
+        console.log("Updating business data:", businessData);
         await BusinessService.updateBusiness(business.id, businessData);
 
         // Update the form data with the uploaded logo URL
@@ -187,9 +188,52 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
           message: "Perfil del negocio actualizado exitosamente",
         });
       } else {
-        // Create new business
-        const newBusiness = await BusinessService.createBusiness(businessData);
+        // Create new business - first create without logo, then upload logo
+        const businessDataWithoutLogo = {
+          name: formData.name,
+          description: formData.description,
+          ownerId: user.id,
+          address: formData.address || undefined,
+          phone: formData.phone || undefined,
+          city: formData.city || undefined,
+          logoUrl: undefined, // Create without logo first
+          instagram: formData.instagram || undefined,
+          facebook: formData.facebook || undefined,
+          tiktok: formData.tiktok || undefined,
+          categories: formData.categories.length > 0 ? formData.categories : undefined,
+          isActive: true,
+        };
+
+        console.log("Creating business without logo first:", businessDataWithoutLogo);
+        const newBusiness = await BusinessService.createBusiness(businessDataWithoutLogo);
         setBusiness(newBusiness);
+        currentBusinessId = newBusiness.id;
+
+        // Now upload the logo with the real business ID
+        if (formData.logoUrl && !formData.logoUrl.startsWith("http")) {
+          try {
+            console.log("Uploading logo for new business ID:", currentBusinessId);
+            console.log("User ID:", user.id);
+
+            logoUrl = await ImageUploadService.uploadBusinessLogo(formData.logoUrl, currentBusinessId);
+
+            // Update the business with the logo URL
+            console.log("Updating business with logo URL:", logoUrl);
+            await BusinessService.updateBusiness(currentBusinessId, { logoUrl });
+
+            // Update local business object
+            setBusiness({ ...newBusiness, logoUrl });
+          } catch (uploadError) {
+            console.error("Error uploading logo for new business:", uploadError);
+            logoUrl = await handleLogoUploadError(uploadError, formData.logoUrl);
+
+            // If we got a valid logo URL, update the business
+            if (logoUrl) {
+              await BusinessService.updateBusiness(currentBusinessId, { logoUrl });
+              setBusiness({ ...newBusiness, logoUrl });
+            }
+          }
+        }
 
         // Update the form data with the uploaded logo URL
         setFormData((prev) => ({ ...prev, logoUrl: logoUrl }));
@@ -255,7 +299,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       // No need to show success message as user will be signed out
     } catch (error) {
       console.error("Error deleting account:", error);
-      
+
       // Handle the requires-recent-login error specifically
       if (error instanceof Error && error.message.includes("autenticarte")) {
         showAlert({

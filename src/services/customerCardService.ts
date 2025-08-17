@@ -1,5 +1,5 @@
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction, serverTimestamp, updateDoc, where } from "firebase/firestore";
-import { db } from "./firebase";
+import { db, auth } from "./firebase";
 import { FIREBASE_COLLECTIONS } from "../constants";
 import { Business, CustomerCard } from "../types";
 import { generateUniqueCardCode } from "../utils/cardCodeUtils";
@@ -13,6 +13,8 @@ import { handleFirestoreError } from "./utils";
 export class CustomerCardService {
   static async joinLoyaltyProgram(customerId: string, loyaltyCardId: string): Promise<CustomerCard & { cardCode: string }> {
     try {
+      console.log("🔍 DEBUG - joinLoyaltyProgram starting", { customerId, loyaltyCardId });
+
       const q = query(
         collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS),
         where("customerId", "==", customerId),
@@ -26,7 +28,18 @@ export class CustomerCardService {
       const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, loyaltyCardId));
       if (!loyaltyCardDoc.exists()) throw new Error("Tarjeta de fidelidad no encontrada");
       const loyaltyCardData = loyaltyCardDoc.data();
-      const businessId = loyaltyCardData.businessId;
+      const businessId = loyaltyCardData.businessId as string | null | undefined;
+
+      console.log("🔍 DEBUG - loyaltyCardData", { loyaltyCardId, businessId, hasBusinessId: !!businessId });
+
+      if (!businessId) {
+        throw new Error("Esta tarjeta de fidelidad no tiene un negocio asociado todavía. Pide al negocio que configure la tarjeta correctamente.");
+      }
+      // Ensure business exists before attempting create (avoids opaque permission errors)
+      const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
+      if (!businessDoc.exists()) {
+        throw new Error("El negocio asociado a esta tarjeta no existe. Intenta más tarde o contacta soporte.");
+      }
 
       const cardCode = await generateUniqueCardCode(businessId, customerId);
 
@@ -47,7 +60,14 @@ export class CustomerCardService {
         cardCode,
       };
 
+      console.log("🔍 DEBUG - About to create customerCard", { customerCardData });
+      console.log("🔍 DEBUG - Auth state", {
+        currentUser: auth.currentUser?.uid,
+        email: auth.currentUser?.email,
+        isAuthenticated: !!auth.currentUser,
+      });
       const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), customerCardData);
+      console.log("✅ DEBUG - customerCard created successfully", { docId: docRef.id });
 
       return {
         id: docRef.id,
@@ -61,6 +81,14 @@ export class CustomerCardService {
         cardCode,
       };
     } catch (error: any) {
+      console.error("❌ DEBUG - joinLoyaltyProgram error", { error: error.message, code: error?.code, customerId, loyaltyCardId });
+      // Surface clearer message for Firestore security rule denials
+      const code = error?.code || error?.name;
+      if (code === "permission-denied") {
+        throw new Error(
+          "No tienes permisos para unirte a esta tarjeta. Asegúrate de estar autenticado y que la tarjeta pertenezca al mismo negocio. Si el problema persiste, pide al negocio que verifique su configuración."
+        );
+      }
       throw new Error(error.message || "Error al unirse al programa de fidelidad");
     }
   }
@@ -571,21 +599,100 @@ export class CustomerCardService {
 
   static async deleteCustomerCard(customerCardId: string): Promise<void> {
     try {
+      console.log("🔍 DEBUG - deleteCustomerCard starting", { customerCardId });
+
+      // First, check if the user has permission to delete this card
+      if (!auth.currentUser) {
+        console.log("❌ DEBUG - No authenticated user");
+        throw new Error("Debes estar autenticado para eliminar una tarjeta");
+      }
+
+      console.log("🔍 DEBUG - Current user", {
+        uid: auth.currentUser.uid,
+        email: auth.currentUser.email,
+      });
+
+      // Get the customer card to verify ownership
+      const customerCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId));
+      if (!customerCardDoc.exists()) {
+        console.log("❌ DEBUG - Customer card not found");
+        throw new Error("Tarjeta no encontrada");
+      }
+
+      const customerCardData = customerCardDoc.data();
+      console.log("🔍 DEBUG - Customer card data", {
+        customerId: customerCardData.customerId,
+        currentUserId: auth.currentUser.uid,
+        matches: customerCardData.customerId === auth.currentUser.uid,
+      });
+
+      if (customerCardData.customerId !== auth.currentUser.uid) {
+        console.log("❌ DEBUG - User ID mismatch");
+        throw new Error("No tienes permisos para eliminar esta tarjeta");
+      }
+
+      console.log("✅ DEBUG - User has permission to delete card, proceeding with deletion");
+
+      // Query and delete related documents
+      console.log("🔍 DEBUG - Querying stamp activities");
       const stampActivitiesQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY), where("customerCardId", "==", customerCardId));
       const stampActivitiesSnapshot = await getDocs(stampActivitiesQuery);
+
+      console.log("🔍 DEBUG - Querying stamps");
       const stampsQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMPS), where("customerCardId", "==", customerCardId));
       const stampsSnapshot = await getDocs(stampsQuery);
+
+      console.log("🔍 DEBUG - Querying rewards");
       const rewardsQuery = query(collection(db, FIREBASE_COLLECTIONS.REWARDS), where("customerCardId", "==", customerCardId));
       const rewardsSnapshot = await getDocs(rewardsQuery);
 
-      const deletePromises: Promise<any>[] = [];
-      stampActivitiesSnapshot.docs.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
-      stampsSnapshot.docs.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
-      rewardsSnapshot.docs.forEach((doc) => deletePromises.push(deleteDoc(doc.ref)));
-      await Promise.all(deletePromises);
+      console.log("🔍 DEBUG - Found related documents", {
+        stampActivities: stampActivitiesSnapshot.size,
+        stamps: stampsSnapshot.size,
+        rewards: rewardsSnapshot.size,
+      });
+
+      // Execute deletions in sequence to isolate which one fails
+      console.log("🔍 DEBUG - Deleting stamp activities sequentially");
+      for (const stampActivityDoc of stampActivitiesSnapshot.docs) {
+        console.log("🔍 DEBUG - Deleting stamp activity", stampActivityDoc.id);
+        await deleteDoc(stampActivityDoc.ref);
+      }
+
+      console.log("🔍 DEBUG - Deleting stamps sequentially");
+      for (const stampDoc of stampsSnapshot.docs) {
+        console.log("🔍 DEBUG - Deleting stamp", stampDoc.id);
+        await deleteDoc(stampDoc.ref);
+      }
+
+      console.log("🔍 DEBUG - Deleting rewards sequentially");
+      for (const rewardDoc of rewardsSnapshot.docs) {
+        console.log("🔍 DEBUG - Deleting reward", rewardDoc.id);
+        await deleteDoc(rewardDoc.ref);
+      }
+
+      // Finally, delete the customer card itself
+      console.log("🔍 DEBUG - Deleting customer card");
       await deleteDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId));
+
+      console.log("✅ DEBUG - Customer card deleted successfully");
     } catch (error: any) {
-      throw new Error(error.message || "Error al eliminar la tarjeta de cliente");
+      console.error("❌ DEBUG - Error deleting customer card:", error);
+
+      // Provide more specific error messages based on error codes
+      if (error.code === "permission-denied") {
+        console.log("❌ DEBUG - Permission denied error");
+        throw new Error("No tienes permisos para eliminar esta tarjeta");
+      } else if (error.code === "not-found") {
+        console.log("❌ DEBUG - Not found error");
+        throw new Error("Tarjeta no encontrada");
+      } else if (error.code === "unauthenticated") {
+        console.log("❌ DEBUG - Unauthenticated error");
+        throw new Error("Debes estar autenticado para eliminar una tarjeta");
+      } else {
+        console.log("❌ DEBUG - Generic error", { code: error.code, message: error.message });
+        throw new Error(error.message || "Error al eliminar la tarjeta de cliente");
+      }
     }
   }
 }

@@ -186,27 +186,13 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
 
       setUploading(true);
 
-      let result;
-
-      if (Platform.OS === "web") {
-        // For web, use the expo-image-picker which handles file input
-        result = await ImagePickerExpo.launchImageLibraryAsync({
-          mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1], // Square aspect ratio for logo
-          quality: IMAGE_CONFIG.quality,
-          base64: false,
-        });
-      } else {
-        // For mobile platforms
-        result = await ImagePickerExpo.launchImageLibraryAsync({
-          mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1], // Square aspect ratio for logo
-          quality: IMAGE_CONFIG.quality,
-          base64: false,
-        });
-      }
+      const result = await ImagePickerExpo.launchImageLibraryAsync({
+        mediaTypes: ImagePickerExpo.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1], // Square aspect ratio for logo
+        quality: IMAGE_CONFIG.quality,
+        base64: false,
+      });
 
       if (!result.canceled && result.assets[0]) {
         let imageUri = result.assets[0].uri;
@@ -235,72 +221,9 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
     }
   };
 
-  const takePhoto = async () => {
-    try {
-      const hasPermission = await requestPermissions();
-      if (!hasPermission) return;
-
-      const { status } = await ImagePickerExpo.requestCameraPermissionsAsync();
-      if (status !== "granted") {
-        showAlert({
-          title: "Permisos requeridos",
-          message: "Necesitamos permisos para acceder a tu cámara.",
-        });
-        return;
-      }
-
-      setUploading(true);
-
-      const result = await ImagePickerExpo.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [1, 1], // Square aspect ratio for logo
-        quality: IMAGE_CONFIG.quality,
-        base64: false,
-      });
-
-      if (!result.canceled && result.assets[0]) {
-        let imageUri = result.assets[0].uri;
-
-        // Compress and resize the image
-        if (Platform.OS === "web") {
-          // Use the advanced resizer for web
-          imageUri = await resizeAndCompressImage(imageUri);
-          imageUri = await checkAndOptimizeFileSize(imageUri);
-        } else {
-          // For mobile, expo-image-picker handles the compression with quality setting
-          // The allowsEditing and quality parameters provide basic optimization
-          imageUri = await checkAndOptimizeFileSize(imageUri);
-        }
-
-        onImageSelect(imageUri);
-      }
-    } catch (error) {
-      console.error("Error taking photo:", error);
-      showAlert({
-        title: "Error",
-        message: "No se pudo tomar la foto",
-      });
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const showImageSourceOptions = () => {
-    if (Platform.OS === "web") {
-      // On web, only show gallery option
-      pickImage();
-    } else {
-      // On mobile, show both options
-      showAlert({
-        title: "Seleccionar imagen",
-        message: "¿Cómo quieres agregar tu logo?",
-        buttons: [
-          { text: "Galería", onPress: pickImage },
-          { text: "Cámara", onPress: takePhoto },
-          { text: "Cancelar", style: "cancel" },
-        ],
-      });
-    }
+    // For both web and mobile, just use the gallery picker like in CustomerProfileScreen
+    pickImage();
   };
 
   const removeImage = () => {
@@ -352,7 +275,7 @@ export const ImagePicker: React.FC<ImagePickerProps> = ({ label, value, onImageS
           <View style={styles.placeholderContainer}>
             <Ionicons name={isUploading ? "cloud-upload" : "camera"} size={40} color={COLORS.textSecondary} />
             <Text style={styles.placeholderText}>{isUploading ? "Procesando imagen..." : placeholder}</Text>
-            <Text style={styles.placeholderSubtext}>{isUploading ? "Optimizando tamaño y calidad..." : `Toca para ${Platform.OS === "web" ? "seleccionar" : "seleccionar o tomar una foto"}`}</Text>
+            <Text style={styles.placeholderSubtext}>{isUploading ? "Optimizando tamaño y calidad..." : "Toca para seleccionar una imagen"}</Text>
           </View>
         )}
       </TouchableOpacity>

@@ -362,8 +362,7 @@ export const CustomerProfileScreen: React.FC<CustomerProfileScreenProps> = ({ na
               </View>
             </TouchableOpacity>
             <Text style={styles.userName}>{user?.displayName}</Text>
-            <Text style={styles.userEmail}>{user?.email}</Text>
-            <Text style={styles.memberSince}>Casero desde {new Date(user?.createdAt || new Date()).toLocaleDateString("es-ES", { month: "long", year: "numeric" })}</Text>
+            <Text style={styles.memberSince}>Casero desde {new Date(user?.createdAt || new Date()).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}</Text>
           </View>
           {/* Stats Section */}
           <View style={styles.section}>

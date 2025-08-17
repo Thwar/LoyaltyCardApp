@@ -7,8 +7,12 @@ import { BusinessService } from "./businessService";
 export class LoyaltyCardService {
   static async createLoyaltyCard(cardData: Omit<LoyaltyCard, "id" | "createdAt">): Promise<LoyaltyCard> {
     if (!auth.currentUser) throw new Error("El usuario debe estar autenticado para crear una tarjeta de fidelidad");
-    const cleanData = Object.fromEntries(Object.entries(cardData).filter(([_, v]) => v !== undefined && v !== ""));
-    const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), { ...cleanData, ownerId: auth.currentUser.uid, createdAt: serverTimestamp() });
+    const cleanData = Object.fromEntries(Object.entries(cardData).filter(([_, v]) => v !== undefined && v !== "")) as Partial<LoyaltyCard>;
+    if (!cleanData.businessId) throw new Error("businessId es requerido");
+    const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS), {
+      ...cleanData,
+      createdAt: serverTimestamp(),
+    });
     return { id: docRef.id, ...cardData, createdAt: new Date() };
   }
 
