@@ -1,4 +1,10 @@
-# Push Notifications & Sound Effects Documentation
+# Push Notifications & Sound Effects Document#### SoundService (`src/services/soundService.ts`)
+
+- Manages audio playback using Expo AV
+- Loads and plays custom MP3 sound files from `assets/sounds/`
+- Provides `success.mp3` sound for stamp additions
+- Provides `complete.mp3` sound for card completions and reward redemptions
+- Handles audio initialization and cleanup
 
 ## Overview
 
@@ -15,10 +21,11 @@ This document describes the push notification and sound effect features added to
 
 ### 🔊 Sound Effects
 
-- **Success sound** played when a stamp is added
-- **Completion chime** played when a loyalty card is completed or reward is redeemed
-- **Programmatically generated sounds** (no external audio files needed)
+- **Success sound** played when a stamp is added (using `success.mp3`)
+- **Completion chime** played when a loyalty card is completed or reward is redeemed (using `complete.mp3`)
+- **Custom MP3 audio files** from `assets/sounds/` directory
 - **Cross-platform compatibility** (iOS, Android, Web)
+- **Notification sounds** match in-app sound effects for consistent experience
 
 ## Technical Implementation
 
@@ -119,7 +126,7 @@ This document describes the push notification and sound effect features added to
     [
       "expo-notifications",
       {
-        "icon": "./assets/notification-icon.png",
+        "icon": "./assets/icon.png",
         "color": "#ffffff",
         "defaultChannel": "default"
       }

@@ -53,33 +53,46 @@ export class NotificationService {
       let token: string | null = null;
 
       if (Platform.OS === "android") {
-        // Create notification channel for Android
+        // Create notification channel for Android with custom sound
         await Notifications.setNotificationChannelAsync("default", {
           name: "Default Notifications",
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF231F7C",
-          sound: "default",
+          sound: "success.mp3", // Use custom success sound
           enableLights: true,
           enableVibrate: true,
           lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
           bypassDnd: true,
         });
 
-        // Create a high priority channel for stamp notifications
+        // Create a high priority channel for stamp notifications with custom sound
         await Notifications.setNotificationChannelAsync("stamps", {
           name: "Stamp Notifications",
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF231F7C",
-          sound: "default",
+          sound: "success.mp3", // Use custom success sound for stamps
           enableLights: true,
           enableVibrate: true,
           lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
           bypassDnd: true,
         });
 
-        console.log("Android notification channels created");
+        // Create a completion channel for when cards are completed
+        await Notifications.setNotificationChannelAsync("completion", {
+          name: "Card Completion Notifications",
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250],
+          lightColor: "#FF231F7C",
+          sound: "complete.mp3", // Use custom complete sound for completion
+          enableLights: true,
+          enableVibrate: true,
+          lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+          bypassDnd: true,
+        });
+
+        console.log("Android notification channels created with custom sounds");
       }
 
       if (Device.isDevice) {
@@ -241,7 +254,7 @@ export class NotificationService {
             isCompleted,
             customerName,
           },
-          sound: true,
+          sound: isCompleted ? "complete.mp3" : "success.mp3", // Use appropriate sound
           priority: Notifications.AndroidNotificationPriority.MAX,
           vibrate: [0, 250, 250, 250],
           categoryIdentifier: "stamp_notification",
@@ -274,7 +287,7 @@ export class NotificationService {
             businessName,
             type: "reward_redeemed",
           },
-          sound: true,
+          sound: "complete.mp3", // Use complete sound for reward redemption
           priority: Notifications.AndroidNotificationPriority.HIGH,
           vibrate: [0, 250, 250, 250],
         },
@@ -317,7 +330,7 @@ export class NotificationService {
         content: {
           title: "🧪 Test Notification",
           body: "If you see this, notifications are working!",
-          sound: true,
+          sound: "success.mp3", // Use custom success sound
           priority: Notifications.AndroidNotificationPriority.MAX,
           vibrate: [0, 250, 250, 250],
         },

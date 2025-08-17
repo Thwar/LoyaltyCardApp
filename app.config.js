@@ -32,14 +32,18 @@ export default ({ config }) => {
       [
         "expo-notifications",
         {
-          icon: "./assets/notification-icon.png",
+          icon: "./assets/icon.png",
           color: "#ffffff",
           defaultChannel: "default",
+          sounds: [
+            "./assets/sounds/success.mp3",
+            "./assets/sounds/complete.mp3"
+          ]
         },
       ],
     ],
     splash: {
-      image: "./assets/splash-icon.png",
+      image: "./assets/icon.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
@@ -67,7 +71,7 @@ export default ({ config }) => {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/icon.png",
         backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
