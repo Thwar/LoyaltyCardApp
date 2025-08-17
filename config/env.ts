@@ -101,21 +101,21 @@ const APP_ENV = getEnvironment();
 
 // Environment-specific configurations
 const developmentConfig: Partial<EnvConfig> = {
-  API_BASE_URL: "http://localhost:3000/api",
+  API_BASE_URL: "https://www.caseroapp.com/api",
   ENABLE_DEBUG_LOGS: true,
   ENABLE_ANALYTICS: false,
   ENABLE_CRASH_REPORTING: false,
 };
 
 const stagingConfig: Partial<EnvConfig> = {
-  API_BASE_URL: "https://staging-api.yourapp.com/api",
+  API_BASE_URL: "https://www.caseroapp.com/api",
   ENABLE_DEBUG_LOGS: true,
   ENABLE_ANALYTICS: true,
   ENABLE_CRASH_REPORTING: true,
 };
 
 const productionConfig: Partial<EnvConfig> = {
-  API_BASE_URL: "https://api.yourapp.com/api",
+  API_BASE_URL: "https://www.caseroapp.com/api",
   ENABLE_DEBUG_LOGS: false,
   ENABLE_ANALYTICS: true,
   ENABLE_CRASH_REPORTING: true,

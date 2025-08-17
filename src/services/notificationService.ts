@@ -6,11 +6,10 @@ import Constants from "expo-constants";
 // Configure notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
     shouldShowBanner: true,
     shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
   }),
 });
 
@@ -23,7 +22,12 @@ export interface StampNotificationData {
 }
 
 export class NotificationService {
-  private static readonly API_BASE_URL = (typeof window !== "undefined" && (window as any).__API_BASE_URL__) || (Constants.expoConfig?.extra as any)?.API_BASE_URL || "";
+  private static readonly API_BASE_URL = (typeof window !== "undefined" && (window as any).__API_BASE_URL__) || (Constants.expoConfig?.extra as any)?.API_BASE_URL || "https://www.caseroapp.com/api"; // Fallback to your deployed API
+
+  // Check if API is configured
+  private static isApiConfigured(): boolean {
+    return this.API_BASE_URL !== "";
+  }
 
   // Register for push notifications (only works on mobile devices)
   static async registerForPushNotificationsAsync(): Promise<string | null> {
@@ -136,8 +140,53 @@ export class NotificationService {
   // Send push notifications via server (works from web and mobile)
   static async sendPushNotification(pushTokens: string[], title: string, body: string, data?: any): Promise<boolean> {
     try {
+      // Check if API is configured
+      if (!this.isApiConfigured()) {
+        console.warn("API_BASE_URL not configured. Skipping server push notifications.");
+        console.log("Push tokens would be sent to:", pushTokens);
+        console.log("Notification:", { title, body, data });
+        return false;
+      }
+
+      const apiUrl = `${this.API_BASE_URL}/send-push-notification`;
+      console.log("=== PUSH NOTIFICATION DEBUG START ===");
+      console.log("API_BASE_URL:", this.API_BASE_URL);
+      console.log("Full API URL:", apiUrl);
+      console.log("Platform:", Platform.OS);
+      console.log("Device info:", Device);
+      console.log("Push tokens count:", pushTokens.length);
+      console.log("Push tokens:", pushTokens);
+      console.log(
+        "Request payload:",
+        JSON.stringify(
+          {
+            pushTokens,
+            title,
+            body,
+            data,
+          },
+          null,
+          2
+        )
+      );
+
+      // Test basic connectivity first
+      console.log("Testing basic connectivity to domain...");
+      try {
+        const connectivityTest = await fetch(this.API_BASE_URL.replace("/api", ""), {
+          method: "HEAD",
+          mode: "no-cors",
+        });
+        console.log("Basic connectivity test completed");
+      } catch (connectError) {
+        console.error("Basic connectivity test failed:", connectError);
+      }
+
+      const requestStart = Date.now();
+      console.log("Making fetch request at:", new Date().toISOString());
+
       // This works from any platform - web, iOS, Android
-      const response = await fetch(`${this.API_BASE_URL}/api/send-push-notification`, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -150,21 +199,58 @@ export class NotificationService {
         }),
       });
 
+      const requestDuration = Date.now() - requestStart;
+      console.log("Response received after:", requestDuration, "ms");
+      console.log("Response status:", response.status);
+      console.log("Response statusText:", response.statusText);
+      console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}, statusText: ${response.statusText}`);
       }
 
       const result = await response.json();
+      console.log("Response JSON:", result);
 
       if (result.success) {
         console.log("Push notifications sent successfully");
+        console.log("=== PUSH NOTIFICATION DEBUG END (SUCCESS) ===");
         return true;
       } else {
         console.error("Failed to send push notifications:", result.error);
+        console.log("=== PUSH NOTIFICATION DEBUG END (API ERROR) ===");
         return false;
       }
     } catch (error) {
+      console.log("=== PUSH NOTIFICATION DEBUG END (EXCEPTION) ===");
       console.error("Error sending push notifications:", error);
+
+      // More detailed error logging
+      if (error instanceof TypeError && error.message === "Network request failed") {
+        console.error("NETWORK ERROR DETAILS:");
+        console.error("- This usually means the device cannot reach the server");
+        console.error("- Check internet connection");
+        console.error("- Verify API URL is accessible:", `${this.API_BASE_URL}/send-push-notification`);
+        console.error("- Check if CORS is properly configured on the server");
+        console.error("- Verify the server is running and accessible");
+      }
+
+      if (error instanceof Error) {
+        console.error("Error name:", error.name);
+        console.error("Error message:", error.message);
+        console.error("Error stack:", error.stack);
+      }
+
+      // Fallback: if we're on mobile and server call fails, try local notification
+      if (Platform.OS !== "web" && Device.isDevice) {
+        console.log("Server push failed, falling back to local notification on mobile");
+        try {
+          await this.scheduleLocalNotification(title, body, data);
+          return true;
+        } catch (localError) {
+          console.error("Local notification fallback also failed:", localError);
+        }
+      }
 
       return false;
     }
@@ -214,6 +300,73 @@ export class NotificationService {
     } catch (error) {
       console.error("Error sending notification to customer:", error);
       return false;
+    }
+  }
+
+  // Test API connectivity (for debugging)
+  static async testApiConnectivity(): Promise<void> {
+    console.log("=== API CONNECTIVITY TEST ===");
+    console.log("API_BASE_URL:", this.API_BASE_URL);
+
+    if (!this.isApiConfigured()) {
+      console.error("API not configured!");
+      return;
+    }
+
+    try {
+      // Test 1: Basic domain connectivity
+      const domain = this.API_BASE_URL.replace("/api", "");
+      console.log("Testing domain connectivity to:", domain);
+
+      const basicTest = await fetch(domain, {
+        method: "HEAD",
+        mode: "no-cors",
+      });
+      console.log("Domain connectivity: OK");
+
+      // Test 2: API endpoint with simple GET (if it supports it)
+      console.log("Testing API endpoint:", `${this.API_BASE_URL}/send-push-notification`);
+
+      const apiTest = await fetch(`${this.API_BASE_URL}/send-push-notification`, {
+        method: "GET",
+      });
+      console.log("API endpoint response status:", apiTest.status);
+    } catch (error) {
+      console.error("Connectivity test failed:", error);
+    }
+    console.log("=== API CONNECTIVITY TEST END ===");
+  }
+
+  // Generic local notification method (fallback for when server push fails)
+  static async scheduleLocalNotification(title: string, body: string, data?: any): Promise<void> {
+    try {
+      // Check if we're on web platform - notifications are not supported
+      if (Platform.OS === "web") {
+        console.log("Local notifications not supported on web platform");
+        return;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title,
+          body,
+          data: data || {},
+          sound: "success.mp3",
+          priority: Notifications.AndroidNotificationPriority.MAX,
+          vibrate: [0, 250, 250, 250],
+          autoDismiss: false,
+          // iOS specific properties
+          badge: 1,
+          categoryIdentifier: "general",
+        },
+        trigger: null, // Show immediately
+        identifier: `notification_${Date.now()}`,
+      });
+
+      console.log("Local notification scheduled successfully");
+    } catch (error) {
+      console.error("Error scheduling local notification:", error);
+      throw error;
     }
   }
 

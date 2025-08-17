@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "LoyaltyCardApp",
-    "slug": "LoyaltyCardApp",
+    "name": "CaseroApp",
+    "slug": "CaseroApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,7 +19,7 @@
         "react-native-fbsdk-next",
         {
           "appID": "1119577610065940",
-          "displayName": "LoyaltyCardApp",
+          "displayName": "CaseroApp",
           "scheme": "fb1119577610065940",
           "advertiserIDCollectionEnabled": false,
           "autoLogAppEventsEnabled": false,
@@ -68,7 +68,7 @@
           }
         ]
       },
-      "bundleIdentifier": "com.thwar077.LoyaltyCardApp",
+      "bundleIdentifier": "com.thwar077.CaseroApp",
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
@@ -87,7 +87,7 @@
         "android.permission.POST_NOTIFICATIONS",
         "com.android.alarm.permission.SET_ALARM"
       ],
-      "package": "com.thwar077.LoyaltyCardApp",
+      "package": "com.thwar077.CaseroApp",
       "googleServicesFile": "./android/app/google-services.json",
       "intentFilters": [
         {

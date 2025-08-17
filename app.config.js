@@ -15,8 +15,8 @@ export default ({ config }) => {
 
   return {
     ...config,
-    name: process.env.APP_NAME || "LoyaltyCardApp",
-    slug: "LoyaltyCardApp",
+    name: process.env.APP_NAME || "CaseroApp",
+    slug: "CaseroApp",
     version: process.env.APP_VERSION || "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -34,7 +34,7 @@ export default ({ config }) => {
         "react-native-fbsdk-next",
         {
           appID: FACEBOOK_APP_ID,
-          displayName: process.env.APP_NAME || "LoyaltyCardApp",
+          displayName: process.env.APP_NAME || "CaseroApp",
           scheme: `fb${FACEBOOK_APP_ID}`,
           advertiserIDCollectionEnabled: false,
           autoLogAppEventsEnabled: false,
@@ -49,6 +49,9 @@ export default ({ config }) => {
           color: "#ffffff",
           defaultChannel: "default",
           sounds: ["./assets/sounds/success.mp3", "./assets/sounds/complete.mp3"],
+          // iOS specific notification settings
+          iosDisplayInForeground: true,
+          mode: "production", // or "development"
         },
       ],
     ],
@@ -60,6 +63,7 @@ export default ({ config }) => {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
+      icon: "./assets/icon.png",
       infoPlist: {
         NSCameraUsageDescription: "Esta aplicación necesita acceso a la cámara para tomar fotos del logo de tu negocio.",
         NSPhotoLibraryUsageDescription: "Esta aplicación necesita acceso a tu galería de fotos para seleccionar el logo de tu negocio.",
@@ -80,7 +84,7 @@ export default ({ config }) => {
           },
         ],
       },
-      bundleIdentifier: "com.thwar077.LoyaltyCardApp",
+      bundleIdentifier: "com.thwar077.CaseroApp",
       googleServicesFile: "./GoogleService-Info.plist",
     },
     android: {
@@ -97,7 +101,7 @@ export default ({ config }) => {
         "android.permission.POST_NOTIFICATIONS",
         "com.android.alarm.permission.SET_ALARM",
       ],
-      package: "com.thwar077.LoyaltyCardApp",
+      package: "com.thwar077.CaseroApp",
       googleServicesFile: "./android/app/google-services.json",
       intentFilters: [
         {
@@ -125,7 +129,7 @@ export default ({ config }) => {
       },
       // Environment variables to be accessible in the app
       APP_ENV: process.env.APP_ENV || (isDev ? "development" : "production"),
-      APP_NAME: process.env.APP_NAME || "LoyaltyCardApp",
+      APP_NAME: process.env.APP_NAME || "CaseroApp",
       APP_VERSION: process.env.APP_VERSION || "1.0.0",
 
       // Firebase Configuration
@@ -138,7 +142,7 @@ export default ({ config }) => {
       FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID,
 
       // API Configuration
-      API_BASE_URL: process.env.API_BASE_URL,
+      API_BASE_URL: process.env.API_BASE_URL || "https://www.caseroapp.com/api",
       API_TIMEOUT: process.env.API_TIMEOUT,
 
       // Feature Flags
