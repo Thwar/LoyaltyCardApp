@@ -254,16 +254,26 @@ export class AuthService {
             email,
             displayName,
             hasProfileImage: !!profileImage,
+            emailSource: firebaseUser.email ? "firebase" : facebookProfile?.email ? "facebook" : "none",
           });
           
-          if (!email || !displayName) {
-            console.error("Missing required user data:", { email, displayName });
+          // Check if we have at least a display name (email is optional for Facebook users)
+          if (!displayName) {
+            console.error("Missing required display name:", { email, displayName });
             await signOut(auth);
-            throw new Error("No se pudo obtener la información completa del perfil de Facebook. Por favor intenta de nuevo.");
+            throw new Error("No se pudo obtener el nombre del perfil de Facebook. Por favor intenta de nuevo.");
+          }
+          
+          // For Facebook users without email, we'll use a placeholder email or generate one
+          let finalEmail = email;
+          if (!finalEmail) {
+            // Generate a placeholder email using the Firebase UID
+            finalEmail = `facebook_${firebaseUser.uid}@placeholder.local`;
+            console.log("Generated placeholder email for Facebook user without email:", finalEmail);
           }
           
           const userData: Omit<User, "id"> = {
-            email,
+            email: finalEmail,
             displayName,
             userType: "customer",
             createdAt: new Date(),
@@ -278,14 +288,18 @@ export class AuthService {
             profileImage: userData.profileImage,
           });
           
-          // Send welcome email with the profile data
-          EmailService.sendWelcomeEmail({ 
-            email: userData.email, 
-            displayName: userData.displayName, 
-            userType: userData.userType 
-          }).catch((emailError) => {
-            console.error("Failed to send welcome email:", emailError);
-          });
+          // Send welcome email only if we have a real email address
+          if (email && !email.includes("@placeholder.local")) {
+            EmailService.sendWelcomeEmail({ 
+              email: userData.email, 
+              displayName: userData.displayName, 
+              userType: userData.userType 
+            }).catch((emailError) => {
+              console.error("Failed to send welcome email:", emailError);
+            });
+          } else {
+            console.log("Skipping welcome email for Facebook user without email");
+          }
           
           return { id: firebaseUser.uid, ...userData };
         } else {

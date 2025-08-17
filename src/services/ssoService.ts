@@ -168,90 +168,95 @@ export class SSOService {
   // Fetch Facebook user profile
   static async fetchFacebookProfile(accessToken: string): Promise<{ email?: string; name?: string; picture?: string }> {
     try {
+      console.log("Fetching Facebook profile with access token");
       const response = await fetch(
         `https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${accessToken}`
       );
       
       if (!response.ok) {
-        throw new Error(`Facebook API error: ${response.status}`);
+        const errorText = await response.text();
+        console.error("Facebook API error response:", errorText);
+        throw new Error(`Facebook API error: ${response.status} - ${errorText}`);
       }
       
       const profile = await response.json();
       console.log("Facebook profile fetched:", {
+        hasId: !!profile.id,
         hasEmail: !!profile.email,
         hasName: !!profile.name,
         hasPicture: !!profile.picture?.data?.url,
+        emailValue: profile.email || "not provided",
       });
       
+      // Facebook sometimes doesn't return email even when requested
+      if (!profile.email) {
+        console.warn("Facebook did not provide email address - this is common due to privacy settings");
+      }
+      
       return {
-        email: profile.email,
-        name: profile.name,
-        picture: profile.picture?.data?.url,
+        email: profile.email || undefined,
+        name: profile.name || undefined,
+        picture: profile.picture?.data?.url || undefined,
       };
     } catch (error) {
       console.error("Error fetching Facebook profile:", error);
-      throw error;
+      // Don't throw here - return empty object so authentication can continue
+      console.warn("Continuing Facebook authentication without profile data");
+      return {};
     }
   }
 
   // Facebook Sign-In for Web
   static async signInWithFacebookWeb(): Promise<UserCredential & { facebookProfile?: any }> {
     try {
-      console.log("Starting Facebook Web Sign-In");
+      console.log("Starting Facebook Web Sign-In with Firebase popup");
 
-      // Create specific redirect URI for web
-      const redirectUri = AuthSession.makeRedirectUri({
-        preferLocalhost: true,
-        scheme: undefined, // Let it use the default web scheme
+      // Configure Facebook provider with additional scopes
+      facebookProvider.addScope('email');
+      facebookProvider.addScope('public_profile');
+      
+      // Set custom parameters for better user experience
+      facebookProvider.setCustomParameters({
+        display: 'popup'
       });
 
-      console.log("Facebook Web Redirect URI:", redirectUri);
+      // Use Firebase's built-in popup method
+      const result = await signInWithPopup(auth, facebookProvider);
+      console.log("Firebase Facebook sign-in successful");
 
-      // Create auth request with proper configuration
-      const request = new AuthSession.AuthRequest({
-        clientId: FACEBOOK_CONFIG.appId,
-        scopes: ["public_profile", "email"],
-        responseType: AuthSession.ResponseType.Token,
-        redirectUri,
-        // Add additional parameters for web
-        extraParams: {},
-        prompt: AuthSession.Prompt.SelectAccount,
-      });
+      // Extract access token from the credential
+      const credential = FacebookAuthProvider.credentialFromResult(result);
+      const accessToken = credential?.accessToken;
 
-      const discovery = {
-        authorizationEndpoint: "https://www.facebook.com/v19.0/dialog/oauth",
-      };
-
-      console.log("Prompting Facebook login...");
-      const result = await request.promptAsync(discovery);
-
-      console.log("Facebook auth result:", result.type);
-
-      if (result.type === "success" && result.params.access_token) {
-        console.log("Facebook login successful, fetching user profile");
-        
-        // Fetch user profile from Facebook
-        const facebookProfile = await this.fetchFacebookProfile(result.params.access_token);
-        
-        // Create Firebase credential
-        const facebookCredential = FacebookAuthProvider.credential(result.params.access_token);
-
-        // Sign in with Firebase
-        const firebaseResult = await signInWithCredential(auth, facebookCredential);
-        console.log("Firebase sign-in successful");
-        
-        // Attach the profile data for later use
-        (firebaseResult as any).facebookProfile = facebookProfile;
-        
-        return firebaseResult as UserCredential & { facebookProfile?: any };
-      } else if (result.type === "cancel") {
-        throw new Error("Inicio de sesión con Facebook cancelado");
-      } else {
-        console.error("Facebook login failed:", result);
-        throw new Error("Error en el inicio de sesión con Facebook");
+      let facebookProfile = null;
+      if (accessToken) {
+        try {
+          // Fetch additional profile data from Facebook Graph API
+          facebookProfile = await this.fetchFacebookProfile(accessToken);
+        } catch (profileError) {
+          console.warn("Could not fetch Facebook profile data:", profileError);
+          // Continue without additional profile data
+        }
       }
+
+      // Attach the profile data for later use
+      (result as any).facebookProfile = facebookProfile;
+      
+      return result as UserCredential & { facebookProfile?: any };
     } catch (error: any) {
       console.error("Facebook Sign-In Web error:", error);
+      
+      // Handle specific Firebase errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        throw new Error("Inicio de sesión con Facebook cancelado");
+      } else if (error.code === 'auth/popup-blocked') {
+        throw new Error("El navegador bloqueó la ventana emergente. Por favor permite ventanas emergentes para este sitio e intenta de nuevo.");
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        throw new Error("Inicio de sesión con Facebook cancelado");
+      } else if (error.code === 'auth/account-exists-with-different-credential') {
+        throw new Error("Ya existe una cuenta con esta dirección de correo electrónico pero con un método de inicio de sesión diferente.");
+      }
+      
       throw new Error(error.message || "Error al iniciar sesión con Facebook");
     }
   }
@@ -275,9 +280,10 @@ export class SSOService {
         scopes: ["public_profile", "email"],
         responseType: AuthSession.ResponseType.Token,
         redirectUri,
-        // Add additional parameters for better compatibility
+        // Add additional parameters for better compatibility and email access
         extraParams: {
           display: "popup",
+          auth_type: "rerequest", // Force re-request of permissions
         },
       });
 
@@ -293,8 +299,14 @@ export class SSOService {
       if (result.type === "success" && result.params.access_token) {
         console.log("Facebook native login successful, fetching user profile");
         
-        // Fetch user profile from Facebook
-        const facebookProfile = await this.fetchFacebookProfile(result.params.access_token);
+        // Fetch user profile from Facebook with explicit field request
+        let facebookProfile = null;
+        try {
+          facebookProfile = await this.fetchFacebookProfile(result.params.access_token);
+        } catch (profileError) {
+          console.warn("Could not fetch Facebook profile data:", profileError);
+          // Continue with basic data from Firebase
+        }
         
         // Create Firebase credential
         const facebookCredential = FacebookAuthProvider.credential(result.params.access_token);
@@ -303,8 +315,23 @@ export class SSOService {
         const firebaseResult = await signInWithCredential(auth, facebookCredential);
         console.log("Firebase sign-in successful");
         
-        // Attach the profile data for later use
-        (firebaseResult as any).facebookProfile = facebookProfile;
+        // Enhanced profile data collection with fallbacks
+        const firebaseUser = firebaseResult.user;
+        const enhancedProfile = {
+          email: facebookProfile?.email || firebaseUser.email || "",
+          name: facebookProfile?.name || firebaseUser.displayName || "",
+          picture: facebookProfile?.picture || firebaseUser.photoURL || "",
+        };
+        
+        console.log("Enhanced Facebook profile data:", {
+          hasEmail: !!enhancedProfile.email,
+          hasName: !!enhancedProfile.name,
+          hasPicture: !!enhancedProfile.picture,
+          emailSource: facebookProfile?.email ? "facebook" : firebaseUser.email ? "firebase" : "none",
+        });
+        
+        // Attach the enhanced profile data for later use
+        (firebaseResult as any).facebookProfile = enhancedProfile;
         
         return firebaseResult as UserCredential & { facebookProfile?: any };
       } else if (result.type === "cancel") {
