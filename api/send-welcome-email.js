@@ -773,7 +773,7 @@ module.exports = async (req, res) => {
         },
       ],
       from: {
-        email: "admin@caseroaoo.com",
+        email: "admin@caseroapp.com",
         name: "CaseroApp",
       },
       content: [
