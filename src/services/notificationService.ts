@@ -23,10 +23,7 @@ export interface StampNotificationData {
 }
 
 export class NotificationService {
-  private static readonly API_BASE_URL =
-    process.env.NODE_ENV === "production"
-      ? "" // Use same origin in production to avoid CORS issues
-      : "https://caseroapp-thomas-projects-09adf0ba.vercel.app"; // Use deployed Vercel app for development
+  private static readonly API_BASE_URL = (typeof window !== "undefined" && (window as any).__API_BASE_URL__) || (Constants.expoConfig?.extra as any)?.API_BASE_URL || "";
 
   // Register for push notifications (only works on mobile devices)
   static async registerForPushNotificationsAsync(): Promise<string | null> {

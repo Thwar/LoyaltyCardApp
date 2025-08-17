@@ -4,25 +4,24 @@ import { auth, googleProvider, facebookProvider } from "./firebase";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
+import env from "../../config/env";
 
 // Configure WebBrowser for auth sessions
 WebBrowser.maybeCompleteAuthSession();
 
 // Google Sign-In Configuration
 const GOOGLE_CONFIG = {
-  // Web client ID from Android google-services.json (client_type: 3)
-  webClientId: "853612097033-6nqf00qv5ei37ggspu0g1abqauposvb0.apps.googleusercontent.com",
-  // Android client ID from google-services.json (client_type: 1) - Updated with correct SHA-1
-  androidClientId: "853612097033-c14lg164nqpb27ikaoef88q397d80nho.apps.googleusercontent.com",
-  // iOS client ID from GoogleService-Info.plist (CLIENT_ID)
-  iosClientId: "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com",
+  webClientId: env.GOOGLE_WEB_CLIENT_ID || undefined,
+  // Keep these optional; some flows only need webClientId
+  androidClientId: undefined as string | undefined,
+  iosClientId: undefined as string | undefined,
 };
 
 // Facebook App Configuration
 const FACEBOOK_CONFIG = {
-  appId: "1119577610065940",
-  clientToken: "1c3d3fd5ca4c067a37377d3de3fb583f",
-  appName: "LoyaltyCardApp",
+  appId: env.FACEBOOK_APP_ID,
+  clientToken: env.FACEBOOK_CLIENT_TOKEN,
+  appName: env.APP_NAME,
 };
 
 export class SSOService {
@@ -39,7 +38,7 @@ export class SSOService {
         };
 
         // Platform-specific configuration
-        if (Platform.OS === "ios") {
+        if (Platform.OS === "ios" && GOOGLE_CONFIG.iosClientId) {
           config.iosClientId = GOOGLE_CONFIG.iosClientId;
         }
 
@@ -273,8 +272,11 @@ export class SSOService {
       console.log("Facebook Native Redirect URI:", redirectUri);
 
       // For React Native, we'll use expo-auth-session with Facebook
+      if (!FACEBOOK_CONFIG.appId) {
+        throw new Error("Facebook App ID is not configured. Set FACEBOOK_APP_ID in your environment.");
+      }
       const request = new AuthSession.AuthRequest({
-        clientId: FACEBOOK_CONFIG.appId,
+        clientId: FACEBOOK_CONFIG.appId as string,
         scopes: ["public_profile", "email"],
         responseType: AuthSession.ResponseType.Token,
         redirectUri,

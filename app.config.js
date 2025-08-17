@@ -11,6 +11,7 @@ require("dotenv").config();
 export default ({ config }) => {
   const isDev = process.env.NODE_ENV === "development";
   const isProduction = process.env.APP_ENV === "production";
+  const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "1119577610065940"; // fallback for dev only
 
   return {
     ...config,
@@ -27,6 +28,18 @@ export default ({ config }) => {
         "@react-native-google-signin/google-signin",
         {
           iosUrlScheme: "com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba",
+        },
+      ],
+      [
+        "react-native-fbsdk-next",
+        {
+          appID: FACEBOOK_APP_ID,
+          displayName: process.env.APP_NAME || "LoyaltyCardApp",
+          scheme: `fb${FACEBOOK_APP_ID}`,
+          advertiserIDCollectionEnabled: false,
+          autoLogAppEventsEnabled: false,
+          isAutoInitEnabled: true,
+          iosUserTrackingPermission: "This identifier will be used to deliver personalized ads to you.",
         },
       ],
       [
@@ -61,6 +74,10 @@ export default ({ config }) => {
             CFBundleURLSchemes: ["com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba"],
           },
           {
+            CFBundleURLName: "facebook",
+            CFBundleURLSchemes: [`fb${FACEBOOK_APP_ID}`],
+          },
+          {
             CFBundleURLName: "loyaltycardapp",
             CFBundleURLSchemes: ["loyaltycardapp"],
           },
@@ -77,8 +94,6 @@ export default ({ config }) => {
       edgeToEdgeEnabled: true,
       permissions: [
         "android.permission.CAMERA",
-        "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.VIBRATE",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.WAKE_LOCK",
@@ -95,6 +110,9 @@ export default ({ config }) => {
             {
               scheme: "loyaltycardapp",
             },
+            {
+              scheme: `fb${FACEBOOK_APP_ID}`,
+            },
           ],
           category: ["BROWSABLE", "DEFAULT"],
         },
@@ -103,7 +121,7 @@ export default ({ config }) => {
     web: {
       favicon: "./assets/favicon.png",
     },
-    scheme: "loyaltycardapp",
+    scheme: ["loyaltycardapp", `fb${FACEBOOK_APP_ID}`],
     extra: {
       eas: {
         projectId: process.env.EXPO_PROJECT_ID || "20c6dc88-4b0c-4405-85e3-a0b7e343d220",

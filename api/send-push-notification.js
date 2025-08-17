@@ -4,6 +4,18 @@ const { Expo } = require("expo-server-sdk");
 const expo = new Expo();
 
 module.exports = async (req, res) => {
+  // Set CORS headers similar to send-welcome-email
+  res.setHeader("Access-Control-Allow-Credentials", true);
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET,OPTIONS,PATCH,DELETE,POST,PUT"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
+  );
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return res.status(200).json({});
@@ -12,7 +24,7 @@ module.exports = async (req, res) => {
   try {
     const { pushTokens, title, body, data } = req.body;
 
-    if (!pushTokens || !Array.isArray(pushTokens) || pushTokens.length === 0) {
+  if (!pushTokens || !Array.isArray(pushTokens) || pushTokens.length === 0) {
       return res.status(400).json({
         success: false,
         error: "pushTokens array is required",
