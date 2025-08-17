@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -29,15 +29,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
   });
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
-  // Timeout management
-  const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
-
-  // Function to clear all timeouts
-  const clearAllTimeouts = useCallback(() => {
-    timeoutRefs.current.forEach((timeout: NodeJS.Timeout) => clearTimeout(timeout));
-    timeoutRefs.current = [];
-  }, []);
 
   // Create dropdown options for stamps from 3 to 20
   const stampOptions = Array.from({ length: 18 }, (_, i) => ({
@@ -57,11 +48,6 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       });
     }
   }, [cardData, visible]);
-
-  // Cleanup timeouts on unmount
-  useEffect(() => {
-    return clearAllTimeouts;
-  }, [clearAllTimeouts]);
 
   const updateFormData = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -155,32 +141,43 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     }
   };
   const handleDeactivateCard = () => {
-    // Close the modal first, then show the alert
-    onClose();
+    console.log("🔴 handleDeactivateCard called");
 
-    // Use a small delay to ensure the modal is fully closed before showing the alert
-    const timeout = setTimeout(() => {
-      showAlert({
-        title: "Desactivar Tarjeta de Lealtad",
-        message: "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando.",
-        buttons: [
-          {
-            text: "Cancelar",
-            style: "cancel",
-            onPress: () => {
-              // If user cancels, we should potentially reopen the edit modal
-              // but for now, just stay closed
-            },
+    // For web, let's use the native browser confirm for now
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando."
+      );
+      if (confirmed) {
+        onClose();
+        confirmDeactivateCard();
+      }
+      return;
+    }
+
+    // For mobile - use our custom Alert
+    showAlert({
+      title: "Desactivar Tarjeta de Lealtad",
+      message: "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando.",
+      buttons: [
+        {
+          text: "Cancelar",
+          style: "cancel",
+          onPress: () => {
+            console.log("🔴 Cancel deactivate pressed");
           },
-          {
-            text: "Desactivar",
-            style: "destructive",
-            onPress: confirmDeactivateCard,
+        },
+        {
+          text: "Desactivar",
+          style: "destructive",
+          onPress: () => {
+            console.log("🔴 Confirm deactivate pressed");
+            onClose();
+            confirmDeactivateCard();
           },
-        ],
-      });
-    }, 100);
-    timeoutRefs.current.push(timeout);
+        },
+      ],
+    });
   };
 
   const confirmDeactivateCard = async () => {
@@ -213,33 +210,44 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
   };
 
   const handleDeleteCard = () => {
-    // Close the modal first, then show the alert
-    onClose();
+    console.log("🗑️ handleDeleteCard called");
 
-    // Use a small delay to ensure the modal is fully closed before showing the alert
-    const timeout = setTimeout(() => {
-      showAlert({
-        title: "Eliminar Tarjeta de Lealtad",
-        message:
-          "⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE la tarjeta de lealtad y TODOS los datos relacionados, incluyendo las tarjetas de clientes, sellos y actividades. Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro?",
-        buttons: [
-          {
-            text: "Cancelar",
-            style: "cancel",
-            onPress: () => {
-              // If user cancels, we should potentially reopen the edit modal
-              // but for now, just stay closed
-            },
+    // For web, let's use the native browser confirm for now
+    if (typeof window !== "undefined") {
+      const confirmed = window.confirm(
+        "⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE la tarjeta de lealtad y TODOS los datos relacionados, incluyendo las tarjetas de clientes, sellos y actividades. Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro?"
+      );
+      if (confirmed) {
+        onClose();
+        confirmDeleteCard();
+      }
+      return;
+    }
+
+    // For mobile - use our custom Alert
+    showAlert({
+      title: "Eliminar Tarjeta de Lealtad",
+      message:
+        "⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE la tarjeta de lealtad y TODOS los datos relacionados, incluyendo las tarjetas de clientes, sellos y actividades. Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro?",
+      buttons: [
+        {
+          text: "Cancelar",
+          style: "cancel",
+          onPress: () => {
+            console.log("🗑️ Cancel delete pressed");
           },
-          {
-            text: "ELIMINAR",
-            style: "destructive",
-            onPress: confirmDeleteCard,
+        },
+        {
+          text: "ELIMINAR",
+          style: "destructive",
+          onPress: () => {
+            console.log("🗑️ Confirm delete pressed");
+            onClose();
+            confirmDeleteCard();
           },
-        ],
-      });
-    }, 100);
-    timeoutRefs.current.push(timeout);
+        },
+      ],
+    });
   };
   const confirmDeleteCard = async () => {
     if (!loyaltyCard) return;

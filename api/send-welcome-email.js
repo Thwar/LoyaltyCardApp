@@ -9,122 +9,333 @@ const getBusinessWelcomeTemplate = (displayName) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bienvenido a CaseroApp</title>
+        <title>Bienvenido a CaseroApp - Tu Plataforma de Fidelización</title>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap');
             
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
             body {
-                font-family: 'Baloo Bhaijaan 2', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: 'Baloo Bhaijaan 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 line-height: 1.6;
-                color: #333;
+                color: #1a1a1a;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px 0;
+                min-height: 100vh;
+            }
+            
+            .email-wrapper {
                 max-width: 600px;
                 margin: 0 auto;
-                padding: 20px;
-                background-color: #E53935;
+                background: transparent;
             }
+            
             .container {
-                background-color: #ffffff;
-                padding: 40px;
-                border-radius: 12px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                background: #ffffff;
+                border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                margin: 20px;
             }
+            
             .header {
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                color: white;
+                padding: 40px 32px;
                 text-align: center;
-                margin-bottom: 30px;
-                padding-bottom: 20px;
-                border-bottom: 3px solid #E53935;
-            }
-            .logo-img {
-                max-width: 120px;
-                height: auto;
-                margin-bottom: 15px;
-            }
-            .logo {
-                font-size: 28px;
-                font-weight: 700;
-                color: #E53935;
-                margin-bottom: 10px;
-                font-family: 'Baloo Bhaijaan 2', sans-serif;
-            }
-            .welcome-title {
-                color: #2c3e50;
-                font-size: 24px;
-                margin-bottom: 20px;
-                text-align: center;
-                font-family: 'Baloo Bhaijaan 2', sans-serif;
-                font-weight: 600;
-            }
-            .content {
-                margin-bottom: 30px;
-            }
-            .highlight {
-                background-color: #ffebee;
-                padding: 20px;
-                border-radius: 8px;
-                border-left: 4px solid #E53935;
-                margin: 20px 0;
-            }
-            .features {
-                list-style: none;
-                padding: 0;
-            }
-            .features li {
-                padding: 10px 0;
-                border-bottom: 1px solid #eee;
                 position: relative;
-                padding-left: 30px;
             }
-            .features li:before {
-                content: "✅";
+            
+            .header::before {
+                content: '';
                 position: absolute;
+                bottom: 0;
                 left: 0;
-                top: 10px;
+                right: 0;
+                height: 20px;
+                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M1200 120L0 16.48V0h1200v120z" fill="%23ffffff"></path></svg>') no-repeat center bottom;
+                background-size: cover;
             }
-            .footer {
+            
+            .logo-container {
+                margin-bottom: 20px;
+            }
+            
+            .logo-img {
+                max-width: 250px;
+                height: auto;
+                filter: brightness(0) invert(1);
+                margin-bottom: 12px;
+            }
+            
+            .brand-name {
+                font-size: 32px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                letter-spacing: -0.02em;
+            }
+            
+            .brand-tagline {
+                font-size: 16px;
+                opacity: 0.9;
+                font-weight: 300;
+            }
+            
+            .content {
+                padding: 48px 32px;
+            }
+            
+            .welcome-title {
+                font-size: 28px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 24px;
                 text-align: center;
-                margin-top: 40px;
-                padding-top: 20px;
-                border-top: 1px solid #eee;
-                color: #666;
+                letter-spacing: -0.02em;
+            }
+            
+            .intro-text {
+                font-size: 16px;
+                color: #4a5568;
+                margin-bottom: 32px;
+                text-align: center;
+                line-height: 1.7;
+            }
+            
+            .highlight-box {
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                color: white;
+                padding: 24px;
+                border-radius: 12px;
+                margin: 32px 0;
+                text-align: center;
+            }
+            
+            .highlight-box h3 {
+                font-size: 20px;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            
+            .highlight-box p {
+                font-size: 15px;
+                opacity: 0.95;
+                line-height: 1.6;
+            }
+            
+            .features-section {
+                margin: 40px 0;
+            }
+            
+            .features-title {
+                font-size: 20px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 24px;
+                text-align: center;
+            }
+            
+            .features-grid {
+                display: grid;
+                gap: 16px;
+            }
+            
+            .feature-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 20px;
+                background: #f8fafc;
+                border-radius: 12px;
+                border-left: 4px solid #E53935;
+            }
+            
+            .feature-icon {
+                flex-shrink: 0;
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+            }
+            
+            .feature-content h4 {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 4px;
+            }
+            
+            .feature-content p {
                 font-size: 14px;
+                color: #64748b;
+                line-height: 1.5;
+            }
+            
+            .cta-section {
+                text-align: center;
+                margin: 40px 0;
+                padding: 32px;
+                background: #f8fafc;
+                border-radius: 12px;
+            }
+            
+            .cta-button {
+                display: inline-block;
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                color: white;
+                padding: 16px 32px;
+                border-radius: 10px;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 16px;
+                box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+                transition: transform 0.2s ease;
+            }
+            
+            .cta-button:hover {
+                transform: translateY(-2px);
+            }
+            
+            .footer {
+                background: #f8fafc;
+                padding: 32px;
+                text-align: center;
+                border-top: 1px solid #e2e8f0;
+            }
+            
+            .footer-content {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            
+            .footer h3 {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 12px;
+            }
+            
+            .footer p {
+                font-size: 14px;
+                color: #64748b;
+                margin-bottom: 8px;
+            }
+            
+            .footer-legal {
+                margin-top: 24px;
+                padding-top: 24px;
+                border-top: 1px solid #e2e8f0;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            
+            @media (max-width: 600px) {
+                .container {
+                    margin: 10px;
+                    border-radius: 12px;
+                }
+                
+                .header {
+                    padding: 32px 24px;
+                }
+                
+                .content {
+                    padding: 32px 24px;
+                }
+                
+                .brand-name {
+                    font-size: 28px;
+                }
+                
+                .welcome-title {
+                    font-size: 24px;
+                }
             }
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="header">
-                <img src="https://caseroapp-thomas-projects-09adf0ba.vercel.app/assets/logo-red.png" alt="CaseroApp Logo" class="logo-img" />
-                <div class="logo">CaseroApp</div>
-                <p style="color: #666; margin: 0;">Plataforma Empresarial de Fidelización</p>
-            </div>
-
-            <h1 class="welcome-title">¡Bienvenido, ${displayName}!</h1>
-
-            <div class="content">
-                <p>Nos complace darte la bienvenida a <strong>CaseroApp</strong>, la plataforma líder en soluciones de fidelización empresarial.</p>
-                
-                <div class="highlight">
-                    <p><strong>¡Felicidades por dar el primer paso hacia el crecimiento de tu negocio!</strong></p>
-                    <p>Ahora puedes crear programas de fidelización que transformarán visitantes ocasionales en clientes leales.</p>
+        <div class="email-wrapper">
+            <div class="container">
+                <div class="header">
+                    <div class="logo-container">
+                        <img src="https://caseroapp.com/landing/assets/logo.png" alt="CaseroApp Logo" class="logo-img" onerror="this.style.display='none';" />
+                        <div class="brand-tagline">Plataforma Empresarial de Fidelización</div>
+                    </div>
                 </div>
 
-                <h3 style="color: #E53935; font-family: 'Baloo Bhaijaan 2', sans-serif; font-weight: 600;">🚀 Lo que puedes hacer ahora:</h3>
-                <ul class="features">
-                    <li><strong>Crear tarjetas de fidelización personalizadas</strong> con tu marca y colores</li>
-                    <li><strong>Gestionar recompensas atractivas</strong> que incentiven el regreso de tus clientes</li>
-                    <li><strong>Seguimiento en tiempo real</strong> de la actividad de tus programas</li>
-                    <li><strong>Administrar clientes</strong> y ver estadísticas detalladas</li>
-                    <li><strong>Compartir fácilmente</strong> tus programas con códigos QR</li>
-                </ul>
-            </div>
+                <div class="content">
+                    <h1 class="welcome-title">¡Bienvenido, ${displayName}!</h1>
+                    
+                    <p class="intro-text">
+                        Nos complace darte la bienvenida a <strong>CaseroApp</strong>, la plataforma líder que revolucionará la forma en que conectas con tus clientes y haces crecer tu negocio.
+                    </p>
 
-            <div class="footer">
-                <p><strong>¡Gracias por confiar en CaseroApp!</strong></p>
-                <p>Estamos emocionados de ser parte del crecimiento de tu negocio.</p>
-                <p style="margin-top: 20px;">
-                    © 2025 CaseroApp. Todos los derechos reservados.<br>
-                    <small>Este es un email automático, por favor no respondas a este mensaje.</small>
-                </p>
+                    <div class="highlight-box">
+                        <h3>🎉 ¡Tu viaje hacia el éxito comienza aquí!</h3>
+                        <p>Acabas de unirte a miles de empresarios que han transformado visitantes ocasionales en clientes fieles usando nuestras herramientas de fidelización.</p>
+                    </div>
+
+                    <div class="features-section">
+                        <h2 class="features-title">🚀 Potencia tu negocio con CaseroApp</h2>
+                        <div class="features-grid">
+                            <div class="feature-item">
+                                <div class="feature-icon">🎨</div>
+                                <div class="feature-content">
+                                    <h4>Tarjetas Personalizadas</h4>
+                                    <p>Diseña tarjetas de fidelización únicas que reflejen tu marca con colores, logos y recompensas atractivas.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">🎁</div>
+                                <div class="feature-content">
+                                    <h4>Sistema de Recompensas</h4>
+                                    <p>Crea incentivos irresistibles que motiven a tus clientes a regresar una y otra vez.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">📊</div>
+                                <div class="feature-content">
+                                    <h4>Análisis en Tiempo Real</h4>
+                                    <p>Monitorea el progreso de tus programas y obtén insights valiosos sobre el comportamiento de tus clientes.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">📱</div>
+                                <div class="feature-content">
+                                    <h4>Código QR Inteligente</h4>
+                                    <p>Comparte tus programas fácilmente y permite a los clientes unirse con un simple escaneo.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="cta-section">
+                        <h3 style="margin-bottom: 16px; color: #1a1a1a;">¿Listo para comenzar?</h3>
+                        <p style="margin-bottom: 24px; color: #64748b;">Accede a tu cuenta y crea tu primer programa de fidelización en minutos.</p>
+                        <a href="www.caseroapp.com/web" class="cta-button">Iniciar Sesión</a>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <div class="footer-content">
+                        <h3>¡Bienvenido a la familia CaseroApp!</h3>
+                        <p>Estamos aquí para apoyarte en cada paso de tu crecimiento empresarial.</p>
+                        <p>Si tienes preguntas, nuestro equipo está listo para ayudarte.</p>
+                    </div>
+                    <div class="footer-legal">
+                        © 2025 CaseroApp. Todos los derechos reservados.<br>
+                        <small>Este es un correo automático. Por favor, no respondas a este mensaje.</small>
+                    </div>
+                </div>
             </div>
         </div>
     </body>
@@ -139,122 +350,360 @@ const getCustomerWelcomeTemplate = (displayName) => {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Bienvenido a CaseroApp</title>
+        <title>Bienvenido a CaseroApp - Tu Billetera Digital de Recompensas</title>
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@400;500;600;700;800&display=swap');
             
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
             body {
-                font-family: 'Baloo Bhaijaan 2', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                font-family: 'Baloo Bhaijaan 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
                 line-height: 1.6;
-                color: #333;
+                color: #1a1a1a;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px 0;
+                min-height: 100vh;
+            }
+            
+            .email-wrapper {
                 max-width: 600px;
                 margin: 0 auto;
-                padding: 20px;
-                background-color: #E53935;
+                background: transparent;
             }
+            
             .container {
-                background-color: #ffffff;
-                padding: 40px;
-                border-radius: 12px;
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                background: #ffffff;
+                border-radius: 16px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                margin: 20px;
             }
+            
             .header {
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                color: white;
+                padding: 40px 32px;
                 text-align: center;
-                margin-bottom: 30px;
-                padding-bottom: 20px;
-                border-bottom: 3px solid #E53935;
-            }
-            .logo-img {
-                max-width: 120px;
-                height: auto;
-                margin-bottom: 15px;
-            }
-            .logo {
-                font-size: 28px;
-                font-weight: 700;
-                color: #E53935;
-                margin-bottom: 10px;
-                font-family: 'Baloo Bhaijaan 2', sans-serif;
-            }
-            .welcome-title {
-                color: #2c3e50;
-                font-size: 24px;
-                margin-bottom: 20px;
-                text-align: center;
-                font-family: 'Baloo Bhaijaan 2', sans-serif;
-                font-weight: 600;
-            }
-            .content {
-                margin-bottom: 30px;
-            }
-            .highlight {
-                background-color: #ffebee;
-                padding: 20px;
-                border-radius: 8px;
-                border-left: 4px solid #E53935;
-                margin: 20px 0;
-            }
-            .features {
-                list-style: none;
-                padding: 0;
-            }
-            .features li {
-                padding: 10px 0;
-                border-bottom: 1px solid #eee;
                 position: relative;
-                padding-left: 30px;
             }
-            .features li:before {
-                content: "🎁";
+            
+            .header::before {
+                content: '';
                 position: absolute;
+                bottom: 0;
                 left: 0;
-                top: 10px;
+                right: 0;
+                height: 20px;
+                background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M1200 120L0 16.48V0h1200v120z" fill="%23ffffff"></path></svg>') no-repeat center bottom;
+                background-size: cover;
             }
-            .footer {
+            
+            .logo-container {
+                margin-bottom: 20px;
+            }
+            
+            .logo-img {
+                max-width: 250px;
+                height: auto;
+                filter: brightness(0) invert(1);
+                margin-bottom: 12px;
+            }
+            
+            .brand-name {
+                font-size: 32px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                letter-spacing: -0.02em;
+            }
+            
+            .brand-tagline {
+                font-size: 16px;
+                opacity: 0.9;
+                font-weight: 300;
+            }
+            
+            .content {
+                padding: 48px 32px;
+            }
+            
+            .welcome-title {
+                font-size: 28px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 24px;
                 text-align: center;
-                margin-top: 40px;
-                padding-top: 20px;
-                border-top: 1px solid #eee;
-                color: #666;
+                letter-spacing: -0.02em;
+            }
+            
+            .intro-text {
+                font-size: 16px;
+                color: #4a5568;
+                margin-bottom: 32px;
+                text-align: center;
+                line-height: 1.7;
+            }
+            
+            .highlight-box {
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                color: white;
+                padding: 24px;
+                border-radius: 12px;
+                margin: 32px 0;
+                text-align: center;
+            }
+            
+            .highlight-box h3 {
+                font-size: 20px;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            
+            .highlight-box p {
+                font-size: 15px;
+                opacity: 0.95;
+                line-height: 1.6;
+            }
+            
+            .features-section {
+                margin: 40px 0;
+            }
+            
+            .features-title {
+                font-size: 20px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 24px;
+                text-align: center;
+            }
+            
+            .features-grid {
+                display: grid;
+                gap: 16px;
+            }
+            
+            .feature-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+                padding: 20px;
+                background: #f8fafc;
+                border-radius: 12px;
+                border-left: 4px solid #E53935;
+            }
+            
+            .feature-icon {
+                flex-shrink: 0;
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 18px;
+            }
+            
+            .feature-content h4 {
+                font-size: 16px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 4px;
+            }
+            
+            .feature-content p {
                 font-size: 14px;
+                color: #64748b;
+                line-height: 1.5;
+            }
+            
+            .reward-box {
+                background: linear-gradient(135deg, #FFA726 0%, #FF7043 100%);
+                color: white;
+                padding: 24px;
+                border-radius: 12px;
+                margin: 32px 0;
+                text-align: center;
+            }
+            
+            .reward-box h3 {
+                font-size: 20px;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+            
+            .cta-section {
+                text-align: center;
+                margin: 40px 0;
+                padding: 32px;
+                background: #f8fafc;
+                border-radius: 12px;
+            }
+            
+            .cta-button {
+                display: inline-block;
+                background: linear-gradient(135deg, #E53935 0%, #C62828 100%);
+                color: white;
+                padding: 16px 32px;
+                border-radius: 10px;
+                text-decoration: none;
+                font-weight: 600;
+                font-size: 16px;
+                box-shadow: 0 4px 12px rgba(229, 57, 53, 0.3);
+                transition: transform 0.2s ease;
+            }
+            
+            .cta-button:hover {
+                transform: translateY(-2px);
+            }
+            
+            .footer {
+                background: #f8fafc;
+                padding: 32px;
+                text-align: center;
+                border-top: 1px solid #e2e8f0;
+            }
+            
+            .footer-content {
+                max-width: 400px;
+                margin: 0 auto;
+            }
+            
+            .footer h3 {
+                font-size: 18px;
+                font-weight: 600;
+                color: #1a1a1a;
+                margin-bottom: 12px;
+            }
+            
+            .footer p {
+                font-size: 14px;
+                color: #64748b;
+                margin-bottom: 8px;
+            }
+            
+            .footer-legal {
+                margin-top: 24px;
+                padding-top: 24px;
+                border-top: 1px solid #e2e8f0;
+                font-size: 12px;
+                color: #94a3b8;
+            }
+            
+            @media (max-width: 600px) {
+                .container {
+                    margin: 10px;
+                    border-radius: 12px;
+                }
+                
+                .header {
+                    padding: 32px 24px;
+                }
+                
+                .content {
+                    padding: 32px 24px;
+                }
+                
+                .brand-name {
+                    font-size: 28px;
+                }
+                
+                .welcome-title {
+                    font-size: 24px;
+                }
             }
         </style>
     </head>
     <body>
-        <div class="container">
-            <div class="header">
-                <img src="https://caseroapp-thomas-projects-09adf0ba.vercel.app/assets/logo-red.png" alt="CaseroApp Logo" class="logo-img" />
-                <div class="logo">CaseroApp</div>
-                <p style="color: #666; margin: 0;">Tu Pasaporte a Increíbles Recompensas</p>
-            </div>
-
-            <h1 class="welcome-title">¡Hola, ${displayName}!</h1>
-
-            <div class="content">
-                <p>¡Bienvenido a <strong>CaseroApp</strong>! Estás a punto de descubrir un mundo lleno de recompensas increíbles en tus lugares favoritos.</p>
-                
-                <div class="highlight">
-                    <p><strong>🎉 ¡Tu aventura de recompensas comienza ahora!</strong></p>
-                    <p>Cada visita a tus restaurantes, cafeterías y tiendas favoritas te acerca más a obtener increíbles premios.</p>
+        <div class="email-wrapper">
+            <div class="container">
+                <div class="header">
+                    <div class="logo-container">
+                        <img src="https://caseroapp.com/landing/assets/logo.png" alt="CaseroApp Logo" class="logo-img" onerror="this.style.display='none';" />
+                        <div class="brand-tagline">Tu Billetera Digital de Recompensas</div>
+                    </div>
                 </div>
 
-                <h3 style="color: #E53935; font-family: 'Baloo Bhaijaan 2', sans-serif; font-weight: 600;">🌟 Descubre lo que puedes hacer:</h3>
-                <ul class="features">
-                    <li><strong>Explora negocios cercanos</strong> que ofrecen programas de fidelización</li>
-                    <li><strong>Únete a programas</strong> de tus lugares favoritos con un simple toque</li>
-                    <li><strong>Acumula sellos automáticamente</strong> en cada visita</li>
-                    <li><strong>Canjea recompensas increíbles</strong> como comidas gratis, descuentos especiales y más</li>
-                    <li><strong>Sigue tu progreso</strong> y nunca pierdas una oportunidad de ganar</li>
-                </ul>
-            </div>
+                <div class="content">
+                    <h1 class="welcome-title">¡Hola, ${displayName}!</h1>
+                    
+                    <p class="intro-text">
+                        ¡Bienvenido a <strong>CaseroApp</strong>! Estás a punto de descubrir un mundo lleno de recompensas increíbles en tus lugares favoritos.
+                    </p>
 
-            <div class="footer">
-                <p><strong>¡Bienvenido a la familia LoyaltyCard!</strong></p>
-                <p>Estamos emocionados de ayudarte a obtener las mejores recompensas.</p>
-                <p style="margin-top: 20px;">
-                    © 2025 CaseroApp. Todos los derechos reservados.<br>
-                    <small>Este es un email automático, por favor no respondas a este mensaje.</small>
-                </p>
+                    <div class="highlight-box">
+                        <h3>🎉 ¡Tu aventura de recompensas comienza ahora!</h3>
+                        <p>Cada visita a tus restaurantes, cafeterías y tiendas favoritas te acerca más a obtener increíbles premios y descuentos exclusivos.</p>
+                    </div>
+
+                    <div class="features-section">
+                        <h2 class="features-title">🌟 Descubre todo lo que puedes hacer</h2>
+                        <div class="features-grid">
+                            <div class="feature-item">
+                                <div class="feature-icon">🔍</div>
+                                <div class="feature-content">
+                                    <h4>Explora Negocios Cercanos</h4>
+                                    <p>Descubre restaurantes, cafeterías y tiendas locales que ofrecen programas de fidelización increíbles.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">💳</div>
+                                <div class="feature-content">
+                                    <h4>Únete Fácilmente</h4>
+                                    <p>Conéctate a programas de lealtad con un simple toque y comienza a acumular recompensas de inmediato.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">⭐</div>
+                                <div class="feature-content">
+                                    <h4>Acumula Sellos Automáticamente</h4>
+                                    <p>Gana sellos en cada visita sin complicaciones. Todo se registra automáticamente en tu perfil.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">🎁</div>
+                                <div class="feature-content">
+                                    <h4>Canjea Recompensas Increíbles</h4>
+                                    <p>Disfruta de comidas gratis, descuentos especiales, productos exclusivos y mucho más.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon">📊</div>
+                                <div class="feature-content">
+                                    <h4>Sigue Tu Progreso</h4>
+                                    <p>Mantén un registro de todos tus sellos y recompensas en una interfaz simple e intuitiva.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="reward-box">
+                        <h3>🏆 ¡Obtén tu primera recompensa!</h3>
+                        <p>Busca negocios en tu área, únete a un programa y comienza a acumular sellos. ¡Tu primera recompensa te está esperando!</p>
+                    </div>
+
+                    <div class="cta-section">
+                        <h3 style="margin-bottom: 16px; color: #1a1a1a;">¿Listo para comenzar?</h3>
+                        <p style="margin-bottom: 24px; color: #64748b;">Explora la app y descubre todas las recompensas que tienes disponibles.</p>
+                        <a href="#" class="cta-button">Explorar Recompensas</a>
+                    </div>
+                </div>
+
+                <div class="footer">
+                    <div class="footer-content">
+                        <h3>¡Bienvenido a la familia CaseroApp!</h3>
+                        <p>Estamos emocionados de ayudarte a obtener las mejores recompensas en tus lugares favoritos.</p>
+                        <p>¡Disfruta coleccionando sellos y canjeando premios increíbles!</p>
+                    </div>
+                    <div class="footer-legal">
+                        © 2025 CaseroApp. Todos los derechos reservados.<br>
+                        <small>Este es un correo automático. Por favor, no respondas a este mensaje.</small>
+                    </div>
+                </div>
             </div>
         </div>
     </body>
@@ -308,10 +757,10 @@ module.exports = async (req, res) => {
     let subject, html;
 
     if (userType === "business") {
-      subject = "¡Bienvenido a CaseroApp! - Tu plataforma de fidelización empresarial";
+      subject = "🚀 ¡Bienvenido a CaseroApp! Tu plataforma de fidelización empresarial está lista";
       html = getBusinessWelcomeTemplate(displayName);
     } else {
-      subject = "¡Bienvenido a CaseroApp! - Descubre recompensas increíbles";
+      subject = "🎉 ¡Bienvenido a CaseroApp! Descubre un mundo de recompensas increíbles";
       html = getCustomerWelcomeTemplate(displayName);
     }
 

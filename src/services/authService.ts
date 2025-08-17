@@ -30,7 +30,9 @@ export class AuthService {
 
       await new Promise((r) => setTimeout(r, 100));
 
-      EmailService.sendWelcomeEmail({ email, displayName, userType }).catch(() => {});
+      EmailService.sendWelcomeEmail({ email, displayName, userType }).catch((emailError) => {
+        console.error("Failed to send welcome email:", emailError);
+      });
 
       return { id: firebaseUser.uid, ...userData };
     } catch (error: any) {
@@ -200,7 +202,9 @@ export class AuthService {
             profileImage: userData.profileImage,
           });
           await new Promise((r) => setTimeout(r, 100));
-          EmailService.sendWelcomeEmail({ email: userData.email, displayName: userData.displayName, userType: userData.userType }).catch(() => {});
+          EmailService.sendWelcomeEmail({ email: userData.email, displayName: userData.displayName, userType: userData.userType }).catch((emailError) => {
+            console.error("Failed to send welcome email:", emailError);
+          });
           return { id: firebaseUser.uid, ...userData };
         } else {
           await signOut(auth);

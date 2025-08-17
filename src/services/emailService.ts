@@ -1,3 +1,5 @@
+import { env } from "../../config/env";
+
 interface WelcomeEmailParams {
   email: string;
   displayName: string;
@@ -5,14 +7,23 @@ interface WelcomeEmailParams {
 }
 
 class EmailService {
-  private static readonly API_BASE_URL = (typeof window !== "undefined" && (window as any).__API_BASE_URL__) || "";
+  private static readonly API_BASE_URL = env.API_BASE_URL;
 
   /**
    * Sends a welcome email to new users via serverless function
    */
   static async sendWelcomeEmail(params: WelcomeEmailParams): Promise<boolean> {
     try {
-      const response = await fetch(`${this.API_BASE_URL}/api/send-welcome-email`, {
+      // Check if API is configured
+      if (!this.API_BASE_URL) {
+        console.error("API_BASE_URL is not configured for EmailService");
+        return false;
+      }
+
+      const apiUrl = `${this.API_BASE_URL}/send-welcome-email`;
+      console.log("Attempting to send welcome email to:", params.email, "via", apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -20,17 +31,29 @@ class EmailService {
         body: JSON.stringify(params),
       });
 
+      console.log("Email API response status:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Email API error response:", errorText);
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
       const result = await response.json();
 
-      if (response.ok && result.success) {
-        console.log("Welcome email sent successfully:", result.messageId);
+      if (result.success) {
+        console.log("Welcome email sent successfully:", result.messageId || "No message ID");
         return true;
       } else {
-        console.error("Failed to send welcome email:", result.error);
+        console.error("Failed to send welcome email:", result.error || "Unknown error");
         return false;
       }
     } catch (error) {
       console.error("Error sending welcome email:", error);
+      // For development/debugging purposes, we might want to see the full error
+      if (error instanceof TypeError && error.message === "Network request failed") {
+        console.error("Network error - Check if the API endpoint is accessible and CORS is configured properly");
+      }
       return false;
     }
   }
@@ -40,7 +63,16 @@ class EmailService {
    */
   static async sendTestEmail(to: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.API_BASE_URL}/api/send-welcome-email`, {
+      // Check if API is configured
+      if (!this.API_BASE_URL) {
+        console.error("API_BASE_URL is not configured for EmailService");
+        return false;
+      }
+
+      const apiUrl = `${this.API_BASE_URL}/send-welcome-email`;
+      console.log("Attempting to send test email to:", to, "via", apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
