@@ -123,15 +123,11 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
   );
 
   const handleNavigateToAddStamp = useCallback(() => {
-    if (loyaltyCards.length > 0 && business) {
-      navigation.navigate("AddStamp", {
-        loyaltyCardId: loyaltyCards[0].id,
-        businessId: business.id,
-      });
-    } else {
-      alert("Primero debe crear una tarjeta de lealtad");
-    }
-  }, [loyaltyCards, business, navigation]);
+    // Navigate to the Sellar tab
+    navigation.navigate("BusinessTabs", {
+      screen: "Sellar",
+    });
+  }, [navigation]);
 
   const handleNavigateToCustomers = useCallback(() => {
     navigation.navigate("BusinessTabs", { screen: "Customers" });

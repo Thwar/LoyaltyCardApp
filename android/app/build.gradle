@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.thwar077.LoyaltyCardApp'
+    namespace 'com.thwar077.CaseroApp'
     defaultConfig {
-        applicationId 'com.thwar077.LoyaltyCardApp'
+        applicationId 'com.thwar077.CaseroApp'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

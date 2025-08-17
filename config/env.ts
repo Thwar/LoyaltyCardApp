@@ -142,7 +142,7 @@ const buildConfig = (): EnvConfig => {
   return {
     // App Configuration
     APP_ENV,
-    APP_NAME: getEnvValue("APP_NAME", "LoyaltyCardApp"),
+    APP_NAME: getEnvValue("APP_NAME", "CaseroApp"),
     APP_VERSION: getEnvValue("APP_VERSION", Constants.expoConfig?.version || "1.0.0"),
 
     // Firebase Configuration

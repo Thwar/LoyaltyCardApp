@@ -121,6 +121,7 @@ export type CustomerTabParamList = {
 export type BusinessTabParamList = {
   Dashboard: undefined;
   MyProgram: undefined;
+  Sellar: undefined;
   Customers: undefined;
   Profile: undefined;
 };
@@ -133,7 +134,6 @@ export type CustomerStackParamList = {
 };
 
 export type BusinessStackParamList = {
-  BusinessTabs: undefined;
+  BusinessTabs: NavigatorScreenParams<BusinessTabParamList> | undefined;
   CustomerDetails: { customerId: string };
-  AddStamp: { loyaltyCardId: string; businessId: string };
 };

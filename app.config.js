@@ -79,8 +79,8 @@ export default ({ config }) => {
             CFBundleURLSchemes: [`fb${FACEBOOK_APP_ID}`],
           },
           {
-            CFBundleURLName: "loyaltycardapp",
-            CFBundleURLSchemes: ["loyaltycardapp"],
+            CFBundleURLName: "caseroapp",
+            CFBundleURLSchemes: ["caseroapp"],
           },
         ],
       },
@@ -109,7 +109,7 @@ export default ({ config }) => {
           autoVerify: true,
           data: [
             {
-              scheme: "loyaltycardapp",
+              scheme: "caseroapp",
             },
             {
               scheme: `fb${FACEBOOK_APP_ID}`,
@@ -122,7 +122,7 @@ export default ({ config }) => {
     web: {
       favicon: "./assets/favicon.png",
     },
-    scheme: ["loyaltycardapp", `fb${FACEBOOK_APP_ID}`],
+    scheme: ["caseroapp", `fb${FACEBOOK_APP_ID}`],
     extra: {
       eas: {
         projectId: process.env.EXPO_PROJECT_ID || "20c6dc88-4b0c-4405-85e3-a0b7e343d220",

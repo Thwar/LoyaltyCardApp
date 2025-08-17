@@ -83,17 +83,6 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                     {canRedeem && " - ¡COMPLETA!"}
                     {isAlreadyRedeemed && " - ¡CANJEADA!"}
                   </Text>
-                  <StampsGrid
-                    totalSlots={loyaltyCard.totalSlots}
-                    currentStamps={customerCard.currentStamps}
-                    stampShape={loyaltyCard.stampShape || "circle"}
-                    showAnimation={false}
-                    size="medium"
-                    containerStyle={styles.stampsGrid}
-                    specialStampColor="darkgray"
-                    specialStampColorOutline={"darkgray"}
-                    stampColor={loyaltyCard.cardColor || COLORS.primary}
-                  />
                   {!canRedeem && !isAlreadyRedeemed && (
                     <View style={[styles.nextStampPreview, willCompleteCard && styles.completeCardPreview]}>
                       <Text style={[styles.previewLabel, willCompleteCard && styles.completeCardLabel]}>
@@ -104,7 +93,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                         currentStamps={customerCard.currentStamps + 1}
                         stampShape={loyaltyCard.stampShape || "circle"}
                         showAnimation={false}
-                        size="small"
+                        size="medium"
                         containerStyle={styles.previewGrid}
                         stampColor={loyaltyCard.cardColor || COLORS.primary}
                         specialStampColor={"darkgray"}

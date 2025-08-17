@@ -3,6 +3,7 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
+import { View } from "react-native";
 
 import { useAuth } from "../context/AuthContext";
 import { COLORS } from "../constants";
@@ -122,6 +123,8 @@ const BusinessNavigator = () => {
             iconName = focused ? "analytics" : "analytics-outline";
           } else if (route.name === "MyProgram") {
             iconName = focused ? "card" : "card-outline";
+          } else if (route.name === "Sellar") {
+            iconName = focused ? "add-circle" : "add-circle-outline";
           } else if (route.name === "Customers") {
             iconName = focused ? "people" : "people-outline";
           } else if (route.name === "Profile") {
@@ -165,6 +168,41 @@ const BusinessNavigator = () => {
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+        }}
+      />
+      <BusinessTab.Screen
+        name="Sellar"
+        component={AddStampScreen}
+        options={{
+          tabBarLabel: "Sellar",
+          headerTitle: "",
+          headerLeft: () => <LogoHeader title="" />,
+          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
+          tabBarIcon: ({ focused, color, size }) => (
+            <View
+              style={{
+                backgroundColor: focused ? COLORS.primary : COLORS.primary,
+                borderRadius: 25,
+                width: 50,
+                height: 50,
+                justifyContent: "center",
+                alignItems: "center",
+                marginBottom: 25,
+                shadowColor: COLORS.primary,
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
+            >
+              <Ionicons name={focused ? "add-circle" : "add-circle"} size={30} color={COLORS.white} />
+            </View>
+          ),
+          tabBarLabelStyle: {
+            color: COLORS.primary,
+            fontWeight: "600",
+            fontSize: 12,
+          },
         }}
       />
       <BusinessTab.Screen
@@ -259,16 +297,6 @@ const BusinessStackNavigator = () => {
       }}
     >
       <BusinessStack.Screen name="BusinessTabs" component={BusinessNavigator} options={{ headerShown: false }} />
-      <BusinessStack.Screen
-        name="AddStamp"
-        component={AddStampScreen}
-        options={{
-          headerTitle: "",
-          headerLeft: () => <LogoHeader title="" />,
-          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
-          headerBackTitle: "Atrás",
-        }}
-      />
     </BusinessStack.Navigator>
   );
 };

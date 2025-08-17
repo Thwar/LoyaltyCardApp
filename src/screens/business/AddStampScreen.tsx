@@ -1,27 +1,63 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, SafeAreaView, ScrollView } from "react-native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import { RouteProp } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 
-import { Button, InputField, useAlert, StampConfirmationModal } from "../../components";
+import { Button, InputField, useAlert, StampConfirmationModal, LoadingState } from "../../components";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
-import { CustomerCardService, StampActivityService } from "../../services/api";
-import { BusinessStackParamList, CustomerCard } from "../../types";
+import { CustomerCardService, BusinessService } from "../../services/api";
+import { BusinessTabParamList, CustomerCard, Business } from "../../types";
+import { useAuth } from "../../context/AuthContext";
 
 interface AddStampScreenProps {
-  navigation: StackNavigationProp<BusinessStackParamList, "AddStamp">;
-  route: RouteProp<BusinessStackParamList, "AddStamp">;
+  navigation: BottomTabNavigationProp<BusinessTabParamList, "Sellar">;
 }
 
-export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, route }) => {
-  const { loyaltyCardId, businessId } = route.params;
+export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation }) => {
+  const { user } = useAuth();
+  const [business, setBusiness] = useState<Business | null>(null);
+  const [loading, setLoading] = useState(true);
+
   const { showAlert, hideAlert } = useAlert();
   const [cardCode, setCardCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [error, setError] = useState("");
   const [customerCard, setCustomerCard] = useState<CustomerCard | null>(null);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [addingStamp, setAddingStamp] = useState(false);
+
+  useEffect(() => {
+    loadBusinessData();
+  }, [user]);
+
+  const loadBusinessData = async () => {
+    if (!user) return;
+
+    try {
+      setLoading(true);
+      // Load business info
+      const businesses = await BusinessService.getBusinessesByOwner(user.id);
+      const userBusiness = businesses[0];
+      setBusiness(userBusiness);
+    } catch (err) {
+      console.error("Error loading business data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <LoadingState loading={true} />;
+  }
+
+  if (!business) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Error: No se pudo obtener la información del negocio</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const handleFindCustomerCard = async () => {
     if (!cardCode.trim()) {
@@ -35,11 +71,11 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
       return;
     }
 
-    setLoading(true);
+    setSearchLoading(true);
     setError("");
     try {
       // Find customer card by card code and business ID
-      const foundCustomerCard = await CustomerCardService.getUnclaimedCustomerCardByCodeAndBusiness(cardCode.trim(), businessId);
+      const foundCustomerCard = await CustomerCardService.getUnclaimedCustomerCardByCodeAndBusiness(cardCode.trim(), business.id);
 
       if (!foundCustomerCard) {
         setError("Código de tarjeta inválido o no pertenece a este negocio");
@@ -74,7 +110,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
         message: errorMessage,
       });
     } finally {
-      setLoading(false);
+      setSearchLoading(false);
     }
   };
   const handleConfirmAddStamp = async () => {
@@ -85,7 +121,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
       const willCompleteCard = customerCard.loyaltyCard && customerCard.currentStamps + 1 >= customerCard.loyaltyCard.totalSlots;
 
       // Always just add a stamp - never auto-claim rewards
-      await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), businessId);
+      await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), business.id);
 
       setShowConfirmationModal(false);
       setCustomerCard(null);
@@ -140,7 +176,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
     setAddingStamp(true);
     try {
       // Call the redeem reward API
-      await CustomerCardService.claimRewardByCardCodeAndBusiness(cardCode.trim(), businessId);
+      await CustomerCardService.claimRewardByCardCodeAndBusiness(cardCode.trim(), business.id);
 
       setShowConfirmationModal(false);
       setCustomerCard(null);
@@ -204,7 +240,7 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
             </Text>
           </View>
           <View style={styles.buttonRow}>
-            <Button title="Buscar Tarjeta" onPress={handleFindCustomerCard} loading={loading} size="large" style={styles.findButton} />
+            <Button title="Buscar Tarjeta" onPress={handleFindCustomerCard} loading={searchLoading} size="large" style={styles.findButton} />
             <Button
               title="Escanear QR"
               onPress={() => {
@@ -219,12 +255,6 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation, rout
               style={styles.scanButton}
             />
           </View>
-        </View>
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <Text style={styles.quickActionsTitle}>Acciones Rápidas</Text>
-          <Button title="Ir al Dashboard" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
-          <Button title="Ver Clientes Recientes" onPress={() => navigation.navigate("BusinessTabs")} variant="outline" size="large" style={styles.quickActionButton} />
         </View>
       </ScrollView>
 
@@ -313,5 +343,16 @@ const styles = StyleSheet.create({
   },
   quickActionButton: {
     marginBottom: SPACING.md,
+  },
+  errorContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: SPACING.lg,
+  },
+  errorText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.error,
+    textAlign: "center",
   },
 });
