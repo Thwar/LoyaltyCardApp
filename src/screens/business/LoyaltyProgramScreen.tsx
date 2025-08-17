@@ -171,9 +171,11 @@ export const LoyaltyProgramScreen: React.FC<LoyaltyProgramScreenProps> = ({ navi
             contentContainerStyle={styles.cardsList}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadLoyaltyCards(true)} />}
           />
-          <View style={styles.actionContainer}>
-            <Button title="Crear Nueva Tarjeta" onPress={handleCreateCard} size="large" style={styles.createButton} />
-          </View>
+          {loyaltyCards.length === 0 && (
+            <View style={styles.actionContainer}>
+              <Button title="Crear Nueva Tarjeta" onPress={handleCreateCard} size="large" style={styles.createButton} />
+            </View>
+          )}
         </>
       )}
       {/* Modals */}

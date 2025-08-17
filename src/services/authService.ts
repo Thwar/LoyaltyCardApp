@@ -222,26 +222,26 @@ export class AuthService {
       const userCredentialWithProfile = await SSOService.signInWithFacebook();
       const firebaseUser = userCredentialWithProfile.user;
       const facebookProfile = (userCredentialWithProfile as any).facebookProfile;
-      
+
       console.log("Facebook sign-in completed:", {
         firebaseEmail: firebaseUser.email,
         firebaseDisplayName: firebaseUser.displayName,
         facebookEmail: facebookProfile?.email,
         facebookName: facebookProfile?.name,
       });
-      
+
       const userDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const createdAt = safeTimestampToDate(userData.createdAt);
-        return { 
-          id: firebaseUser.uid, 
-          email: userData.email, 
-          displayName: userData.displayName, 
-          userType: userData.userType, 
-          createdAt, 
-          profileImage: userData.profileImage 
+        return {
+          id: firebaseUser.uid,
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+          createdAt,
+          profileImage: userData.profileImage,
         };
       } else {
         if (isRegistering) {
@@ -249,21 +249,21 @@ export class AuthService {
           const email = firebaseUser.email || facebookProfile?.email || "";
           const displayName = firebaseUser.displayName || facebookProfile?.name || "";
           const profileImage = firebaseUser.photoURL || facebookProfile?.picture || undefined;
-          
+
           console.log("Creating new user with Facebook data:", {
             email,
             displayName,
             hasProfileImage: !!profileImage,
             emailSource: firebaseUser.email ? "firebase" : facebookProfile?.email ? "facebook" : "none",
           });
-          
+
           // Check if we have at least a display name (email is optional for Facebook users)
           if (!displayName) {
             console.error("Missing required display name:", { email, displayName });
             await signOut(auth);
             throw new Error("No se pudo obtener el nombre del perfil de Facebook. Por favor intenta de nuevo.");
           }
-          
+
           // For Facebook users without email, we'll use a placeholder email or generate one
           let finalEmail = email;
           if (!finalEmail) {
@@ -271,7 +271,7 @@ export class AuthService {
             finalEmail = `facebook_${firebaseUser.uid}@placeholder.local`;
             console.log("Generated placeholder email for Facebook user without email:", finalEmail);
           }
-          
+
           const userData: Omit<User, "id"> = {
             email: finalEmail,
             displayName,
@@ -279,7 +279,7 @@ export class AuthService {
             createdAt: new Date(),
             profileImage,
           };
-          
+
           await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
             email: userData.email,
             displayName: userData.displayName,
@@ -287,20 +287,20 @@ export class AuthService {
             createdAt: serverTimestamp(),
             profileImage: userData.profileImage,
           });
-          
+
           // Send welcome email only if we have a real email address
           if (email && !email.includes("@placeholder.local")) {
-            EmailService.sendWelcomeEmail({ 
-              email: userData.email, 
-              displayName: userData.displayName, 
-              userType: userData.userType 
+            EmailService.sendWelcomeEmail({
+              email: userData.email,
+              displayName: userData.displayName,
+              userType: userData.userType,
             }).catch((emailError) => {
               console.error("Failed to send welcome email:", emailError);
             });
           } else {
             console.log("Skipping welcome email for Facebook user without email");
           }
-          
+
           return { id: firebaseUser.uid, ...userData };
         } else {
           await signOut(auth);

@@ -81,6 +81,7 @@ const CustomerNavigator = () => {
         name="Home"
         component={CustomerHomeScreen}
         options={{
+          tabBarLabel: "Inicio",
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
@@ -90,6 +91,7 @@ const CustomerNavigator = () => {
         name="Discovery"
         component={BusinessDiscoveryScreen}
         options={{
+          tabBarLabel: "Negocios",
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
@@ -99,6 +101,7 @@ const CustomerNavigator = () => {
         name="Profile"
         component={CustomerProfileScreen}
         options={{
+          tabBarLabel: "Perfil",
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
@@ -148,6 +151,7 @@ const BusinessNavigator = () => {
         name="Dashboard"
         component={BusinessDashboardScreen}
         options={{
+          tabBarLabel: "Panel",
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
@@ -157,6 +161,7 @@ const BusinessNavigator = () => {
         name="MyProgram"
         component={LoyaltyProgramScreen}
         options={{
+          tabBarLabel: "Mi Programa",
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
@@ -166,6 +171,7 @@ const BusinessNavigator = () => {
         name="Customers"
         component={CustomerManagementScreen}
         options={{
+          tabBarLabel: "Clientes",
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
@@ -175,6 +181,7 @@ const BusinessNavigator = () => {
         name="Profile"
         component={BusinessSettingsScreen}
         options={{
+          tabBarLabel: "Perfil",
           headerTitle: "",
           headerLeft: () => <LogoHeader title="" />,
           headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
