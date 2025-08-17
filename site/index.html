@@ -163,13 +163,45 @@
         width: 320px;
         max-width: 100%;
         margin: 0 auto 16px;
-        border: 10px solid #000;
-        border-radius: 32px;
-        padding: 8px;
-        background: #000;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        border: 8px solid #1c1c1e;
+        border-radius: 42px;
+        padding: 12px;
+        background: linear-gradient(145deg, #2c2c2e, #1c1c1e);
+        box-shadow: 
+          0 0 0 2px #000,
+          0 10px 30px rgba(0, 0, 0, 0.4),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
         position: relative;
       }
+      
+      /* iPhone notch */
+      .phone-frame::before {
+        content: '';
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 6px;
+        background: #000;
+        border-radius: 3px;
+        z-index: 2;
+      }
+      
+      /* Home indicator */
+      .phone-frame::after {
+        content: '';
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 2px;
+        z-index: 2;
+      }
+      
       .phone-frame .phone-notch {
         position: absolute;
         top: -2px;
@@ -180,17 +212,29 @@
         background: #000;
         border-radius: 0 0 10px 10px;
       }
+      
       .phone-screen {
-        border-radius: 24px;
+        border-radius: 32px;
         overflow: hidden;
         background: #000;
+        position: relative;
       }
+      
       .phone-video {
         display: block;
         width: 100%;
         height: auto;
-        /* Crop 1px from right and bottom */
-        clip-path: inset(0 1px 1px 0);
+        border-radius: 32px;
+      }
+      
+      /* Disclaimer styles */
+      .disclaimer {
+        text-align: center;
+        font-size: 12px;
+        color: var(--textSecondary);
+        margin-top: 8px;
+        opacity: 0.8;
+        font-style: italic;
       }
     </style>
   </head>
@@ -250,6 +294,7 @@
               <video class="phone-video" src="/landing/assets/landing.mp4" autoplay loop muted playsinline></video>
             </div>
           </div>
+          <p class="disclaimer">*El diseño final de la aplicación puede diferir de la versión mostrada en el video.</p>
           <h3>¿Cómo funciona CaseroApp?</h3>
           <p><strong>Clientes:</strong> Colecciona sellos al pagar y canjea recompensas desde tu teléfono.</p>
           <p><strong>Negocios:</strong> Crea tu programa en minutos y entrega sellos con un tap.</p>

@@ -11,8 +11,8 @@ interface AuthContextType {
   isLoggingIn: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string, userType: "customer" | "business") => Promise<User>;
-  signInWithGoogle: (isRegistering?: boolean) => Promise<void>;
-  signInWithFacebook: (isRegistering?: boolean) => Promise<void>;
+  signInWithGoogle: (isRegistering?: boolean, userType?: "customer" | "business") => Promise<void>;
+  signInWithFacebook: (isRegistering?: boolean, userType?: "customer" | "business") => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -210,12 +210,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signInWithGoogle = async (isRegistering: boolean = false): Promise<void> => {
+  const signInWithGoogle = async (isRegistering: boolean = false, userType: "customer" | "business" = "customer"): Promise<void> => {
     setIsLoggingIn(true);
     setLoginHasFailed(false);
     try {
       console.log("Attempting Google Sign-In");
-      const userData = await AuthService.signInWithGoogle(isRegistering);
+      const userData = await AuthService.signInWithGoogle(isRegistering, userType);
       console.log("Google Sign-In completed successfully, user created/retrieved:", userData.email);
 
       // Set the user immediately to prevent the auth state change from signing them out
@@ -242,12 +242,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const signInWithFacebook = async (isRegistering: boolean = false): Promise<void> => {
+  const signInWithFacebook = async (isRegistering: boolean = false, userType: "customer" | "business" = "customer"): Promise<void> => {
     setIsLoggingIn(true);
     setLoginHasFailed(false);
     try {
       console.log("Attempting Facebook Sign-In");
-      const userData = await AuthService.signInWithFacebook(isRegistering);
+      const userData = await AuthService.signInWithFacebook(isRegistering, userType);
       console.log("Facebook Sign-In completed successfully, user created/retrieved:", userData.email);
 
       // Set the user immediately to prevent the auth state change from signing them out

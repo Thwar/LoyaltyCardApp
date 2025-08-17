@@ -175,7 +175,7 @@ export class AuthService {
     }
   }
 
-  static async signInWithGoogle(isRegistering: boolean = false): Promise<User> {
+  static async signInWithGoogle(isRegistering: boolean = false, userType: "customer" | "business" = "customer"): Promise<User> {
     try {
       const userCredential = await SSOService.signInWithGoogle();
       const firebaseUser = userCredential.user;
@@ -190,7 +190,7 @@ export class AuthService {
           const userData: Omit<User, "id"> = {
             email: firebaseUser.email || "",
             displayName: firebaseUser.displayName || "",
-            userType: "customer",
+            userType: userType,
             createdAt: new Date(),
             profileImage: firebaseUser.photoURL || undefined,
           };
@@ -221,7 +221,7 @@ export class AuthService {
     }
   }
 
-  static async signInWithFacebook(isRegistering: boolean = false): Promise<User> {
+  static async signInWithFacebook(isRegistering: boolean = false, userType: "customer" | "business" = "customer"): Promise<User> {
     try {
       const userCredentialWithProfile = await SSOService.signInWithFacebook();
       const firebaseUser = userCredentialWithProfile.user;
@@ -279,7 +279,7 @@ export class AuthService {
           const userData: Omit<User, "id"> = {
             email: finalEmail,
             displayName,
-            userType: "customer",
+            userType: userType,
             createdAt: new Date(),
             profileImage,
           };

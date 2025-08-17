@@ -8,6 +8,7 @@ import { COLORS, FONT_SIZES, SPACING } from "../constants";
 import { AuthStackParamList } from "../types";
 import { testFirebaseConnection } from "../utils/firebaseTest";
 import { BusinessService } from "../services/api";
+import { auth } from "../services/firebase";
 
 type RegisterScreenNavigationProp = StackNavigationProp<AuthStackParamList, "Register">;
 
@@ -107,8 +108,29 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     setGoogleLoading(true);
     try {
       console.log("RegisterScreen: Starting Google Sign-In process");
-      await signInWithGoogle(true);
+      await signInWithGoogle(true, formData.userType);
       console.log("RegisterScreen: Google Sign-In process completed successfully");
+
+      // If registering as business via Google, create the business profile automatically
+      if (formData.userType === "business") {
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            await BusinessService.createBusiness({
+              name: formData.displayName || currentUser.displayName || "Mi Negocio",
+              description: "",
+              ownerId: currentUser.uid,
+              isActive: true,
+            });
+          }
+        } catch (businessError) {
+          console.error("Error creating business profile:", businessError);
+          showAlert({
+            title: "Advertencia",
+            message: "Tu cuenta fue creada exitosamente, pero hubo un problema al crear el perfil del negocio. Puedes completarlo más tarde en la configuración.",
+          });
+        }
+      }
     } catch (error) {
       console.error("RegisterScreen: Google Sign-In error caught:", error);
       showAlert({
@@ -124,8 +146,29 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
     setFacebookLoading(true);
     try {
       console.log("RegisterScreen: Starting Facebook Sign-In process");
-      await signInWithFacebook(true);
+      await signInWithFacebook(true, formData.userType);
       console.log("RegisterScreen: Facebook Sign-In process completed successfully");
+
+      // If registering as business via Facebook, create the business profile automatically
+      if (formData.userType === "business") {
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            await BusinessService.createBusiness({
+              name: formData.displayName || currentUser.displayName || "Mi Negocio",
+              description: "",
+              ownerId: currentUser.uid,
+              isActive: true,
+            });
+          }
+        } catch (businessError) {
+          console.error("Error creating business profile:", businessError);
+          showAlert({
+            title: "Advertencia",
+            message: "Tu cuenta fue creada exitosamente, pero hubo un problema al crear el perfil del negocio. Puedes completarlo más tarde en la configuración.",
+          });
+        }
+      }
     } catch (error) {
       console.error("RegisterScreen: Facebook Sign-In error caught:", error);
       showAlert({
