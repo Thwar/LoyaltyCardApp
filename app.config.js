@@ -58,8 +58,8 @@ export default ({ config }) => {
       [
         "expo-notifications",
         {
-          icon: "./assets/icon-background-red.png",
-          color: "#ffffff",
+          icon: "./assets/splash.png",
+          color: "#E53935",
           defaultChannel: "default",
           sounds: ["./assets/sounds/success.mp3", "./assets/sounds/complete.mp3"],
           // iOS specific notification settings
@@ -69,9 +69,9 @@ export default ({ config }) => {
       ],
     ],
     splash: {
-      image: "./assets/icon.png",
+      image: "./assets/splash.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff",
+      backgroundColor: "#E53935",
     },
     assetBundlePatterns: ["**/*"],
     ios: {

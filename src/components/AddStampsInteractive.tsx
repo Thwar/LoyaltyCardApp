@@ -1,5 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground, ViewStyle, Pressable, useWindowDimensions, Platform } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, ViewStyle, Pressable, useWindowDimensions, Platform, Image } from "react-native";
+// Optional expo-image: dynamically load if available; otherwise fall back to React Native Image
+let ExpoImage: any = null;
+try {
+  ExpoImage = require("expo-image").Image;
+} catch (e) {
+  ExpoImage = null;
+}
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
@@ -7,10 +14,121 @@ import { LoyaltyCard as LoyaltyCardType } from "../types";
 import { imageCache, createShadowStyle, createTextShadowStyle } from "../utils";
 import * as Haptics from "expo-haptics";
 
+// Global animation that runs independently of component lifecycle
+const globalPulseAnim = new Animated.Value(0);
+let globalPulseRunning = false;
+let globalAnimationRef: Animated.CompositeAnimation | null = null;
+
+const startGlobalPulse = () => {
+  if (globalPulseRunning) return;
+  globalPulseRunning = true;
+  
+  const loop = () => {
+    if (!globalPulseRunning) return;
+    
+    globalAnimationRef = Animated.sequence([
+      Animated.timing(globalPulseAnim, { 
+        toValue: 1, 
+        duration: 800, 
+        useNativeDriver: true
+      }),
+      Animated.timing(globalPulseAnim, { 
+        toValue: 0, 
+        duration: 800, 
+        useNativeDriver: true
+      }),
+    ]);
+    
+    globalAnimationRef.start(({ finished }) => {
+      // Always restart, even if finished is false
+      setTimeout(() => {
+        if (globalPulseRunning) {
+          loop();
+        }
+      }, 50);
+    });
+  };
+  
+  loop();
+};
+
+const stopGlobalPulse = () => {
+  globalPulseRunning = false;
+  if (globalAnimationRef) {
+    globalAnimationRef.stop();
+    globalAnimationRef = null;
+  }
+};
+
+// Ensure animation restarts if it gets killed
+const ensureGlobalPulse = () => {
+  if (!globalPulseRunning) {
+    startGlobalPulse();
+  }
+};
+
 // Interactive animated loyalty card used specifically for adding stamps
 // Mirrors AnimatedLoyaltyCard visuals but provides a tappable next-slot grid.
 
 export type StampShape = "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
+
+// Memoized logo to avoid re-rendering (and flicker) on each stamp tap
+interface BusinessLogoProps {
+  source: { uri: string } | null;
+}
+
+// Completely isolated logo component - never re-renders to prevent flicker
+const BusinessLogo: React.FC<BusinessLogoProps> = React.memo(({ source }) => {
+  if (!source) return null;
+  return (
+    <View style={{ opacity: Platform.OS === "ios" ? 0.999 : 1 }}>
+      {ExpoImage ? (
+        <ExpoImage
+          source={source as any}
+          style={styles.businessLogo}
+          contentFit="contain"
+          transition={0}
+          cachePolicy="memory-disk"
+          priority="high"
+          // @ts-ignore defaultSource is supported by expo-image as placeholder
+          defaultSource={require("../../assets/logo.png")}
+        />
+      ) : (
+        <Image
+          source={source as any}
+          defaultSource={require("../../assets/logo.png")}
+          style={[styles.businessLogo, { backfaceVisibility: "hidden" }]}
+          resizeMode="contain"
+        />
+      )}
+    </View>
+  );
+}, () => true); // Never re-render to prevent flicker
+
+interface HeaderSectionProps {
+  logoSource: { uri: string } | null;
+  businessName: string;
+  cardCode?: string;
+  isCompleted: boolean;
+  showLogo: boolean;
+}
+
+const HeaderSection: React.FC<HeaderSectionProps> = React.memo(({ logoSource, businessName, cardCode, isCompleted, showLogo }) => {
+  return (
+    <View style={[styles.header, !logoSource && styles.headerNoBackground]}>
+      <View style={styles.businessInfo}>
+        {showLogo && logoSource && <BusinessLogo source={logoSource} />}
+        <Text style={styles.businessName} numberOfLines={1}>
+          {businessName}
+        </Text>
+      </View>
+      <View style={styles.progressContainer}>
+        <Text style={styles.progress}>#{cardCode}</Text>
+        {isCompleted && <Ionicons name="gift" size={24} color={COLORS.white} style={styles.giftIcon} />}
+      </View>
+    </View>
+  );
+}, () => true); // Never re-render to prevent flicker
 
 interface AddStampsInteractiveProps {
   card: LoyaltyCardType;
@@ -28,6 +146,7 @@ const { width } = Dimensions.get("window");
 
 export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card, currentStamps, style, cardCode, showAnimation = true, enableTilt = true, scaleOnHover = 1.03, onPendingChange }) => {
   const [pending, setPending] = useState(0);
+  // reverted press tracking
   const windowDims = useWindowDimensions();
   const cardWidth = Math.min(windowDims.width - SPACING.md * 2, 680);
 
@@ -37,8 +156,8 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   const selectedStampShape: StampShape = card.stampShape || "circle";
 
   // Images
-  const backgroundImageSource = useMemo(() => (card.backgroundImage ? { uri: card.backgroundImage } : null), [card.backgroundImage]);
-  const businessLogoSource = useMemo(() => (card.businessLogo ? { uri: card.businessLogo } : null), [card.businessLogo]);
+  const backgroundImageSource = useMemo(() => (card.backgroundImage ? { uri: card.backgroundImage } : null), [card.backgroundImage ?? null]);
+  const businessLogoSource = useMemo(() => (card.businessLogo ? { uri: card.businessLogo } : null), [card.businessLogo ?? null]);
 
   useEffect(() => {
     const urls: string[] = [];
@@ -52,7 +171,11 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   const shinePosition = useRef(new Animated.Value(-width)).current;
   const tiltScale = useRef(new Animated.Value(1)).current;
   const borderGlow = useRef(new Animated.Value(0.5)).current;
-  const nextPulseAnim = useRef(new Animated.Value(0)).current; // 0..1 for scale/opacity
+  const nextPulseAnim = globalPulseAnim; // Use global animation
+  
+  // Use a separate ref to track if animation should be visible
+  const showPulseRef = useRef(false);
+  const pulseOpacityRef = useRef(new Animated.Value(0)).current;
 
   const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
   const glowAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
@@ -86,7 +209,7 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
       const pulseAnimation = Animated.loop(
         Animated.sequence([Animated.timing(pulseValue, { toValue: 1.05, duration: 800, useNativeDriver: true }), Animated.timing(pulseValue, { toValue: 1, duration: 800, useNativeDriver: true })])
       );
-      const shineAnimation = Animated.loop(Animated.timing(shinePosition, { toValue: width, duration: 2000, useNativeDriver: false }), { iterations: -1 });
+  const shineAnimation = Animated.loop(Animated.timing(shinePosition, { toValue: width, duration: 2000, useNativeDriver: false }), { iterations: -1 });
       animationsRef.current.push(pulseAnimation, shineAnimation);
       pulseAnimation.start();
       shineAnimation.start();
@@ -96,31 +219,40 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
     return cleanupAnimations;
   }, [isCompleted, showAnimation]);
 
-  // Stronger pulse for next tappable slot
+  // Start global pulse animation once
   useEffect(() => {
-    if (!showAnimation) return;
-    const hasNext = effectiveStamps < totalSlots;
-    if (!hasNext) {
-      try {
-        nextPulseAnim.stopAnimation();
-        nextPulseAnim.setValue(0);
-      } catch {}
-      return;
-    }
-    const anim = Animated.loop(
-      Animated.sequence([Animated.timing(nextPulseAnim, { toValue: 1, duration: 800, useNativeDriver: true }), Animated.timing(nextPulseAnim, { toValue: 0, duration: 800, useNativeDriver: true })])
-    );
-    anim.start();
+    // Always ensure animation is running when component mounts
+    ensureGlobalPulse();
+    
+    // Set up interval to check and restart if needed
+    const interval = setInterval(() => {
+      ensureGlobalPulse();
+    }, 2000);
+    
     return () => {
-      try {
-        anim.stop();
-        nextPulseAnim.setValue(0);
-      } catch {}
+      clearInterval(interval);
+      // Don't stop global animation on unmount - let it run for other instances
     };
-  }, [effectiveStamps, totalSlots, showAnimation]);
+  }, []);
+
+  // Control pulse visibility separately from animation
+  useEffect(() => {
+    const shouldShow = effectiveStamps < totalSlots;
+    showPulseRef.current = shouldShow;
+    
+    Animated.timing(pulseOpacityRef, {
+      toValue: shouldShow ? 1 : 0,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [effectiveStamps, totalSlots]);
 
   // Subtle glass border glow
   useEffect(() => {
+    // On iOS, avoid a constantly animating overlay that can contribute to image flicker
+    if (Platform.OS === "ios") {
+      return;
+    }
     const glow = Animated.loop(
       Animated.sequence([Animated.timing(borderGlow, { toValue: 0.8, duration: 2000, useNativeDriver: false }), Animated.timing(borderGlow, { toValue: 0.5, duration: 2000, useNativeDriver: false })])
     );
@@ -146,6 +278,8 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   useEffect(() => {
     onPendingChange?.(pending);
   }, [pending, onPendingChange]);
+
+  // no-op
 
   const nextTappableIndex = Math.min(totalSlots - 1, currentStamps + pending);
 
@@ -210,27 +344,43 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
       const content = renderStampShape(selectedStampShape, i, isStamped, sizePx, card.cardColor || COLORS.primary);
 
       const cell = (
-        <Pressable key={i} onPress={() => handleTapSlot(i)} disabled={isHistorical} style={({ pressed }) => [styles.pressWrap, pressed && styles.pressed]}>
+        <Pressable
+          key={i}
+          onPress={() => handleTapSlot(i)}
+          disabled={isHistorical}
+          style={({ pressed }) => [styles.pressWrap, pressed && styles.pressed]}
+        >
           <View style={[styles.cellWrap]}>
             {content}
-            {isNext && (
-              <Animated.View
-                style={[
-                  styles.nextPulse,
-                  {
-                    width: sizePx + 16,
-                    height: sizePx + 16,
-                    borderRadius: selectedStampShape === "circle" ? (sizePx + 16) / 2 : 12,
-                    transform: [
-                      {
-                        scale: nextPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.25] }),
-                      },
-                    ],
-                    opacity: nextPulseAnim.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0.1] }),
-                  },
-                ]}
-              />
-            )}
+            {/* Always render pulse - visibility controlled by separate opacity animation */}
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.nextPulse,
+                {
+                  width: sizePx + 16,
+                  height: sizePx + 16,
+                  borderRadius: selectedStampShape === "circle" ? (sizePx + 16) / 2 : 12,
+                  transform: [
+                    {
+                      scale: Animated.add(
+                        1,
+                        Animated.multiply(
+                          nextPulseAnim,
+                          isNext ? 0.25 : 0
+                        )
+                      ),
+                    },
+                  ],
+                  opacity: Animated.multiply(
+                    pulseOpacityRef,
+                    isNext 
+                      ? Animated.add(0.1, Animated.multiply(nextPulseAnim, 0.4))
+                      : 0
+                  ),
+                },
+              ]}
+            />
           </View>
         </Pressable>
       );
@@ -241,39 +391,36 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   };
 
   const CardContent = () => (
-    <View style={styles.container}>
-      {backgroundImageSource && <Image source={backgroundImageSource} style={styles.backgroundLogo} resizeMode="cover" />}
-      <Animated.View style={[styles.glassBorder, { opacity: borderGlow }]} />
-      <View style={styles.backgroundOverlay} />
+  <View style={styles.container}>
+      {backgroundImageSource &&
+        (ExpoImage ? (
+      <ExpoImage source={backgroundImageSource as any} style={styles.backgroundLogo} contentFit="cover" transition={0} cachePolicy="memory-disk" />
+        ) : (
+      <Image source={backgroundImageSource as any} style={styles.backgroundLogo} resizeMode="cover" />
+        ))}
+    <Animated.View style={[styles.glassBorder, { opacity: borderGlow }]} />
+    <View style={styles.backgroundOverlay} />
       {!card.backgroundImage && (
-        <View style={styles.textureOverlay}>
+  <View style={styles.textureOverlay}>
           <View style={styles.texturePattern} />
           <View style={[styles.texturePattern, styles.texturePattern2]} />
           <View style={[styles.texturePattern, styles.texturePattern3]} />
           {textureDots}
         </View>
       )}
-      {showAnimation && isCompleted && <Animated.View style={[styles.shineOverlay, { transform: [{ translateX: shinePosition }] }]} />}
+  {showAnimation && isCompleted && <Animated.View style={[styles.shineOverlay, { transform: [{ translateX: shinePosition }] }]} />}
 
-      <View style={[styles.header, !card.backgroundImage && styles.headerNoBackground]}>
-        <View style={styles.businessInfo}>
-          {businessLogoSource && !card.backgroundImage && <Image source={businessLogoSource} style={styles.businessLogo} resizeMode="contain" />}
-          <Text style={styles.businessName} numberOfLines={1}>
-            {card.businessName}
-          </Text>
-        </View>
-        <View style={styles.progressContainer}>
-          <Text style={styles.progress}>#{cardCode}</Text>
-          {isCompleted && <Ionicons name="gift" size={24} color={COLORS.white} style={styles.giftIcon} />}
-        </View>
-      </View>
+      <HeaderSection
+        logoSource={businessLogoSource}
+        businessName={card.businessName}
+        cardCode={cardCode}
+        isCompleted={isCompleted}
+        showLogo={card.backgroundImage ? false : true}
+      />
 
       <View style={styles.gridContainer}>{renderGrid()}</View>
-
       <View style={styles.rewardContainer}>
-        <Text style={styles.rewardDescription} numberOfLines={2}>
-          🎁 {card.rewardDescription}
-        </Text>
+        <Text style={styles.rewardDescription}>🎁 {card.rewardDescription}</Text>
       </View>
     </View>
   );
@@ -283,17 +430,21 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
     maxWidth: cardWidth,
   };
 
-  const cardStyle = [
-    styles.cardWrapper,
-    style,
-    wrapperStyle,
-    {
-      transform: [{ perspective: 1000 }, ...(showAnimation && isCompleted ? [{ scale: pulseValue }] : []), ...(enableTilt ? [{ scale: tiltScale }] : [])],
-    },
-  ];
+  // Build platform-aware transforms to avoid iOS image layer flicker
+  const transforms: any[] = [];
+  if (Platform.OS !== "ios") {
+    transforms.push({ perspective: 1000 });
+    if (showAnimation && isCompleted) transforms.push({ scale: pulseValue });
+    if (enableTilt) transforms.push({ scale: tiltScale });
+  } else {
+    // On iOS, avoid perspective/tilt during interactions; only apply pulse when completed
+    if (showAnimation && isCompleted) transforms.push({ scale: pulseValue });
+  }
+
+  const cardStyle = [styles.cardWrapper, style, wrapperStyle, transforms.length ? { transform: transforms } : null];
 
   const TiltContainer = ({ children }: { children: React.ReactNode }) => {
-    if (!enableTilt) return <>{children}</>;
+    if (!enableTilt || Platform.OS === "ios") return <>{children}</>;
     return (
       <View onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchEnd} style={styles.tiltContainer}>
         {children}
@@ -314,15 +465,7 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
 
   return (
     <Animated.View style={cardStyle}>
-      <TiltContainer>
-        {backgroundImageSource ? (
-          <ImageBackground source={backgroundImageSource} style={styles.backgroundImage} imageStyle={{ borderRadius: 20, resizeMode: "cover" }}>
-            {cardContent}
-          </ImageBackground>
-        ) : (
-          cardContent
-        )}
-      </TiltContainer>
+      <TiltContainer>{cardContent}</TiltContainer>
     </Animated.View>
   );
 };

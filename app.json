@@ -38,9 +38,9 @@
       ]
     ],
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#E53935"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
