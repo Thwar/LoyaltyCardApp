@@ -482,7 +482,7 @@ const renderStampShape = (shape: StampShape, index: number, isStamped: boolean, 
         ) : (
           <View style={{ alignItems: "center", justifyContent: "center", position: "relative" }}>
             <Ionicons name="triangle-outline" size={stampSize} color={"rgba(255,255,255,0.7)"} />
-            <Text style={[styles.stampNumber, { fontSize: stampSize * 0.3, position: "absolute", bottom: 8, color: "rgba(128,128,128,0.9)" }]}>{index + 1}</Text>
+            <Text style={[styles.stampNumber, { fontSize: stampSize * 0.3, position: "absolute", bottom: 8, color: "white" }]}>{index + 1}</Text>
           </View>
         )}
       </View>
@@ -497,7 +497,7 @@ const renderStampShape = (shape: StampShape, index: number, isStamped: boolean, 
         ) : (
           <View style={{ alignItems: "center", justifyContent: "center", position: "relative" }}>
             <Ionicons name="star-outline" size={stampSize} color={"rgba(255,255,255,0.7)"} />
-            <Text style={[styles.stampNumber, { fontSize: stampSize * 0.3, position: "absolute", bottom: stampSize === 48 ? 14 : 10, color: "rgba(128,128,128,0.9)" }]}>{index + 1}</Text>
+            <Text style={[styles.stampNumber, { fontSize: stampSize * 0.3, position: "absolute", bottom: stampSize === 48 ? 14 : 10, color: "white !important" }]}>{index + 1}</Text>
           </View>
         )}
       </View>
@@ -745,7 +745,7 @@ const styles = StyleSheet.create({
   gradientWithBackground: { backgroundColor: "rgba(0, 0, 0, 0.2)" },
   backgroundImage: { borderRadius: 20, overflow: "hidden", width: "100%" },
   stampsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "100%" },
-  stampNumber: { color: "rgba(128, 128, 128, 0.8)", fontWeight: "600", textAlign: "center" },
+  stampNumber: { color: "white", fontWeight: "600", textAlign: "center" },
   nextPulse: {
     position: "absolute",
     borderWidth: 2,
