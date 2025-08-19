@@ -51,6 +51,7 @@ yarn-error.*
 .vercel
 
 # Firebase
+# Firebase Android config (do not commit secrets)
 google-services.json
 GoogleService-Info.plist
 

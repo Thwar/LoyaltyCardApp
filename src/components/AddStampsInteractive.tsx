@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground, ViewStyle, Pressable } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground, ViewStyle, Pressable, useWindowDimensions, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
@@ -28,6 +28,8 @@ const { width } = Dimensions.get("window");
 
 export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card, currentStamps, style, cardCode, showAnimation = true, enableTilt = true, scaleOnHover = 1.03, onPendingChange }) => {
   const [pending, setPending] = useState(0);
+  const windowDims = useWindowDimensions();
+  const cardWidth = Math.min(windowDims.width - SPACING.md * 2, 680);
 
   const totalSlots = card.totalSlots;
   const effectiveStamps = Math.min(totalSlots, currentStamps + pending);
@@ -276,11 +278,17 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
     </View>
   );
 
+  const wrapperStyle: ViewStyle = {
+    width: "100%",
+    maxWidth: cardWidth,
+  };
+
   const cardStyle = [
     styles.cardWrapper,
     style,
+    wrapperStyle,
     {
-      transform: [{ scale: showAnimation && isCompleted ? pulseValue : 1 }, ...(enableTilt ? [{ scale: tiltScale }, { rotateX: "2deg" }] : [{ rotateX: "2deg" }])],
+      transform: [{ perspective: 1000 }, ...(showAnimation && isCompleted ? [{ scale: pulseValue }] : []), ...(enableTilt ? [{ scale: tiltScale }] : [])],
     },
   ];
 
@@ -419,7 +427,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
   },
-  tiltContainer: { flex: 1 },
+  tiltContainer: {},
   gradient: {
     borderRadius: 20,
     borderCurve: "continuous",
@@ -427,10 +435,11 @@ const styles = StyleSheet.create({
     position: "relative",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.2)",
+    width: "100%",
   },
   container: {
     minHeight: 200,
-    flex: 1,
+    // allow content to define natural height
     position: "relative",
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 19,
@@ -622,7 +631,7 @@ const styles = StyleSheet.create({
     ...createTextShadowStyle({ textShadowColor: "rgba(0, 0, 0, 0.4)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }),
   },
   gradientWithBackground: { backgroundColor: "rgba(0, 0, 0, 0.2)" },
-  backgroundImage: { borderRadius: 20, overflow: "hidden" },
+  backgroundImage: { borderRadius: 20, overflow: "hidden", width: "100%" },
   stampsGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", alignItems: "center", width: "100%" },
   stampNumber: { color: "rgba(128, 128, 128, 0.8)", fontWeight: "600", textAlign: "center" },
   nextPulse: {

@@ -289,13 +289,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   nextStampPreview: {
-    backgroundColor: COLORS.white,
+    backgroundColor: "rgb(248, 249, 250)",
     borderRadius: 8,
     borderCurve: "continuous",
-    padding: SPACING.md,
+    padding: 0,
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: COLORS.success,
+    alignSelf: "center",
+    width: "94%",
+    maxWidth: 680,
   },
   previewLabel: {
     fontSize: FONT_SIZES.sm,
@@ -308,7 +309,6 @@ const styles = StyleSheet.create({
   },
   completeCardPreview: {
     backgroundColor: COLORS.success,
-    borderColor: COLORS.success,
   },
   completeCardLabel: {
     color: COLORS.white,

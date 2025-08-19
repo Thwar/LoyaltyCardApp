@@ -7,11 +7,24 @@
 
 // Load environment variables from .env files
 require("dotenv").config();
+import fs from "fs";
+import path from "path";
 
 export default ({ config }) => {
   const isDev = process.env.NODE_ENV === "development";
   const isProduction = process.env.APP_ENV === "production";
   const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "1119577610065940"; // fallback for dev only
+  const androidGoogleServicesPath = process.env.ANDROID_GOOGLE_SERVICES_FILE || "./google-services.json";
+  const resolvedAndroidGSPath = path.resolve(process.cwd(), androidGoogleServicesPath);
+  const hasAndroidGoogleServices = fs.existsSync(resolvedAndroidGSPath);
+  if (!hasAndroidGoogleServices) {
+    // Helpful message during prebuild when the file is missing
+    console.warn(
+      `expo-config: android google-services.json not found at ${resolvedAndroidGSPath}.\n` +
+        "Prebuild will continue, but building/running Android with Firebase/Notifications will require this file.\n" +
+        "Place your google-services.json at the project root or set ANDROID_GOOGLE_SERVICES_FILE and update config."
+    );
+  }
 
   return {
     ...config,
@@ -56,7 +69,7 @@ export default ({ config }) => {
       ],
     ],
     splash: {
-      image: "./assets/icon-background-red.png",
+      image: "./assets/icon.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
@@ -102,7 +115,7 @@ export default ({ config }) => {
         "com.android.alarm.permission.SET_ALARM",
       ],
       package: "com.thwar077.CaseroApp",
-      googleServicesFile: "./android/app/google-services.json",
+      ...(hasAndroidGoogleServices ? { googleServicesFile: androidGoogleServicesPath } : {}),
       intentFilters: [
         {
           action: "VIEW",

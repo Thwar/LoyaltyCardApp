@@ -38,7 +38,7 @@
       ]
     ],
     "splash": {
-      "image": "./assets/icon-background-red.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -86,7 +86,7 @@
         "com.android.alarm.permission.SET_ALARM"
       ],
       "package": "com.thwar077.CaseroApp",
-      "googleServicesFile": "./android/app/google-services.json",
+      "googleServicesFile": "./google-services.json",
       "intentFilters": [
         {
           "action": "VIEW",

@@ -1,4 +1,4 @@
-package com.thwar077.LoyaltyCardApp
+package com.thwar077.CaseroApp
 
 import android.app.Application
 import android.content.res.Configuration

@@ -1,4 +1,4 @@
-package com.thwar077.LoyaltyCardApp
+package com.thwar077.CaseroApp
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
