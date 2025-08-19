@@ -19,7 +19,7 @@ export default ({ config }) => {
     slug: "CaseroApp",
     version: process.env.APP_VERSION || "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    icon: "./assets/icon-background-red.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     plugins: [
@@ -45,7 +45,7 @@ export default ({ config }) => {
       [
         "expo-notifications",
         {
-          icon: "./assets/icon.png",
+          icon: "./assets/icon-background-red.png",
           color: "#ffffff",
           defaultChannel: "default",
           sounds: ["./assets/sounds/success.mp3", "./assets/sounds/complete.mp3"],
@@ -56,14 +56,14 @@ export default ({ config }) => {
       ],
     ],
     splash: {
-      image: "./assets/icon.png",
+      image: "./assets/icon-background-red.png",
       resizeMode: "contain",
       backgroundColor: "#ffffff",
     },
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      icon: "./assets/icon.png",
+      icon: "./assets/icon-background-red.png",
       infoPlist: {
         NSCameraUsageDescription: "Esta aplicación necesita acceso a la cámara para tomar fotos del logo de tu negocio.",
         NSPhotoLibraryUsageDescription: "Esta aplicación necesita acceso a tu galería de fotos para seleccionar el logo de tu negocio.",
@@ -89,7 +89,7 @@ export default ({ config }) => {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/icon.png",
+        foregroundImage: "./assets/icon-background-red.png",
         backgroundColor: "#ffffff",
       },
       edgeToEdgeEnabled: true,
@@ -125,7 +125,7 @@ export default ({ config }) => {
     scheme: ["caseroapp", `fb${FACEBOOK_APP_ID}`],
     extra: {
       eas: {
-        projectId: process.env.EXPO_PROJECT_ID || "20c6dc88-4b0c-4405-85e3-a0b7e343d220",
+        projectId: process.env.EXPO_PROJECT_ID || "dfe2bd78-90b2-4031-bec7-4cd519f6334a",
       },
       // Environment variables to be accessible in the app
       APP_ENV: process.env.APP_ENV || (isDev ? "development" : "production"),
@@ -159,7 +159,7 @@ export default ({ config }) => {
     },
     runtimeVersion: process.env.APP_VERSION || "1.0.0",
     updates: {
-      url: `https://u.expo.dev/${process.env.EXPO_PROJECT_ID || "20c6dc88-4b0c-4405-85e3-a0b7e343d220"}`,
+      url: `https://u.expo.dev/${process.env.EXPO_PROJECT_ID || "dfe2bd78-90b2-4031-bec7-4cd519f6334a"}`,
     },
   };
 };

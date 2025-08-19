@@ -1,17 +1,19 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
 import { CustomerCard } from "../types";
 import { StampsGrid } from "./StampsGrid";
+import { AddStampsInteractive } from "./AddStampsInteractive";
+import * as Haptics from "expo-haptics";
 
 interface StampConfirmationModalProps {
   customerCard: CustomerCard | null;
   isVisible: boolean;
   loading: boolean;
   onClose: () => void;
-  onConfirmStamp: () => void;
+  onConfirmStamp: (count?: number) => void;
   onRedeemReward?: () => void;
 }
 
@@ -19,10 +21,13 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
   if (!customerCard) return null;
 
   const { loyaltyCard } = customerCard;
-  const willCompleteCard = loyaltyCard && customerCard.currentStamps + 1 >= loyaltyCard.totalSlots;
+  const willCompleteCard = useMemo(() => (loyaltyCard ? customerCard.currentStamps + 1 >= loyaltyCard.totalSlots : false), [customerCard.currentStamps, loyaltyCard]);
   const isCardComplete = loyaltyCard && customerCard.currentStamps >= loyaltyCard.totalSlots;
   const canRedeem = isCardComplete && !customerCard.isRewardClaimed;
   const isAlreadyRedeemed = isCardComplete && customerCard.isRewardClaimed;
+
+  // Pending increments selected in interactive card (non-redeem flow)
+  const [pending, setPending] = useState(0);
 
   return (
     <Modal animationType="slide" transparent={false} visible={isVisible} onRequestClose={onClose}>
@@ -83,21 +88,21 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                     {canRedeem && " - ¡COMPLETA!"}
                     {isAlreadyRedeemed && " - ¡CANJEADA!"}
                   </Text>
-                  {!canRedeem && !isAlreadyRedeemed && (
+                  {!canRedeem && !isAlreadyRedeemed && loyaltyCard && (
                     <View style={[styles.nextStampPreview, willCompleteCard && styles.completeCardPreview]}>
                       <Text style={[styles.previewLabel, willCompleteCard && styles.completeCardLabel]}>
-                        {willCompleteCard ? "¡Listo para canjear en próxima visita!" : `Después del sello: ${customerCard.currentStamps + 1} de ${loyaltyCard.totalSlots}`}
+                        {pending > 0
+                          ? `Seleccionados: ${pending} • Después: ${Math.min(customerCard.currentStamps + pending, loyaltyCard.totalSlots)} de ${loyaltyCard.totalSlots}`
+                          : `Toca para agregar sellos (máx ${loyaltyCard.totalSlots - customerCard.currentStamps})`}
                       </Text>
-                      <StampsGrid
-                        totalSlots={loyaltyCard.totalSlots}
-                        currentStamps={customerCard.currentStamps + 1}
-                        stampShape={loyaltyCard.stampShape || "circle"}
-                        showAnimation={false}
-                        size="medium"
-                        containerStyle={styles.previewGrid}
-                        stampColor={loyaltyCard.cardColor || COLORS.primary}
-                        specialStampColor={"darkgray"}
-                        specialStampColorOutline={"darkgray"}
+                      <AddStampsInteractive
+                        card={loyaltyCard}
+                        currentStamps={customerCard.currentStamps}
+                        cardCode={customerCard.cardCode}
+                        // Always true per requirements
+                        showAnimation={true}
+                        enableTilt={true}
+                        onPendingChange={setPending}
                       />
                     </View>
                   )}
@@ -117,7 +122,22 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
             {!isAlreadyRedeemed && (
               <TouchableOpacity
                 style={[styles.actionButton, canRedeem ? styles.redeemButton : styles.confirmButton]}
-                onPress={canRedeem ? onRedeemReward || onConfirmStamp : onConfirmStamp}
+                onPress={
+                  canRedeem
+                    ? () => {
+                        try {
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        } catch {}
+                        if (onRedeemReward) onRedeemReward();
+                        else onConfirmStamp();
+                      }
+                    : () => {
+                        try {
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        } catch {}
+                        onConfirmStamp(Math.max(1, pending));
+                      }
+                }
                 disabled={loading}
               >
                 {loading ? (
@@ -125,7 +145,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                 ) : (
                   <>
                     <Ionicons name={canRedeem ? "gift" : willCompleteCard ? "star" : "add-circle"} size={24} color={COLORS.white} />
-                    <Text style={styles.confirmButtonText}>{canRedeem ? "Canjear Recompensa" : willCompleteCard ? "Completar Tarjeta" : "Agregar Sello"}</Text>
+                    <Text style={styles.confirmButtonText}>{canRedeem ? "Canjear Recompensa" : pending > 0 ? `Agregar ${pending} sello${pending === 1 ? "" : "s"}` : "Agregar Sello"}</Text>
                   </>
                 )}
               </TouchableOpacity>

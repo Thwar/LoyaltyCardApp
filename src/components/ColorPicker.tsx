@@ -38,14 +38,17 @@ export const ColorPicker: React.FC<ColorPickerProps> = ({ label, selectedColor, 
           return rows;
         }, []).map((row, rowIndex) => (
           <View key={rowIndex} style={styles.gridRow}>
-            {row.map((color: any) => (
-              <TouchableOpacity key={color.value} style={styles.gridColorItem} onPress={() => onColorSelect(color.value)} activeOpacity={0.7}>
-                <View style={[styles.colorCircle, { backgroundColor: color.value }, selectedColor === color.value && styles.selectedColorCircle]}>
-                  {selectedColor === color.value && <Text style={styles.gridCheckmark}>✓</Text>}
-                </View>
-                <Text style={styles.colorName}>{color.name}</Text>
-              </TouchableOpacity>
-            ))}
+            {row.map((color: any) => {
+              // Avoid using `.value` inside inline style objects to prevent Reanimated warnings.
+              const bg = color.value;
+              const isSelected = selectedColor === bg;
+              return (
+                <TouchableOpacity key={bg} style={styles.gridColorItem} onPress={() => onColorSelect(bg)} activeOpacity={0.7}>
+                  <View style={[styles.colorCircle, { backgroundColor: bg }, isSelected && styles.selectedColorCircle]}>{isSelected && <Text style={styles.gridCheckmark}>✓</Text>}</View>
+                  <Text style={styles.colorName}>{color.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         ))}
       </View>

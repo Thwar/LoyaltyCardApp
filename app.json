@@ -4,7 +4,7 @@
     "slug": "CaseroApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon-background-red.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "plugins": [
@@ -30,24 +30,19 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/icon-background-red.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "sounds": [
-            "./assets/sounds/success.mp3",
-            "./assets/sounds/complete.mp3"
-          ]
+          "sounds": ["./assets/sounds/success.mp3", "./assets/sounds/complete.mp3"]
         }
       ]
     ],
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/icon-background-red.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
@@ -58,30 +53,25 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLName": "google",
-            "CFBundleURLSchemes": [
-              "com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba"
-            ]
+            "CFBundleURLSchemes": ["com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba"]
           },
           {
             "CFBundleURLName": "facebook",
-            "CFBundleURLSchemes": [
-              "fb1119577610065940"
-            ]
+            "CFBundleURLSchemes": ["fb1119577610065940"]
           },
           {
             "CFBundleURLName": "caseroapp",
-            "CFBundleURLSchemes": [
-              "caseroapp"
-            ]
+            "CFBundleURLSchemes": ["caseroapp"]
           }
         ]
       },
       "bundleIdentifier": "com.thwar077.CaseroApp",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "icon": "./assets/icon-background-red.png"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
+        "foregroundImage": "./assets/icon-background-red.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -106,10 +96,7 @@
               "scheme": "caseroapp"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
@@ -117,19 +104,13 @@
       "favicon": "./assets/favicon.png",
       "bundler": "webpack"
     },
-    "scheme": [
-      "caseroapp",
-      "fb1119577610065940"
-    ],
+    "scheme": ["caseroapp", "fb1119577610065940"],
     "extra": {
       "eas": {
-        "projectId": "20c6dc88-4b0c-4405-85e3-a0b7e343d220"
+        "projectId": "dfe2bd78-90b2-4031-bec7-4cd519f6334a"
       }
     },
     "runtimeVersion": "1.0.0",
-    "updates": {
-      "url": "https://u.expo.dev/20c6dc88-4b0c-4405-85e3-a0b7e343d220"
-    },
     "owner": "thwar077"
   }
 }

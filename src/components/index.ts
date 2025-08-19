@@ -17,3 +17,4 @@ export { StampShapePicker } from "./StampShapePicker";
 export { default as SSOButton } from "./SSOButton";
 export { Typography } from "./Typography";
 export { LogoHeader } from "./LogoHeader";
+export { AddStampsInteractive } from "./AddStampsInteractive";

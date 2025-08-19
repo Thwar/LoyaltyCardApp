@@ -113,15 +113,17 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation }) =>
       setSearchLoading(false);
     }
   };
-  const handleConfirmAddStamp = async () => {
+  const handleConfirmAddStamp = async (count: number = 1) => {
     if (!customerCard) return;
 
     setAddingStamp(true);
     try {
-      const willCompleteCard = customerCard.loyaltyCard && customerCard.currentStamps + 1 >= customerCard.loyaltyCard.totalSlots;
+      const toAdd = Math.max(1, Math.floor(count));
+      const nextCount = (customerCard.currentStamps || 0) + toAdd;
+      const willCompleteCard = customerCard.loyaltyCard && nextCount >= customerCard.loyaltyCard.totalSlots;
 
       // Always just add a stamp - never auto-claim rewards
-      await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), business.id);
+      await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), business.id, toAdd);
 
       setShowConfirmationModal(false);
       setCustomerCard(null);
@@ -140,12 +142,14 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation }) =>
           ],
         });
       } else {
-        const stampsNeeded = customerCard.loyaltyCard ? customerCard.loyaltyCard.totalSlots - (customerCard.currentStamps + 1) : 0;
+        const stampsNeeded = customerCard.loyaltyCard ? customerCard.loyaltyCard.totalSlots - nextCount : 0;
         showAlert({
-          title: "✅ ¡Sello Agregado!",
-          message: `Sello agregado exitosamente a la tarjeta de ${customerCard.customerName || "el cliente"}. Se ha enviado una notificación al cliente informándole que ${
-            stampsNeeded === 1 ? "le falta" : "le faltan"
-          } ${stampsNeeded} sello${stampsNeeded === 1 ? "" : "s"} para completar su tarjeta.`,
+          title: toAdd > 1 ? "✅ ¡Sellos Agregados!" : "✅ ¡Sello Agregado!",
+          message: `${toAdd > 1 ? `${toAdd} sellos agregados` : "Sello agregado"} exitosamente a la tarjeta de ${
+            customerCard.customerName || "el cliente"
+          }. Se ha enviado una notificación al cliente informándole que ${stampsNeeded === 1 ? "le falta" : "le faltan"} ${stampsNeeded} sello${
+            stampsNeeded === 1 ? "" : "s"
+          } para completar su tarjeta.`,
           buttons: [
             {
               text: "Ok",

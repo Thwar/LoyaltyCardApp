@@ -483,13 +483,93 @@ export class CustomerCardService {
     }
   }
 
-  static async addStampByCardCodeAndBusiness(cardCode: string, businessId: string): Promise<void> {
+  static async addStampByCardCodeAndBusiness(cardCode: string, businessId: string, count: number = 1): Promise<void> {
     try {
       const customerCard = await this.getUnclaimedCustomerCardByCodeAndBusiness(cardCode, businessId);
       if (!customerCard) throw new Error("Tarjeta de cliente no encontrada con este código para este negocio");
-      await this.addStamp(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId);
+
+      // Clamp count >= 1
+      const addCount = Math.max(1, Math.floor(count));
+
+      if (addCount === 1) {
+        await this.addStamp(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId);
+        return;
+      }
+
+      // Bulk path: single transaction for multiple stamps
+      const result = await runTransaction(db, async (tx) => {
+        const cardRef = doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCard.id);
+        const loyaltyRef = doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, customerCard.loyaltyCardId);
+        const businessRef = doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId);
+
+        const [cardSnap, loyaltySnap, businessSnap] = await Promise.all([tx.get(cardRef), tx.get(loyaltyRef), tx.get(businessRef)]);
+        if (!cardSnap.exists()) throw new Error("Tarjeta de cliente no encontrada");
+        if (!loyaltySnap.exists()) throw new Error("Tarjeta de lealtad no encontrada");
+        const cardData: any = cardSnap.data();
+        const loyaltyData: any = loyaltySnap.data();
+
+        const current = cardData.currentStamps || 0;
+        const totalSlots = loyaltyData.totalSlots as number;
+        const remaining = Math.max(0, totalSlots - current);
+        const toAdd = Math.min(remaining, addCount);
+        if (toAdd <= 0) {
+          return {
+            newStampCount: current,
+            totalSlots,
+            isCompleted: current >= totalSlots,
+            toAdd: 0,
+            customerName: cardData.customerName || "",
+            businessName: businessSnap.exists() ? (businessSnap.data() as any).name : "el negocio",
+          };
+        }
+
+        // Increment count
+        tx.update(cardRef, { currentStamps: increment(toAdd), lastStampDate: serverTimestamp() });
+        // Create N stamp docs
+        for (let i = 0; i < toAdd; i++) {
+          const stampRef = doc(collection(db, FIREBASE_COLLECTIONS.STAMPS));
+          tx.set(stampRef, {
+            customerCardId: customerCard.id,
+            customerId: customerCard.customerId,
+            businessId,
+            loyaltyCardId: customerCard.loyaltyCardId,
+            timestamp: serverTimestamp(),
+          });
+        }
+
+        const newStampCount = current + toAdd;
+        const isCompleted = newStampCount >= totalSlots;
+        return { newStampCount, totalSlots, isCompleted, toAdd, customerName: cardData.customerName || "", businessName: businessSnap.exists() ? (businessSnap.data() as any).name : "el negocio" };
+      });
+
+      // Activity with final count
+      await StampActivityService.createStampActivity(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId, result.newStampCount, `Se agregaron ${result.toAdd} sello(s)`);
+
+      const notificationData: StampNotificationData = {
+        customerName: result.customerName,
+        businessName: result.businessName,
+        currentStamps: result.newStampCount,
+        totalSlots: result.totalSlots,
+        isCompleted: result.isCompleted,
+      };
+      try {
+        await NotificationService.sendStampAddedNotification(notificationData);
+        try {
+          const customerUser = await UserService.getUser(customerCard.customerId);
+          if (customerUser?.pushToken) {
+            await NotificationService.sendStampNotificationViaPush([customerUser.pushToken], notificationData);
+          }
+        } catch (pushErr) {
+          console.warn("addStampByCardCodeAndBusiness(bulk): push notification error", pushErr);
+        }
+        if (!result.isCompleted) {
+          await SoundService.playSuccessSound();
+        }
+      } catch (notifErr) {
+        console.warn("addStampByCardCodeAndBusiness(bulk): notification/sound error", notifErr);
+      }
     } catch (error: any) {
-      throw new Error(error.message || "Error al agregar sello por código de tarjeta y negocio");
+      throw new Error(error.message || "Error al agregar sellos por código de tarjeta y negocio");
     }
   }
 
