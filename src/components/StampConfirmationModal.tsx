@@ -87,7 +87,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                     {isAlreadyRedeemed && " ¡CANJEADA!"}
                   </Text> */}
                   {!canRedeem && !isAlreadyRedeemed && loyaltyCard && (
-                    <View style={[styles.nextStampPreview, willCompleteCard && styles.completeCardPreview]}>
+                    <View style={[styles.nextStampPreview]}>
                       <AddStampsInteractive
                         card={loyaltyCard}
                         currentStamps={customerCard.currentStamps}
@@ -107,6 +107,16 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                   )}
                   {(canRedeem || isAlreadyRedeemed) && (
                     <View style={[styles.redeemSection, isAlreadyRedeemed && styles.redeemedSection]}>
+                      <AddStampsInteractive
+                        card={loyaltyCard}
+                        currentStamps={customerCard.currentStamps}
+                        cardCode={customerCard.cardCode}
+                        // Always true per requirements
+                        showAnimation={true}
+                        enableTilt={true}
+                        onPendingChange={setPending}
+                      />
+
                       <Text style={[styles.redeemLabel, isAlreadyRedeemed && styles.redeemedLabel]}>{isAlreadyRedeemed ? "¡Recompensa ya canjeada!" : "¡Recompensa disponible para canjear!"}</Text>
                       <View style={styles.rewardBox}>
                         <Text style={styles.rewardText}>{loyaltyCard.rewardDescription}</Text>
@@ -308,9 +318,6 @@ const styles = StyleSheet.create({
   previewGrid: {
     marginBottom: 0,
   },
-  completeCardPreview: {
-    backgroundColor: COLORS.success,
-  },
   completeCardLabel: {
     color: COLORS.white,
     fontWeight: "bold",
@@ -367,17 +374,16 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   redeemSection: {
-    backgroundColor: COLORS.primary,
     borderRadius: 8,
     borderCurve: "continuous",
-    padding: SPACING.md,
+    padding: SPACING.xs,
     alignItems: "center",
-    marginTop: SPACING.md,
+    marginTop: 0,
   },
   redeemLabel: {
     fontSize: FONT_SIZES.md,
     fontWeight: "bold",
-    color: COLORS.white,
+    color: COLORS.success,
     marginBottom: SPACING.sm,
   },
   rewardBox: {

@@ -359,12 +359,23 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
 
     return <View style={[styles.stampsGrid, { gap: selectedStampShape === "diamond" ? SPACING.md : SPACING.sm }]}>{stamps}</View>;
   };
+  const TRANSPARENT_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAAWgmWQ0AAAAASUVORK5CYII=";
 
   const CardContent = () => (
     <View style={styles.container}>
       {backgroundImageSource &&
         (ExpoImage ? (
-          <ExpoImage source={backgroundImageSource as any} style={styles.backgroundLogo} contentFit="cover" transition={0} cachePolicy="memory-disk" />
+          <ExpoImage
+            source={backgroundImageSource as any}
+            style={styles.backgroundLogo}
+            contentFit="cover"
+            placeholder={{ uri: TRANSPARENT_PNG }}
+            placeholderContentFit="cover"
+            transition={250}
+            cachePolicy="memory-disk"
+            priority="high"
+            recyclingKey={backgroundImageSource.uri}
+          />
         ) : (
           <Image source={backgroundImageSource as any} style={styles.backgroundLogo} resizeMode="cover" />
         ))}
