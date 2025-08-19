@@ -1,10 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Modal, ActivityIndicator, ScrollView } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../constants";
 import { CustomerCard } from "../types";
-import { StampsGrid } from "./StampsGrid";
 import { AddStampsInteractive } from "./AddStampsInteractive";
 import * as Haptics from "expo-haptics";
 
@@ -34,10 +32,10 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
       <SafeAreaView style={styles.modalContainer}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+            <Ionicons name="arrow-back" size={24} color={COLORS.white} />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>{canRedeem ? "Canjear Recompensa" : isAlreadyRedeemed ? "Recompensa Canjeada" : willCompleteCard ? "Completar Tarjeta" : "Confirmar Sello"}</Text>
-          <View style={{ width: 24 }}>{loading && <ActivityIndicator size="small" color={COLORS.primary} />}</View>
+          <View style={{ width: 24 }}>{loading && <ActivityIndicator size="small" color={COLORS.white} />}</View>
         </View>
         <ScrollView style={styles.modalContent}>
           <View style={styles.confirmationSection}>
@@ -68,33 +66,28 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                 <Text style={styles.infoLabel}>Nombre:</Text>
                 <Text style={styles.infoValue}>{customerCard.customerName || "Cliente"}</Text>
               </View>
-              <View style={styles.infoRow}>
+              {/* <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Código de Tarjeta:</Text>
                 <Text style={styles.infoValue}>{customerCard.cardCode}</Text>
-              </View>
+              </View> */}
             </View>
           </View>
           {loyaltyCard && (
             <View style={styles.loyaltyCardSection}>
               <View style={styles.cardContainer}>
-                <View style={styles.cardHeader}>
+                {/* <View style={styles.cardHeader}>
                   <Text style={styles.cardTitle}>{loyaltyCard.businessName}</Text>
                   <Text style={styles.rewardDescription}>{loyaltyCard.rewardDescription}</Text>
-                </View>
+                </View> */}
 
                 <View style={styles.stampsSection}>
-                  <Text style={styles.stampsLabel}>
+                  {/* <Text style={styles.stampsLabel}>
                     Sellos Actuales: {customerCard.currentStamps} de {loyaltyCard.totalSlots}
-                    {canRedeem && " - ¡COMPLETA!"}
-                    {isAlreadyRedeemed && " - ¡CANJEADA!"}
-                  </Text>
+                    {canRedeem && ""}
+                    {isAlreadyRedeemed && " ¡CANJEADA!"}
+                  </Text> */}
                   {!canRedeem && !isAlreadyRedeemed && loyaltyCard && (
                     <View style={[styles.nextStampPreview, willCompleteCard && styles.completeCardPreview]}>
-                      <Text style={[styles.previewLabel, willCompleteCard && styles.completeCardLabel]}>
-                        {pending > 0
-                          ? `Seleccionados: ${pending} • Después: ${Math.min(customerCard.currentStamps + pending, loyaltyCard.totalSlots)} de ${loyaltyCard.totalSlots}`
-                          : `Toca para agregar sellos (máx ${loyaltyCard.totalSlots - customerCard.currentStamps})`}
-                      </Text>
                       <AddStampsInteractive
                         card={loyaltyCard}
                         currentStamps={customerCard.currentStamps}
@@ -104,6 +97,12 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                         enableTilt={true}
                         onPendingChange={setPending}
                       />
+
+                      <Text style={[styles.previewLabel, willCompleteCard && styles.completeCardLabel]}>
+                        {pending > 0
+                          ? `Seleccionados: ${pending} • Después: ${Math.min(customerCard.currentStamps + pending, loyaltyCard.totalSlots)} de ${loyaltyCard.totalSlots}`
+                          : `Presiona para agregar sellos (máx ${loyaltyCard.totalSlots - customerCard.currentStamps})`}
+                      </Text>
                     </View>
                   )}
                   {(canRedeem || isAlreadyRedeemed) && (
@@ -121,7 +120,7 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
           <View style={styles.actionSection}>
             {!isAlreadyRedeemed && (
               <TouchableOpacity
-                style={[styles.actionButton, canRedeem ? styles.redeemButton : styles.confirmButton]}
+                style={[styles.actionButton, canRedeem ? styles.redeemButton : styles.confirmButton, !canRedeem && pending === 0 ? styles.disabledButton : null]}
                 onPress={
                   canRedeem
                     ? () => {
@@ -138,14 +137,16 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                         onConfirmStamp(Math.max(1, pending));
                       }
                 }
-                disabled={loading}
+                disabled={loading || (!canRedeem && pending === 0)}
               >
                 {loading ? (
                   <ActivityIndicator size="small" color={COLORS.white} />
                 ) : (
                   <>
-                    <Ionicons name={canRedeem ? "gift" : willCompleteCard ? "star" : "add-circle"} size={24} color={COLORS.white} />
-                    <Text style={styles.confirmButtonText}>{canRedeem ? "Canjear Recompensa" : pending > 0 ? `Agregar ${pending} sello${pending === 1 ? "" : "s"}` : "Agregar Sello"}</Text>
+                    <Ionicons name={canRedeem ? "gift" : willCompleteCard ? "star" : "add-circle"} size={24} color={!canRedeem && pending === 0 ? COLORS.textSecondary : COLORS.white} />
+                    <Text style={[styles.confirmButtonText, !canRedeem && pending === 0 ? styles.disabledButtonText : null]}>
+                      {canRedeem ? "Canjear Recompensa" : pending > 0 ? `Agregar ${pending} sello${pending === 1 ? "" : "s"}` : "Agregar Sello"}
+                    </Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -178,8 +179,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.inputBorder,
-    backgroundColor: COLORS.white,
+    borderBottomColor: COLORS.primaryDark,
+    backgroundColor: COLORS.primary,
   },
   backButton: {
     padding: SPACING.xs,
@@ -187,7 +188,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "bold",
-    color: COLORS.textPrimary,
+    color: COLORS.white,
     flex: 1,
     textAlign: "center",
     marginHorizontal: SPACING.md,
@@ -262,9 +263,7 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     ...SHADOWS.small,
   },
-  cardHeader: {
-    marginBottom: SPACING.md,
-  },
+  cardHeader: {},
   cardTitle: {
     fontSize: FONT_SIZES.lg,
     fontWeight: "bold",
@@ -278,6 +277,7 @@ const styles = StyleSheet.create({
   },
   stampsSection: {
     alignItems: "center",
+    flexDirection: "row",
   },
   stampsLabel: {
     fontSize: FONT_SIZES.md,
@@ -295,14 +295,15 @@ const styles = StyleSheet.create({
     padding: 0,
     alignItems: "center",
     alignSelf: "center",
-    width: "94%",
+    width: "100%",
     maxWidth: 680,
   },
   previewLabel: {
     fontSize: FONT_SIZES.sm,
     fontWeight: "600",
     color: COLORS.success,
-    marginBottom: SPACING.sm,
+    margin: SPACING.sm,
+    marginBottom: SPACING.xs,
   },
   previewGrid: {
     marginBottom: 0,
@@ -334,6 +335,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     ...SHADOWS.small,
   },
+  disabledButton: {
+    backgroundColor: COLORS.lightGray,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+  },
   redeemButton: {
     backgroundColor: COLORS.success,
     ...SHADOWS.small,
@@ -342,6 +348,12 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     fontWeight: "bold",
     color: COLORS.white,
+    marginLeft: SPACING.xs,
+  },
+  disabledButtonText: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: "bold",
+    color: COLORS.textSecondary,
     marginLeft: SPACING.xs,
   },
   cancelButton: {

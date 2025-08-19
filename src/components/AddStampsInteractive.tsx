@@ -22,23 +22,23 @@ let globalAnimationRef: Animated.CompositeAnimation | null = null;
 const startGlobalPulse = () => {
   if (globalPulseRunning) return;
   globalPulseRunning = true;
-  
+
   const loop = () => {
     if (!globalPulseRunning) return;
-    
+
     globalAnimationRef = Animated.sequence([
-      Animated.timing(globalPulseAnim, { 
-        toValue: 1, 
-        duration: 800, 
-        useNativeDriver: true
+      Animated.timing(globalPulseAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
       }),
-      Animated.timing(globalPulseAnim, { 
-        toValue: 0, 
-        duration: 800, 
-        useNativeDriver: true
+      Animated.timing(globalPulseAnim, {
+        toValue: 0,
+        duration: 800,
+        useNativeDriver: true,
       }),
     ]);
-    
+
     globalAnimationRef.start(({ finished }) => {
       // Always restart, even if finished is false
       setTimeout(() => {
@@ -48,7 +48,7 @@ const startGlobalPulse = () => {
       }, 50);
     });
   };
-  
+
   loop();
 };
 
@@ -77,33 +77,21 @@ interface BusinessLogoProps {
   source: { uri: string } | null;
 }
 
-// Completely isolated logo component - never re-renders to prevent flicker
-const BusinessLogo: React.FC<BusinessLogoProps> = React.memo(({ source }) => {
-  if (!source) return null;
-  return (
-    <View style={{ opacity: Platform.OS === "ios" ? 0.999 : 1 }}>
-      {ExpoImage ? (
-        <ExpoImage
-          source={source as any}
-          style={styles.businessLogo}
-          contentFit="contain"
-          transition={0}
-          cachePolicy="memory-disk"
-          priority="high"
-          // @ts-ignore defaultSource is supported by expo-image as placeholder
-          defaultSource={require("../../assets/logo.png")}
-        />
-      ) : (
-        <Image
-          source={source as any}
-          defaultSource={require("../../assets/logo.png")}
-          style={[styles.businessLogo, { backfaceVisibility: "hidden" }]}
-          resizeMode="contain"
-        />
-      )}
-    </View>
-  );
-}, () => true); // Never re-render to prevent flicker
+// Static logo component - completely frozen to prevent any re-renders
+const BusinessLogo = React.memo(
+  () => {
+    // Get the logo source from a stable ref to avoid prop changes
+    const logoRef = useRef<string | null>(null);
+
+    // Only set logo once and never change it
+    if (!logoRef.current && typeof window !== "undefined") {
+      // We'll set this from parent component
+    }
+
+    return null; // Temporarily remove to test if this eliminates flicker completely
+  },
+  () => true
+);
 
 interface HeaderSectionProps {
   logoSource: { uri: string } | null;
@@ -113,22 +101,25 @@ interface HeaderSectionProps {
   showLogo: boolean;
 }
 
-const HeaderSection: React.FC<HeaderSectionProps> = React.memo(({ logoSource, businessName, cardCode, isCompleted, showLogo }) => {
-  return (
-    <View style={[styles.header, !logoSource && styles.headerNoBackground]}>
-      <View style={styles.businessInfo}>
-        {showLogo && logoSource && <BusinessLogo source={logoSource} />}
-        <Text style={styles.businessName} numberOfLines={1}>
-          {businessName}
-        </Text>
+const HeaderSection: React.FC<HeaderSectionProps> = React.memo(
+  ({ logoSource, businessName, cardCode, isCompleted, showLogo }) => {
+    return (
+      <View style={[styles.header, !logoSource && styles.headerNoBackground]}>
+        <View style={styles.businessInfo}>
+          {/* Logo temporarily removed to test flicker */}
+          <Text style={styles.businessName} numberOfLines={1}>
+            {businessName}
+          </Text>
+        </View>
+        <View style={styles.progressContainer}>
+          <Text style={styles.progress}>#{cardCode}</Text>
+          {isCompleted && <Ionicons name="gift" size={24} color={COLORS.white} style={styles.giftIcon} />}
+        </View>
       </View>
-      <View style={styles.progressContainer}>
-        <Text style={styles.progress}>#{cardCode}</Text>
-        {isCompleted && <Ionicons name="gift" size={24} color={COLORS.white} style={styles.giftIcon} />}
-      </View>
-    </View>
-  );
-}, () => true); // Never re-render to prevent flicker
+    );
+  },
+  () => true
+); // Never re-render to prevent flicker
 
 interface AddStampsInteractiveProps {
   card: LoyaltyCardType;
@@ -148,7 +139,6 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   const [pending, setPending] = useState(0);
   // reverted press tracking
   const windowDims = useWindowDimensions();
-  const cardWidth = Math.min(windowDims.width - SPACING.md * 2, 680);
 
   const totalSlots = card.totalSlots;
   const effectiveStamps = Math.min(totalSlots, currentStamps + pending);
@@ -172,7 +162,7 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   const tiltScale = useRef(new Animated.Value(1)).current;
   const borderGlow = useRef(new Animated.Value(0.5)).current;
   const nextPulseAnim = globalPulseAnim; // Use global animation
-  
+
   // Use a separate ref to track if animation should be visible
   const showPulseRef = useRef(false);
   const pulseOpacityRef = useRef(new Animated.Value(0)).current;
@@ -209,7 +199,7 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
       const pulseAnimation = Animated.loop(
         Animated.sequence([Animated.timing(pulseValue, { toValue: 1.05, duration: 800, useNativeDriver: true }), Animated.timing(pulseValue, { toValue: 1, duration: 800, useNativeDriver: true })])
       );
-  const shineAnimation = Animated.loop(Animated.timing(shinePosition, { toValue: width, duration: 2000, useNativeDriver: false }), { iterations: -1 });
+      const shineAnimation = Animated.loop(Animated.timing(shinePosition, { toValue: width, duration: 2000, useNativeDriver: false }), { iterations: -1 });
       animationsRef.current.push(pulseAnimation, shineAnimation);
       pulseAnimation.start();
       shineAnimation.start();
@@ -223,12 +213,12 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   useEffect(() => {
     // Always ensure animation is running when component mounts
     ensureGlobalPulse();
-    
+
     // Set up interval to check and restart if needed
     const interval = setInterval(() => {
       ensureGlobalPulse();
     }, 2000);
-    
+
     return () => {
       clearInterval(interval);
       // Don't stop global animation on unmount - let it run for other instances
@@ -239,7 +229,7 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   useEffect(() => {
     const shouldShow = effectiveStamps < totalSlots;
     showPulseRef.current = shouldShow;
-    
+
     Animated.timing(pulseOpacityRef, {
       toValue: shouldShow ? 1 : 0,
       duration: 200,
@@ -344,13 +334,8 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
       const content = renderStampShape(selectedStampShape, i, isStamped, sizePx, card.cardColor || COLORS.primary);
 
       const cell = (
-        <Pressable
-          key={i}
-          onPress={() => handleTapSlot(i)}
-          disabled={isHistorical}
-          style={({ pressed }) => [styles.pressWrap, pressed && styles.pressed]}
-        >
-          <View style={[styles.cellWrap]}>
+        <Pressable key={i} onPress={() => handleTapSlot(i)} disabled={isHistorical} style={({ pressed }) => [styles.pressWrap, pressed && styles.pressed]}>
+          <View style={[styles.cellWrap, isHistorical && { opacity: 0.6 }]}>
             {content}
             {/* Always render pulse - visibility controlled by separate opacity animation */}
             <Animated.View
@@ -363,21 +348,10 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
                   borderRadius: selectedStampShape === "circle" ? (sizePx + 16) / 2 : 12,
                   transform: [
                     {
-                      scale: Animated.add(
-                        1,
-                        Animated.multiply(
-                          nextPulseAnim,
-                          isNext ? 0.25 : 0
-                        )
-                      ),
+                      scale: Animated.add(1, Animated.multiply(nextPulseAnim, isNext ? 0.25 : 0)),
                     },
                   ],
-                  opacity: Animated.multiply(
-                    pulseOpacityRef,
-                    isNext 
-                      ? Animated.add(0.1, Animated.multiply(nextPulseAnim, 0.4))
-                      : 0
-                  ),
+                  opacity: Animated.multiply(pulseOpacityRef, isNext ? Animated.add(0.1, Animated.multiply(nextPulseAnim, 0.4)) : 0),
                 },
               ]}
             />
@@ -391,32 +365,26 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
   };
 
   const CardContent = () => (
-  <View style={styles.container}>
+    <View style={styles.container}>
       {backgroundImageSource &&
         (ExpoImage ? (
-      <ExpoImage source={backgroundImageSource as any} style={styles.backgroundLogo} contentFit="cover" transition={0} cachePolicy="memory-disk" />
+          <ExpoImage source={backgroundImageSource as any} style={styles.backgroundLogo} contentFit="cover" transition={0} cachePolicy="memory-disk" />
         ) : (
-      <Image source={backgroundImageSource as any} style={styles.backgroundLogo} resizeMode="cover" />
+          <Image source={backgroundImageSource as any} style={styles.backgroundLogo} resizeMode="cover" />
         ))}
-    <Animated.View style={[styles.glassBorder, { opacity: borderGlow }]} />
-    <View style={styles.backgroundOverlay} />
+      <Animated.View style={[styles.glassBorder, { opacity: borderGlow }]} />
+      <View style={styles.backgroundOverlay} />
       {!card.backgroundImage && (
-  <View style={styles.textureOverlay}>
+        <View style={styles.textureOverlay}>
           <View style={styles.texturePattern} />
           <View style={[styles.texturePattern, styles.texturePattern2]} />
           <View style={[styles.texturePattern, styles.texturePattern3]} />
           {textureDots}
         </View>
       )}
-  {showAnimation && isCompleted && <Animated.View style={[styles.shineOverlay, { transform: [{ translateX: shinePosition }] }]} />}
+      {showAnimation && isCompleted && <Animated.View style={[styles.shineOverlay, { transform: [{ translateX: shinePosition }] }]} />}
 
-      <HeaderSection
-        logoSource={businessLogoSource}
-        businessName={card.businessName}
-        cardCode={cardCode}
-        isCompleted={isCompleted}
-        showLogo={card.backgroundImage ? false : true}
-      />
+      <HeaderSection logoSource={businessLogoSource} businessName={card.businessName} cardCode={cardCode} isCompleted={isCompleted} showLogo={card.backgroundImage ? false : true} />
 
       <View style={styles.gridContainer}>{renderGrid()}</View>
       <View style={styles.rewardContainer}>
@@ -427,7 +395,8 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
 
   const wrapperStyle: ViewStyle = {
     width: "100%",
-    maxWidth: cardWidth,
+    marginLeft: 0,
+    marginRight: 0,
   };
 
   // Build platform-aware transforms to avoid iOS image layer flicker
@@ -562,7 +531,7 @@ const renderStampShape = (shape: StampShape, index: number, isStamped: boolean, 
 
 const styles = StyleSheet.create({
   cardWrapper: {
-    marginHorizontal: SPACING.md,
+    marginHorizontal: 0,
     marginVertical: SPACING.sm,
     borderRadius: 20,
     borderCurve: "continuous",

@@ -80,7 +80,7 @@ export class NotificationService {
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
           lightColor: "#FF231F7C",
-          sound: "complete.mp3", // Use custom complete sound for completion
+          sound: "success.mp3", // Use success sound for completion (save complete.mp3 for redemption)
           enableLights: true,
           enableVibrate: true,
           lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
@@ -289,7 +289,7 @@ export class NotificationService {
             isCompleted,
             customerName,
           },
-          sound: isCompleted ? "complete.mp3" : "success.mp3", // Use appropriate sound
+          sound: isCompleted ? "success.mp3" : "success.mp3", // Use success sound for both stamp added and completion
           priority: Notifications.AndroidNotificationPriority.MAX,
           vibrate: [0, 250, 250, 250],
           categoryIdentifier: "stamp_notification",

@@ -3,7 +3,7 @@
 - Manages audio playback using Expo AV
 - Loads and plays custom MP3 sound files from `assets/sounds/`
 - Provides `success.mp3` sound for stamp additions
-- Provides `complete.mp3` sound for card completions and reward redemptions
+- Provides `complete.mp3` sound for reward redemptions only
 - Handles audio initialization and cleanup
 
 ## Overview
@@ -21,8 +21,8 @@ This document describes the push notification and sound effect features added to
 
 ### 🔊 Sound Effects
 
-- **Success sound** played when a stamp is added (using `success.mp3`)
-- **Completion chime** played when a loyalty card is completed or reward is redeemed (using `complete.mp3`)
+- **Success sound** played when a stamp is added or loyalty card is completed (using `success.mp3`)
+- **Completion chime** played only when a reward is redeemed (using `complete.mp3`)
 - **Custom MP3 audio files** from `assets/sounds/` directory
 - **Cross-platform compatibility** (iOS, Android, Web)
 - **Notification sounds** match in-app sound effects for consistent experience
@@ -88,7 +88,7 @@ This document describes the push notification and sound effect features added to
 
 - **Title**: "🎉 ¡Tarjeta Completada!"
 - **Message**: "¡Felicidades! Has completado tu tarjeta de [BusinessName]. ¡Puedes canjear tu recompensa!"
-- **Sound**: Completion chime (two-tone)
+- **Sound**: Success sound (same as stamp added)
 - **Vibration**: 250ms pattern
 
 ### Reward Redeemed
