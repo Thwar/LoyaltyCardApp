@@ -239,10 +239,6 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
 
   // Subtle glass border glow
   useEffect(() => {
-    // On iOS, avoid a constantly animating overlay that can contribute to image flicker
-    if (Platform.OS === "ios") {
-      return;
-    }
     const glow = Animated.loop(
       Animated.sequence([Animated.timing(borderGlow, { toValue: 0.8, duration: 2000, useNativeDriver: false }), Animated.timing(borderGlow, { toValue: 0.5, duration: 2000, useNativeDriver: false })])
     );
@@ -399,21 +395,15 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
     marginRight: 0,
   };
 
-  // Build platform-aware transforms to avoid iOS image layer flicker
   const transforms: any[] = [];
-  if (Platform.OS !== "ios") {
-    transforms.push({ perspective: 1000 });
-    if (showAnimation && isCompleted) transforms.push({ scale: pulseValue });
-    if (enableTilt) transforms.push({ scale: tiltScale });
-  } else {
-    // On iOS, avoid perspective/tilt during interactions; only apply pulse when completed
-    if (showAnimation && isCompleted) transforms.push({ scale: pulseValue });
-  }
+  transforms.push({ perspective: 1000 });
+  if (showAnimation && isCompleted) transforms.push({ scale: pulseValue });
+  if (enableTilt) transforms.push({ scale: tiltScale });
 
   const cardStyle = [styles.cardWrapper, style, wrapperStyle, transforms.length ? { transform: transforms } : null];
 
   const TiltContainer = ({ children }: { children: React.ReactNode }) => {
-    if (!enableTilt || Platform.OS === "ios") return <>{children}</>;
+    if (!enableTilt) return <>{children}</>;
     return (
       <View onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchEnd} style={styles.tiltContainer}>
         {children}
