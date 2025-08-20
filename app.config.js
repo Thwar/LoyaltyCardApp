@@ -172,7 +172,10 @@ export default ({ config }) => {
 
       // Social Auth
       GOOGLE_WEB_CLIENT_ID: process.env.GOOGLE_WEB_CLIENT_ID,
-      FACEBOOK_APP_ID: process.env.FACEBOOK_APP_ID,
+  // Ensure the runtime always has a Facebook App ID. Fall back to the same
+  // value used for native configuration so Android doesn't generate
+  // fb://authorize (empty id) which causes a Play Store 404.
+  FACEBOOK_APP_ID: FACEBOOK_APP_ID,
     },
     runtimeVersion: process.env.APP_VERSION || "1.0.0",
     updates: {

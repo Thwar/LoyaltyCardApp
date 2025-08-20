@@ -273,9 +273,20 @@ export class SSOService {
     try {
       console.log("Starting Facebook Native Sign-In");
 
+      // Validate App ID and build a safe redirect URI
+      let scheme = undefined as string | undefined;
+      if (FACEBOOK_CONFIG.appId && `${FACEBOOK_CONFIG.appId}`.trim().length > 0) {
+        scheme = `fb${FACEBOOK_CONFIG.appId}`;
+      } else {
+        // Fallback so we never generate an invalid "fb://" scheme which causes
+        // Android to open Play Store with an empty id (404)
+        console.warn("FACEBOOK_APP_ID is missing. Falling back to app scheme 'caseroapp' for redirect URI.");
+        scheme = "caseroapp";
+      }
+
       // Create platform-specific redirect URI for native
       const redirectUri = AuthSession.makeRedirectUri({
-        scheme: `fb${FACEBOOK_CONFIG.appId}`,
+        scheme,
         path: "authorize",
       });
 
