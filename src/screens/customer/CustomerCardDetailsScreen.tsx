@@ -232,8 +232,8 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
       console.log("✅ Successfully joined loyalty program with card ID:", newCustomerCard.id);
       console.log("✅ Generated card code:", newCustomerCard.cardCode);
 
-      // Set refresh flags to trigger fresh data fetch in both screens
-      await refreshFlags.setRefreshForBothScreens();
+      // Set refresh flags to trigger fresh data fetch in all screens
+      await refreshFlags.setRefreshForAllScreens();
 
       // Clear joining state
       setJoiningCard(null);

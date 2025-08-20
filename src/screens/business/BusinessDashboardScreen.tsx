@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, RefreshControl, TouchableOpacity, Image } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -10,6 +10,7 @@ import { CreateLoyaltyCardModal } from "./CreateLoyaltyCardScreen";
 import { COLORS, FONT_SIZES, SPACING, SHADOWS } from "../../constants";
 import { BusinessService, LoyaltyCardService, CustomerCardService } from "../../services/api";
 import { Business, LoyaltyCard } from "../../types";
+import { refreshFlags } from "../../utils";
 
 interface BusinessDashboardScreenProps {
   navigation: StackNavigationProp<any>;
@@ -21,6 +22,15 @@ interface DashboardStats {
   totalStamps: number;
   claimedRewards: number;
 }
+
+interface DashboardCache {
+  business: Business | null;
+  loyaltyCards: LoyaltyCard[];
+  stats: DashboardStats;
+  timestamp: number;
+}
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = ({ navigation }) => {
   const { user } = useAuth();
@@ -37,9 +47,40 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
   const [createModalVisible, setCreateModalVisible] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Dashboard data cache with timestamp
+  const [dashboardCache, setDashboardCache] = useState<DashboardCache | null>(null);
+  
+  // Ref to prevent multiple simultaneous loads
+  const loadingRef = useRef(false);
+
+  // Function to clear dashboard cache
+  const clearDashboardCache = useCallback(() => {
+    console.log("🗑️ Clearing dashboard cache");
+    setDashboardCache(null);
+  }, []);
+
   const loadDashboardData = useCallback(
-    async (isRefresh = false) => {
+    async (isRefresh = false, forceReload = false) => {
       if (!user) return;
+      
+      // Prevent multiple simultaneous loads
+      if (loadingRef.current && !isRefresh) {
+        console.log("⏳ Load already in progress, skipping");
+        return;
+      }
+
+      // Check if we have valid cached data and no force reload
+      const now = Date.now();
+      if (!forceReload && !isRefresh && dashboardCache && (now - dashboardCache.timestamp) < CACHE_DURATION) {
+        console.log("📦 Using cached dashboard data");
+        setBusiness(dashboardCache.business);
+        setLoyaltyCards(dashboardCache.loyaltyCards);
+        setStats(dashboardCache.stats);
+        setLoading(false);
+        return;
+      }
+
+      loadingRef.current = true;
 
       try {
         if (isRefresh) {
@@ -49,14 +90,25 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         }
         setError(null);
 
+        console.log("🔄 Loading fresh dashboard data");
+
         // Load business info
         const businesses = await BusinessService.getBusinessesByOwner(user.id);
         const userBusiness = businesses[0];
         setBusiness(userBusiness);
 
+        let newLoyaltyCards: LoyaltyCard[] = [];
+        let newStats: DashboardStats = {
+          totalCards: 0,
+          activeCustomers: 0,
+          totalStamps: 0,
+          claimedRewards: 0,
+        };
+
         if (userBusiness) {
           // Load loyalty cards for this business
           const businessLoyaltyCards = await LoyaltyCardService.getLoyaltyCardsByBusiness(userBusiness.id);
+          newLoyaltyCards = businessLoyaltyCards;
           setLoyaltyCards(businessLoyaltyCards);
 
           if (businessLoyaltyCards.length > 0) {
@@ -81,45 +133,61 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
               }
             });
 
-            setStats({
+            newStats = {
               totalCards: businessLoyaltyCards.length,
               activeCustomers: uniqueActiveCustomers.size,
               totalStamps,
               claimedRewards,
-            });
-          } else {
-            // Reset stats if no loyalty cards
-            setStats({
-              totalCards: 0,
-              activeCustomers: 0,
-              totalStamps: 0,
-              claimedRewards: 0,
-            });
+            };
+            setStats(newStats);
           }
         } else {
           // Reset everything if no business
           setLoyaltyCards([]);
-          setStats({
-            totalCards: 0,
-            activeCustomers: 0,
-            totalStamps: 0,
-            claimedRewards: 0,
-          });
         }
+
+        // Cache the loaded data
+        setDashboardCache({
+          business: userBusiness,
+          loyaltyCards: newLoyaltyCards,
+          stats: newStats,
+          timestamp: now,
+        });
+
+        console.log("✅ Dashboard data cached successfully");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load dashboard");
       } finally {
         setLoading(false);
         setRefreshing(false);
+        loadingRef.current = false;
       }
     },
-    [user]
+    [user, dashboardCache]
   );
 
   useFocusEffect(
     useCallback(() => {
-      loadDashboardData();
-    }, [user])
+      const checkRefreshFlags = async () => {
+        // Check if we need to refresh based on flags
+        const shouldRefreshDashboard = await refreshFlags.shouldRefreshBusinessDashboard();
+        
+        if (shouldRefreshDashboard) {
+          console.log("🔄 Dashboard refresh needed based on flags");
+          
+          // Clear the refresh flag
+          await refreshFlags.clearBusinessDashboardRefresh();
+          
+          // Force reload the data
+          loadDashboardData(false, true);
+        } else {
+          // Try to load from cache first
+          loadDashboardData();
+        }
+      };
+
+      checkRefreshFlags();
+    }, [user, loadDashboardData])
   );
 
   const handleNavigateToAddStamp = useCallback(() => {
@@ -138,15 +206,15 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
   }, [navigation]);
 
   const handleRefresh = useCallback(() => {
-    loadDashboardData(true);
+    loadDashboardData(true, true); // Force refresh when user pulls to refresh
   }, [loadDashboardData]);
 
   const handleCreateModalSuccess = useCallback(() => {
-    loadDashboardData();
+    loadDashboardData(false, true); // Force reload after creating new loyalty card
   }, [loadDashboardData]);
 
   const handleRetry = useCallback(() => {
-    loadDashboardData();
+    loadDashboardData(false, true); // Force reload on retry
   }, [loadDashboardData]);
 
   const StatCard: React.FC<{

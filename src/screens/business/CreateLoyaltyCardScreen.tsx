@@ -7,6 +7,7 @@ import { Button, InputField, Dropdown, ColorPicker, StampShapePicker, AnimatedLo
 import { COLORS, FONT_SIZES, SPACING, getFontFamily } from "../../constants";
 import { LoyaltyCardService, BusinessService } from "../../services/api";
 import { ImageUploadService } from "../../services/imageUpload";
+import { refreshFlags } from "../../utils";
 
 interface CreateLoyaltyCardModalProps {
   visible: boolean;
@@ -76,6 +77,9 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
 
       // Create the loyalty card first to get its ID
       const createdCard = await LoyaltyCardService.createLoyaltyCard(cardData);
+
+      // Set refresh flags to trigger data refresh in all relevant screens
+      await refreshFlags.setRefreshForAllScreens();
 
       // If there's a background image and it's a data URL, upload it
       let uploadSuccess = true;

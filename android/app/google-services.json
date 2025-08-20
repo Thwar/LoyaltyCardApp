@@ -7,18 +7,26 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:853612097033:android:e4e61e9085b9416eca52d8",
+        "mobilesdk_app_id": "1:853612097033:android:78584aabd75fb41dca52d8",
         "android_client_info": {
-          "package_name": "com.thwar077.LoyaltyCardApp"
+          "package_name": "com.thwar077.CaseroApp"
         }
       },
       "oauth_client": [
         {
-          "client_id": "853612097033-c14lg164nqpb27ikaoef88q397d80nho.apps.googleusercontent.com",
+          "client_id": "853612097033-0oaa0q2sfc2u4vb3tstcbnab316fp80j.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.thwar077.LoyaltyCardApp",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+            "package_name": "com.thwar077.CaseroApp",
+            "certificate_hash": "dabf0e77bad5eb7d12b204a24ad87051ccb46a3a"
+          }
+        },
+        {
+          "client_id": "853612097033-9paup4ks4cd76h7jm3mep58cciipq98c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.thwar077.CaseroApp",
+            "certificate_hash": "200eb36bfca73c08fce439dff50e9dc459e48284"
           }
         },
         {

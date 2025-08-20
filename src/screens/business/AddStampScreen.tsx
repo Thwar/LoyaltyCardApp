@@ -7,6 +7,7 @@ import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService, BusinessService } from "../../services/api";
 import { BusinessTabParamList, CustomerCard, Business } from "../../types";
 import { useAuth } from "../../context/AuthContext";
+import { refreshFlags } from "../../utils";
 
 interface AddStampScreenProps {
   navigation: BottomTabNavigationProp<BusinessTabParamList, "Sellar">;
@@ -125,6 +126,9 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation }) =>
       // Always just add a stamp - never auto-claim rewards
       await CustomerCardService.addStampByCardCodeAndBusiness(cardCode.trim(), business.id, toAdd);
 
+      // Set refresh flag for business dashboard to update stats
+      await refreshFlags.setBusinessDashboardRefresh();
+
       setShowConfirmationModal(false);
       setCustomerCard(null);
 
@@ -181,6 +185,9 @@ export const AddStampScreen: React.FC<AddStampScreenProps> = ({ navigation }) =>
     try {
       // Call the redeem reward API
       await CustomerCardService.claimRewardByCardCodeAndBusiness(cardCode.trim(), business.id);
+
+      // Set refresh flag for business dashboard to update stats
+      await refreshFlags.setBusinessDashboardRefresh();
 
       setShowConfirmationModal(false);
       setCustomerCard(null);

@@ -76,7 +76,11 @@ export default ({ config }) => {
     assetBundlePatterns: ["**/*"],
     ios: {
       supportsTablet: true,
-      icon: "./assets/icon-background-red.png",
+      icon: {
+        dark: "./assets/icon-background-red.png",
+        light: "./assets/icon-background-red.png",
+        tinted: "./assets/icon-background-red.png",
+      },
       infoPlist: {
         NSCameraUsageDescription: "Esta aplicación necesita acceso a la cámara para tomar fotos del logo de tu negocio.",
         NSPhotoLibraryUsageDescription: "Esta aplicación necesita acceso a tu galería de fotos para seleccionar el logo de tu negocio.",

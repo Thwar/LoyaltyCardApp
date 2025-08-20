@@ -17,6 +17,13 @@ const GOOGLE_CONFIG = {
   iosClientId: undefined as string | undefined,
 };
 
+// Debug log the configuration
+console.log("Google Sign-In config loaded:", {
+  hasWebClientId: !!GOOGLE_CONFIG.webClientId,
+  webClientId: GOOGLE_CONFIG.webClientId?.substring(0, 20) + "...", // Only show first 20 chars for security
+  platform: Platform.OS,
+});
+
 // Facebook App Configuration
 const FACEBOOK_CONFIG = {
   appId: env.FACEBOOK_APP_ID,
@@ -47,6 +54,7 @@ export class SSOService {
           iosClientId: config.iosClientId,
           platform: Platform.OS,
           expectedAndroidClientId: GOOGLE_CONFIG.androidClientId,
+          hasWebClientId: !!config.webClientId,
         });
 
         await GoogleSignin.configure(config);
@@ -156,7 +164,9 @@ export class SSOService {
       ) {
         console.error("Developer error - likely configuration issue:", error);
         console.error("This usually means you need to rebuild your development client with the updated google-services.json file");
-        throw new Error("Google Sign-In requiere una nueva compilación. Instala la nueva versión de desarrollo y vuelve a intentar.");
+        console.error("Current SHA-1 fingerprint should be: DA:BF:0E:77:BA:D5:EB:7D:12:B2:04:A2:4A:D8:70:51:CC:B4:6A:3A");
+        console.error("Web Client ID should be:", GOOGLE_CONFIG.webClientId);
+        throw new Error("Google Sign-In necesita una nueva compilación. Por favor, instala la nueva versión de desarrollo que se está creando ahora.");
       } else {
         console.error("Unexpected Google Sign-In error:", error);
         throw new Error(error.message || "Error al iniciar sesión con Google");

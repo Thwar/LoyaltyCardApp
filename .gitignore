@@ -50,8 +50,12 @@ yarn-error.*
 
 .vercel
 
-# Firebase
-# Firebase Android config (do not commit secrets)
+# Local Credentials and Keystores
+credentials.json
+android/app/keystores/*.keystore
+!android/app/debug.keystore
+
+# Firebase Config Files
 google-services.json
 GoogleService-Info.plist
 

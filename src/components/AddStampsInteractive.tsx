@@ -371,7 +371,6 @@ export const AddStampsInteractive: React.FC<AddStampsInteractiveProps> = ({ card
             contentFit="cover"
             placeholder={{ uri: TRANSPARENT_PNG }}
             placeholderContentFit="cover"
-            transition={250}
             cachePolicy="memory-disk"
             priority="high"
             recyclingKey={backgroundImageSource.uri}

@@ -325,6 +325,9 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
       console.log("✅ Successfully joined loyalty program with card ID:", newCustomerCard.id);
       console.log("✅ Generated card code:", newCustomerCard.cardCode);
 
+      // Set refresh flags to trigger fresh data fetch in all screens
+      await refreshFlags.setRefreshForAllScreens();
+
       // Clear joining state
       setJoiningCard(null);
 

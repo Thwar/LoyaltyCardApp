@@ -11,6 +11,7 @@ const REFRESH_FLAGS_KEY = "@loyalty_app_refresh_flags";
 interface RefreshFlags {
   businessDiscoveryRefresh: boolean;
   customerHomeRefresh: boolean;
+  businessDashboardRefresh: boolean;
   timestamp: number;
 }
 
@@ -18,6 +19,7 @@ class RefreshFlagsManager {
   private flags: RefreshFlags = {
     businessDiscoveryRefresh: false,
     customerHomeRefresh: false,
+    businessDashboardRefresh: false,
     timestamp: Date.now(),
   };
 
@@ -72,6 +74,17 @@ class RefreshFlagsManager {
   }
 
   /**
+   * Set a refresh flag for BusinessDashboardScreen
+   */
+  async setBusinessDashboardRefresh(): Promise<void> {
+    console.log("🚩 Setting BusinessDashboard refresh flag");
+    await this.loadFlags();
+    this.flags.businessDashboardRefresh = true;
+    this.flags.timestamp = Date.now();
+    await this.saveFlags();
+  }
+
+  /**
    * Check if BusinessDiscoveryScreen should refresh
    */
   async shouldRefreshBusinessDiscovery(): Promise<boolean> {
@@ -85,6 +98,14 @@ class RefreshFlagsManager {
   async shouldRefreshCustomerHome(): Promise<boolean> {
     await this.loadFlags();
     return this.flags.customerHomeRefresh;
+  }
+
+  /**
+   * Check if BusinessDashboardScreen should refresh
+   */
+  async shouldRefreshBusinessDashboard(): Promise<boolean> {
+    await this.loadFlags();
+    return this.flags.businessDashboardRefresh;
   }
 
   /**
@@ -108,6 +129,16 @@ class RefreshFlagsManager {
   }
 
   /**
+   * Clear BusinessDashboardScreen refresh flag
+   */
+  async clearBusinessDashboardRefresh(): Promise<void> {
+    console.log("🚩 Clearing BusinessDashboard refresh flag");
+    await this.loadFlags();
+    this.flags.businessDashboardRefresh = false;
+    await this.saveFlags();
+  }
+
+  /**
    * Clear all refresh flags
    */
   async clearAllFlags(): Promise<void> {
@@ -115,13 +146,28 @@ class RefreshFlagsManager {
     this.flags = {
       businessDiscoveryRefresh: false,
       customerHomeRefresh: false,
+      businessDashboardRefresh: false,
       timestamp: Date.now(),
     };
     await this.saveFlags();
   }
 
   /**
+   * Set refresh flags for all screens - useful for operations that affect all screens
+   */
+  async setRefreshForAllScreens(): Promise<void> {
+    console.log("🚩 Setting refresh flags for all screens");
+    await this.loadFlags();
+    this.flags.businessDiscoveryRefresh = true;
+    this.flags.customerHomeRefresh = true;
+    this.flags.businessDashboardRefresh = true;
+    this.flags.timestamp = Date.now();
+    await this.saveFlags();
+  }
+
+  /**
    * Set refresh flags for both screens - useful for operations that affect both
+   * @deprecated Use setRefreshForAllScreens instead
    */
   async setRefreshForBothScreens(): Promise<void> {
     console.log("🚩 Setting refresh flags for both screens");
