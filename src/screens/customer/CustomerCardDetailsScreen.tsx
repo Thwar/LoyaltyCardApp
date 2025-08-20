@@ -41,7 +41,7 @@ interface BusinessWithCards extends Business {
 interface CustomerCardDetailsModalProps {
   visible: boolean;
   customerCard: CustomerCard;
-  onClose: () => void;
+  onClose: (refreshNeeded?: boolean) => void;
   navigation?: StackNavigationProp<CustomerStackParamList, any>;
   onJoinSuccess?: (cardCode: string) => void; // Callback for successful join
 }
@@ -60,11 +60,27 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
   // Track last refresh time to prevent unnecessary re-renders
   const lastRefreshTime = useRef(0);
 
-  // Simple cache for business data to avoid repeated fetches
-  const [businessCache, setBusinessCache] = useState<Record<string, BusinessWithCards>>({});
+  // Note: We intentionally avoid caching business details here to prevent stale data
+  // when viewing a business from a customer's card. BusinessDiscovery handles its own
+  // refresh/cache strategy; here we always fetch fresh to reflect current programs.
 
   const isCardComplete = card.currentStamps >= (card.loyaltyCard?.totalSlots || 0);
   const canClaimReward = isCardComplete && !card.isRewardClaimed;
+
+  // Memoize status text to prevent re-calculations
+  const statusText = useMemo(() => {
+    if (card.isRewardClaimed) return "Recompensa Reclamada";
+    if (canClaimReward) return "¡Listo para Reclamar!";
+    return "En Progreso";
+  }, [card.isRewardClaimed, canClaimReward]);
+
+  // Memoize expensive date calculations
+  const formattedDates = useMemo(() => {
+    return {
+      lastStampDate: card.lastStampDate ? new Date(card.lastStampDate).toLocaleDateString() : null,
+      createdAtDate: card.createdAt ? new Date(card.createdAt).toLocaleDateString() : null,
+    };
+  }, [card.lastStampDate, card.createdAt]);
 
   // Memoize card props to prevent unnecessary re-renders of AnimatedLoyaltyCard
   const cardProps = useMemo(
@@ -74,7 +90,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
             card: card.loyaltyCard,
             currentStamps: card.currentStamps,
             cardCode: card.cardCode,
-            showAnimation: true,
+            showAnimation: Platform.OS === "ios", // Disable animations on Android for performance
             stampShape: card.loyaltyCard.stampShape,
           }
         : null,
@@ -119,7 +135,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
 
       if (Platform.OS === "web") {
         window.alert("¡Tarjeta Eliminada!\n\nTu tarjeta de lealtad ha sido eliminada exitosamente.");
-        onClose();
+        handleCloseWithRefresh();
       } else {
         // For mobile, use React Native's native Alert
         console.log("Showing native success alert for mobile");
@@ -128,7 +144,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
             text: "OK",
             onPress: () => {
               console.log("OK button pressed, closing modal and refreshing");
-              onClose(); // This will trigger navigation back to home in the screen wrapper
+              handleCloseWithRefresh(); // This will trigger navigation back to home in the screen wrapper
             },
           },
         ]);
@@ -150,13 +166,6 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
     if (!card.loyaltyCard?.businessId || !user) return;
 
     const businessId = card.loyaltyCard.businessId;
-
-    // Check if we have cached data for this business
-    if (businessCache[businessId]) {
-      console.log("Using cached business data for:", businessId);
-      setSelectedBusiness(businessCache[businessId]);
-      return;
-    }
 
     try {
       setBusinessLoading(true);
@@ -181,6 +190,9 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
         return;
       }
 
+      // Filter only ACTIVE loyalty cards to match BusinessDiscovery behavior
+      const activeLoyaltyCards = loyaltyCards.filter((c) => c.isActive);
+
       // Filter unclaimed customer cards for display
       const unclaimedCustomerCards = allCustomerCards.filter((card) => !card.isRewardClaimed);
 
@@ -194,16 +206,10 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
 
       const businessWithCards: BusinessWithCards = {
         ...business,
-        loyaltyCards,
+        loyaltyCards: activeLoyaltyCards,
         customerCards: unclaimedCustomerCards,
         claimedRewardsCount,
       };
-
-      // Cache the result
-      setBusinessCache((prev) => ({
-        ...prev,
-        [businessId]: businessWithCards,
-      }));
 
       setSelectedBusiness(businessWithCards);
 
@@ -239,17 +245,10 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
       setJoiningCard(null);
 
       // Use callback if available (preferred for modal usage), otherwise try navigation
-      if (onJoinSuccess) {
-        console.log("📞 Calling onJoinSuccess callback with cardCode:", newCustomerCard.cardCode);
-        onClose(); // Close this modal first
-
-        // Wait for modal to close before showing success modal
-        setTimeout(() => {
-          onJoinSuccess(newCustomerCard.cardCode);
-        }, 300); // 300ms delay to ensure card details modal is fully closed
-      } else if (navigation) {
+      if (onJoinSuccess && navigation) {
         console.log("🚀 Navigating to Home with success modal params, cardCode:", newCustomerCard.cardCode);
         onClose(); // Close this modal first
+        handleCloseBusinessModal();
 
         // Navigate to CustomerTabs and then to Home with success modal params
         navigation.navigate("CustomerTabs", {
@@ -289,6 +288,14 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
 
     // Since we're already in a card details modal, we just update the current card being displayed
     // No navigation needed - the modal will update with the new card data
+  };
+
+  const handleClose = () => {
+    onClose(false); // Normal close, no refresh needed
+  };
+
+  const handleCloseWithRefresh = () => {
+    onClose(true); // Close with refresh needed
   };
 
   const refreshCard = async () => {
@@ -346,17 +353,17 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
   }
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" transparent={false} onRequestClose={onClose}>
+    <Modal visible={visible} animationType={Platform.OS === "android" ? "fade" : "slide"} presentationStyle="pageSheet" transparent={false} onRequestClose={handleClose}>
       <SafeAreaView style={styles.container}>
         {/* Header with close button */}
         <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
+          <TouchableOpacity onPress={handleClose} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>Detalles de Tarjeta</Text>
           <View style={styles.headerSpacer} />
         </View>
-        <ScrollView style={styles.scrollView}>
+        <ScrollView style={styles.scrollView} removeClippedSubviews={Platform.OS === "android"} scrollEventThrottle={Platform.OS === "android" ? 16 : 1} showsVerticalScrollIndicator={false}>
           {/* Card Display */}
           <View style={styles.cardContainer}>{cardProps ? <AnimatedLoyaltyCard {...cardProps} /> : <LoadingState error="Tarjeta no disponible" onRetry={onClose} />}</View>
           {/* Action Buttons */}
@@ -374,14 +381,12 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
             </View>
             <View style={styles.statusRow}>
               <Text style={styles.statusLabel}>Estado:</Text>
-              <Text style={[styles.statusValue, canClaimReward && styles.statusValueSuccess]}>
-                {card.isRewardClaimed ? "Recompensa Reclamada" : canClaimReward ? "¡Listo para Reclamar!" : "En Progreso"}
-              </Text>
+              <Text style={[styles.statusValue, canClaimReward && styles.statusValueSuccess]}>{statusText}</Text>
             </View>
             {card.lastStampDate && (
               <View style={styles.statusRow}>
                 <Text style={styles.statusLabel}>Último Sello:</Text>
-                <Text style={styles.statusValue}>{new Date(card.lastStampDate).toLocaleDateString()}</Text>
+                <Text style={styles.statusValue}>{formattedDates.lastStampDate}</Text>
               </View>
             )}
             <View style={styles.statusRow}>
@@ -391,7 +396,7 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
             {card.createdAt && (
               <View style={styles.statusRow}>
                 <Text style={styles.statusLabel}>Acumulando puntos desde:</Text>
-                <Text style={styles.statusValue}>{new Date(card.createdAt).toLocaleDateString()}</Text>
+                <Text style={styles.statusValue}>{formattedDates.createdAtDate}</Text>
               </View>
             )}
           </View>
@@ -420,7 +425,14 @@ const CustomerCardDetailsModal: React.FC<CustomerCardDetailsModalProps> = ({ vis
           </View>
         </ScrollView>
         {/* Loyalty Program List Modal */}
-        <LoyaltyProgramListModal selectedBusiness={selectedBusiness} joiningCard={joiningCard} onClose={handleCloseBusinessModal} onJoinProgram={handleJoinProgram} onViewCard={handleViewCard} />
+        <LoyaltyProgramListModal
+          key={selectedBusiness ? `${selectedBusiness.id}-${selectedBusiness.loyaltyCards.length}-${selectedBusiness.customerCards.length}` : "no-business"}
+          selectedBusiness={selectedBusiness}
+          joiningCard={joiningCard}
+          onClose={handleCloseBusinessModal}
+          onJoinProgram={handleJoinProgram}
+          onViewCard={handleViewCard}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -570,17 +582,19 @@ export const CustomerCardDetailsScreen: React.FC<CustomerCardDetailsScreenProps>
   const { customerCard } = route.params;
   const [modalVisible, setModalVisible] = useState(true);
 
-  const handleClose = () => {
+  const handleClose = (refreshNeeded = false) => {
     setModalVisible(false);
-    // Navigate back to the home screen with timestamp to trigger refresh
+    // Navigate back to the home screen with timestamp to trigger refresh if needed
     navigation.goBack();
-    // Navigate to CustomerTabs and then to Home with refresh parameter
-    navigation.navigate("CustomerTabs", {
-      screen: "Home",
-      params: {
-        timestamp: Date.now(), // This will trigger useFocusEffect to refresh the data
-      },
-    });
+    if (refreshNeeded) {
+      // Navigate to CustomerTabs and then to Home with refresh parameter
+      navigation.navigate("CustomerTabs", {
+        screen: "Home",
+        params: {
+          timestamp: Date.now(), // This will trigger useFocusEffect to refresh the data
+        },
+      });
+    }
   };
 
   return <CustomerCardDetailsModal visible={modalVisible} customerCard={customerCard} onClose={handleClose} navigation={navigation} />;

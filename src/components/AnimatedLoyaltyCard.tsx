@@ -1,16 +1,16 @@
 import React, { useEffect, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground, ViewStyle } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Dimensions, Image, ImageBackground, ViewStyle, Platform } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
-import { LoyaltyCard as LoyaltyCardType } from "../types";
+import { LoyaltyCard } from "../types";
 import { StampsGrid } from "./StampsGrid";
 import { imageCache, createShadowStyle, createTextShadowStyle } from "../utils";
 
 type StampShape = "circle" | "square" | "egg" | "triangle" | "diamond" | "star";
 
 interface AnimatedLoyaltyCardProps {
-  card: LoyaltyCardType;
+  card: LoyaltyCard;
   currentStamps?: number;
   onPress?: () => void;
   style?: ViewStyle;
@@ -30,6 +30,13 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     // Use stampShape from card first, then prop, then default to circle
     const selectedStampShape = card.stampShape || stampShape;
 
+    // Disable heavy features on Android for performance
+    const isAndroid = Platform.OS === "android";
+    const shouldShowAnimations = showAnimation && !isAndroid; // Disable general animations on Android
+    const shouldShowCompletionAnimation = showAnimation && isCompleted; // Allow completion animation on both platforms
+    const shouldShowTextures = !isAndroid; // Disable texture overlays on Android
+    const shouldShowGlassEffects = !isAndroid; // Disable glass effects on Android
+
     // Memoize image sources to prevent unnecessary re-renders
     const backgroundImageSource = useMemo(() => {
       return card.backgroundImage ? { uri: card.backgroundImage } : null;
@@ -39,24 +46,24 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       return card.businessLogo ? { uri: card.businessLogo } : null;
     }, [card.businessLogo]);
 
-    // Memoize texture dots to prevent re-creation on every render
-    const textureDots = useMemo(
-      () =>
-        Array.from({ length: 12 }, (_, i) => (
-          <View
-            key={i}
-            style={[
-              styles.textureDot,
-              {
-                top: 30 + (i % 4) * 40,
-                left: 30 + Math.floor(i / 4) * 60,
-                opacity: 0.5 + (i % 3) * 0.2,
-              },
-            ]}
-          />
-        )),
-      []
-    );
+    // Memoize texture dots to prevent re-creation on every render - skip on Android for performance
+    const textureDots = useMemo(() => {
+      if (!shouldShowTextures) return null; // Skip on Android for performance
+
+      return Array.from({ length: 12 }, (_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.textureDot,
+            {
+              top: 30 + (i % 4) * 40,
+              left: 30 + Math.floor(i / 4) * 60,
+              opacity: 0.5 + (i % 3) * 0.2,
+            },
+          ]}
+        />
+      ));
+    }, [shouldShowTextures]);
 
     // Pre-load images when component mounts or URLs change
     useEffect(() => {
@@ -69,12 +76,12 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       }
     }, [card.backgroundImage, card.businessLogo]);
 
-    // Animation values - only create what we need
+    // Animation values - create pulse for completion animation on both platforms, others only for iOS
     const scaleValue = useRef(new Animated.Value(1)).current;
-    const pulseValue = useRef(new Animated.Value(1)).current;
-    const shinePosition = useRef(new Animated.Value(-width)).current;
-    const tiltScale = useRef(new Animated.Value(1)).current;
-    const borderGlow = useRef(new Animated.Value(0.5)).current;
+    const pulseValue = useRef(new Animated.Value(1)).current; // Always create for completion animation
+    const shinePosition = useRef(new Animated.Value(-width)).current; // Always create for completion animation
+    const tiltScale = useRef(enableTilt && !isAndroid ? new Animated.Value(1) : new Animated.Value(1)).current;
+    const borderGlow = useRef(shouldShowGlassEffects ? new Animated.Value(0.5) : new Animated.Value(0.5)).current;
 
     // Animation cleanup refs
     const animationsRef = useRef<Animated.CompositeAnimation[]>([]);
@@ -118,7 +125,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     }).current;
 
     useEffect(() => {
-      const currentState = { isCompleted, showAnimation };
+      const currentState = { isCompleted, showAnimation: shouldShowCompletionAnimation };
 
       // Only restart animations if the relevant state has actually changed
       if (animationState.current.isCompleted === currentState.isCompleted && animationState.current.showAnimation === currentState.showAnimation) {
@@ -131,11 +138,16 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       // Clear previous animations
       cleanupAnimations();
 
-      if (showAnimation && isCompleted) {
+      // Allow completion animations on Android, but skip other animations
+      if (isAndroid && !isCompleted) {
+        return;
+      }
+
+      if (shouldShowCompletionAnimation && isCompleted) {
         // Reset shine position to start position
         shinePosition.setValue(-width);
 
-        // Pulse animation for completed cards
+        // Pulse animation for completed cards (now works on Android too!)
         const pulseAnimation = Animated.loop(
           Animated.sequence([
             Animated.timing(pulseValue, {
@@ -171,11 +183,16 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
 
       // Return cleanup function for this effect
       return cleanupAnimations;
-    }, [isCompleted, showAnimation, cleanupAnimations]);
+    }, [isCompleted, shouldShowCompletionAnimation, cleanupAnimations, isAndroid]);
 
     // Separate effect for border glow that doesn't depend on card completion
     useEffect(() => {
-      // Subtle glass border glow animation - always run this
+      // Skip glow animation on Android for performance
+      if (isAndroid || !shouldShowGlassEffects) {
+        return;
+      }
+
+      // Subtle glass border glow animation - only on iOS
       const glowAnimation = Animated.loop(
         Animated.sequence([
           Animated.timing(borderGlow, {
@@ -204,7 +221,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
           glowAnimationRef.current = null;
         }
       };
-    }, []); // Only run once
+    }, [isAndroid, shouldShowGlassEffects]); // Only run when Android status changes
 
     // Cleanup all animations on unmount - comprehensive cleanup
     useEffect(() => {
@@ -220,8 +237,10 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
           // Ignore errors during unmount cleanup
         }
       };
-    }, [cleanupAnimations]); // Touch handlers for scale effect - with proper animation tracking
+    }, [cleanupAnimations]); // Touch handlers for scale effect - with proper animation tracking and Android optimization
     const handleTouchStart = () => {
+      if (!shouldShowAnimations) return; // Skip animations on Android for performance
+
       const touchAnimation = Animated.spring(tiltScale, {
         toValue: scaleOnHover,
         useNativeDriver: true,
@@ -232,6 +251,8 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     };
 
     const handleTouchEnd = () => {
+      if (!shouldShowAnimations) return; // Skip animations on Android for performance
+
       const touchAnimation = Animated.spring(tiltScale, {
         toValue: 1,
         useNativeDriver: true,
@@ -243,23 +264,36 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
 
     const handlePress = () => {
       if (onPress) {
-        // Scale animation on press - properly tracked
-        const pressAnimation = Animated.sequence([
-          Animated.timing(scaleValue, {
-            toValue: 0.95,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.timing(scaleValue, {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-        ]);
-
-        pressAnimation.start();
+        if (shouldShowAnimations) {
+          // Scale animation on press - properly tracked (iOS only)
+          const pressAnimation = Animated.sequence([
+            Animated.timing(scaleValue, {
+              toValue: 0.95,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+            Animated.timing(scaleValue, {
+              toValue: 1,
+              duration: 100,
+              useNativeDriver: true,
+            }),
+          ]);
+          pressAnimation.start();
+        }
         onPress();
       }
+    };
+
+    const TiltWrapper = ({ children }: { children: React.ReactNode }) => {
+      if (!enableTilt || !shouldShowAnimations) {
+        return <>{children}</>;
+      }
+
+      return (
+        <View onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchEnd} style={styles.tiltContainer}>
+          {children}
+        </View>
+      );
     };
 
     const CardContent = () => (
@@ -267,21 +301,23 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
         {/* Business Logo Background - Only show if no custom background image */}
         {backgroundImageSource && <Image source={backgroundImageSource} style={styles.backgroundLogo} resizeMode="cover" />}
 
-        {/* Glass Border Effect */}
-        <Animated.View
-          style={[
-            styles.glassBorder,
-            {
-              opacity: borderGlow,
-            },
-          ]}
-        />
+        {/* Glass Border Effect - Only on iOS for performance */}
+        {shouldShowGlassEffects && (
+          <Animated.View
+            style={[
+              styles.glassBorder,
+              {
+                opacity: borderGlow,
+              },
+            ]}
+          />
+        )}
 
         {/* 3D Background Overlay */}
         <View style={styles.backgroundOverlay} />
 
-        {/* Subtle Texture Overlay - Only when no background image */}
-        {!card.backgroundImage && (
+        {/* Subtle Texture Overlay - Only when no background image and only on iOS for performance */}
+        {!card.backgroundImage && shouldShowTextures && (
           <View style={styles.textureOverlay}>
             <View style={styles.texturePattern} />
             <View style={[styles.texturePattern, styles.texturePattern2]} />
@@ -291,8 +327,8 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
           </View>
         )}
 
-        {/* Shine Effect Overlay */}
-        {showAnimation && isCompleted && (
+        {/* Shine Effect Overlay - Now works on Android for completed cards! */}
+        {shouldShowCompletionAnimation && isCompleted && (
           <Animated.View
             style={[
               styles.shineOverlay,
@@ -323,7 +359,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
           totalSlots={card.totalSlots}
           currentStamps={currentStamps}
           stampShape={selectedStampShape}
-          showAnimation={showAnimation}
+          showAnimation={showAnimation && shouldShowAnimations} // Disable animations on Android
           size={card.totalSlots >= 7 ? "medium" : "large"}
           stampColor={card.cardColor || COLORS.primary}
         />
@@ -336,20 +372,25 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       </View>
     );
     const cardStyle = [
-      styles.cardWrapper,
+      isAndroid ? styles.cardWrapperAndroid : styles.cardWrapper,
       style,
       {
-        transform: [
-          { scale: showAnimation && isCompleted ? pulseValue : scaleValue },
-          ...(enableTilt
-            ? [
-                { scale: tiltScale },
-                { rotateX: "2deg" }, // Simplified tilt effect
-              ]
-            : [
-                { rotateX: "2deg" }, // Default subtle 3D tilt when tilt is disabled
-              ]),
-        ],
+        transform: shouldShowAnimations
+          ? [
+              { scale: shouldShowCompletionAnimation && isCompleted ? pulseValue : scaleValue },
+              ...(enableTilt
+                ? [
+                    { scale: tiltScale },
+                    { rotateX: "2deg" }, // Simplified tilt effect
+                  ]
+                : [
+                    { rotateX: "2deg" }, // Default subtle 3D tilt when tilt is disabled
+                  ]),
+            ]
+          : [
+              // Android: Allow completion pulse but skip other transforms
+              { scale: shouldShowCompletionAnimation && isCompleted ? pulseValue : 1 },
+            ],
       },
     ];
 
@@ -430,6 +471,15 @@ const styles = StyleSheet.create({
       shadowRadius: 8.0,
       elevation: 12,
     }),
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  cardWrapperAndroid: {
+    marginHorizontal: SPACING.md,
+    marginVertical: SPACING.sm,
+    borderRadius: 20,
+    // Remove expensive shadows and use minimal elevation for Android performance
+    elevation: 4,
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.1)",
   },

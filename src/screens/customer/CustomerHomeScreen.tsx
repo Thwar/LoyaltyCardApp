@@ -90,23 +90,32 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
         navigation.setParams({ showSuccessModal: undefined, cardCode: undefined });
       }
 
-      // Always load cards when screen comes into focus to ensure fresh data
-      loadCards();
-      hasLoadedInitially.current = true;
+      // Load cards if it's the first time, or if a refresh is forced via navigation params.
+      if (!hasLoadedInitially.current || route.params?.timestamp) {
+        loadCards();
+        hasLoadedInitially.current = true;
+        if (route.params?.timestamp) {
+          // Clear the timestamp to prevent re-loading on subsequent focuses
+          navigation.setParams({ timestamp: undefined });
+        }
+      }
     }, [user, route?.params?.timestamp, route?.params?.showSuccessModal, route?.params?.cardCode, navigation])
   );
 
   const handleCardPress = (card: CustomerCard) => {
     setSelectedCard(card);
-    setModalVisible(true);
+    // Small delay to improve modal animation on Android
+    setTimeout(() => setModalVisible(true), 50);
   };
 
-  const handleModalClose = () => {
+  const handleModalClose = (refreshNeeded = false) => {
     setModalVisible(false);
     setSelectedCard(null);
-    // Force a refresh of the cards list when modal closes
-    // in case a card was deleted or modified
-    loadCards(true);
+    // Force a refresh of the cards list only when needed (e.g., after a card is deleted)
+    if (refreshNeeded) {
+      console.log("🔄 Refreshing cards after modal close");
+      loadCards(true);
+    }
   };
 
   const handleRetry = () => {
