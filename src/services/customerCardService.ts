@@ -277,7 +277,6 @@ export class CustomerCardService {
       };
 
       try {
-        await NotificationService.sendStampAddedNotification(notificationData);
         try {
           const customerUser = await UserService.getUser(customerId);
           if (customerUser?.pushToken) {
@@ -553,7 +552,6 @@ export class CustomerCardService {
         isCompleted: result.isCompleted,
       };
       try {
-        await NotificationService.sendStampAddedNotification(notificationData);
         try {
           const customerUser = await UserService.getUser(customerCard.customerId);
           if (customerUser?.pushToken) {

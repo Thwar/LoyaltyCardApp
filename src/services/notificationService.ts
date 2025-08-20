@@ -256,53 +256,6 @@ export class NotificationService {
     }
   }
 
-  // Send a local notification for stamp added (mobile only)
-  static async sendStampAddedNotification(data: StampNotificationData): Promise<void> {
-    try {
-      // Check if we're on web platform - local notifications are not supported
-      if (Platform.OS === "web") {
-        return;
-      }
-
-      const { customerName, businessName, currentStamps, totalSlots, isCompleted } = data;
-
-      let title: string;
-      let body: string;
-
-      if (isCompleted) {
-        title = "🎉 ¡Tarjeta Completada!";
-        body = `¡Felicidades! Has completado tu tarjeta de ${businessName}. ¡Puedes canjear tu recompensa!`;
-      } else {
-        const stampsNeeded = totalSlots - currentStamps;
-        title = "✅ ¡Sello Agregado!";
-        body = `Sello agregado en ${businessName}. Te ${stampsNeeded === 1 ? "falta" : "faltan"} ${stampsNeeded} sello${stampsNeeded === 1 ? "" : "s"} para tu recompensa.`;
-      }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title,
-          body,
-          data: {
-            businessName,
-            currentStamps,
-            totalSlots,
-            isCompleted,
-            customerName,
-          },
-          sound: isCompleted ? "success.mp3" : "success.mp3", // Use success sound for both stamp added and completion
-          priority: Notifications.AndroidNotificationPriority.MAX,
-          vibrate: [0, 250, 250, 250],
-          categoryIdentifier: "stamp_notification",
-          autoDismiss: false,
-        },
-        trigger: null, // Show immediately
-        identifier: `stamp_${Date.now()}`,
-      });
-    } catch (error) {
-      console.error("Error sending stamp notification:", error);
-    }
-  }
-
   // Send a notification when reward is redeemed
   static async sendRewardRedeemedNotification(businessName: string): Promise<void> {
     try {
