@@ -375,11 +375,15 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
   }, [loadBusinessesWithCards]);
 
   const loadMoreBusinesses = useCallback(async () => {
-    if (loadingMore || !hasMoreData) return;
+    if (loadingMore || !hasMoreData || loading) {
+      console.log("🚫 Skipping loadMoreBusinesses:", { loadingMore, hasMoreData, loading });
+      return;
+    }
 
+    console.log("📱 Loading more businesses...", { currentBusinessCount: businesses.length });
     const currentPage = Math.floor(businesses.length / BUSINESSES_PER_PAGE);
     await loadBusinessesWithCards(false, currentPage);
-  }, [businesses.length, loadingMore, hasMoreData, loadBusinessesWithCards]);
+  }, [businesses.length, loadingMore, hasMoreData, loading, loadBusinessesWithCards]);
 
   const renderBusinessItem = ({ item }: { item: BusinessWithCards }) => <BusinessDiscoveryCard business={item} onPress={handleBusinessPress} />;
 
@@ -492,8 +496,11 @@ export const BusinessDiscoveryScreen: React.FC<BusinessDiscoveryScreenProps> = (
             showsVerticalScrollIndicator={false}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[COLORS.primary]} />}
             onEndReached={loadMoreBusinesses}
-            onEndReachedThreshold={0.3}
+            onEndReachedThreshold={0.5}
             ListFooterComponent={renderFooter}
+            removeClippedSubviews={false}
+            maxToRenderPerBatch={10}
+            windowSize={10}
           />
         )}
       </View>
@@ -571,6 +578,7 @@ const styles = StyleSheet.create({
   },
   businessList: {
     paddingBottom: SPACING.xl,
+    flexGrow: 1,
   },
   logoPlaceholder: {
     backgroundColor: COLORS.lightGray,

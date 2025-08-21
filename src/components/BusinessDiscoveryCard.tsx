@@ -45,7 +45,7 @@ export const BusinessDiscoveryCard: React.FC<BusinessDiscoveryCardProps> = ({ bu
             </Text>
             {business.customerCards.length > 0 && (
               <View style={styles.memberBadge}>
-                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} />
+                <Ionicons name="checkmark-circle" size={12} color={COLORS.success} />
                 <Text style={styles.memberText}>
                   Miembro de {business.customerCards.length} programa
                   {business.customerCards.length > 1 ? "s" : ""}
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 12,
     borderCurve: "continuous",
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     borderWidth: 1,
     borderColor: COLORS.inputBorder,
     ...SHADOWS.small,
@@ -88,12 +88,14 @@ const styles = StyleSheet.create({
     alignItems: "stretch",
   },
   logoContainer: {
-    width: 80,
+    width: 50,
+    alignSelf: "stretch",
+    maxHeight: 100,
   },
   logo: {
     width: "100%",
     height: "100%",
-    borderRadius: 8,
+    borderRadius: 6,
     borderCurve: "continuous",
   },
   logoPlaceholder: {
@@ -103,36 +105,38 @@ const styles = StyleSheet.create({
   },
   businessDetails: {
     flex: 1,
-    marginLeft: SPACING.xs,
-    padding: SPACING.md,
+    marginLeft: SPACING.sm,
+    paddingVertical: SPACING.sm,
+    paddingRight: SPACING.xs,
   },
   businessName: {
-    fontSize: FONT_SIZES.md,
+    fontSize: FONT_SIZES.sm,
     fontWeight: "bold",
     color: COLORS.textPrimary,
     marginBottom: 2,
   },
   businessCity: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   businessCategories: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
-    marginBottom: 4,
+    marginBottom: 2,
     fontStyle: "italic",
   },
   businessDescription: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
-    lineHeight: 18,
+    lineHeight: 14,
   },
   businessActions: {
     alignItems: "center",
     justifyContent: "center",
-
-    padding: SPACING.sm,
+    paddingLeft: SPACING.xs,
+    paddingRight: SPACING.sm,
+    paddingVertical: SPACING.sm,
   },
   loyaltyCardCount: {
     alignItems: "center",
@@ -152,17 +156,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: `${COLORS.success}20`,
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: 6,
-    borderRadius: 8,
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 2,
+    borderRadius: 6,
     borderCurve: "continuous",
-    marginTop: SPACING.sm,
+    marginTop: SPACING.xs,
     alignSelf: "flex-start",
   },
   memberText: {
     fontSize: FONT_SIZES.xs,
     color: COLORS.success,
     fontWeight: "600",
-    marginLeft: 4,
+    marginLeft: 2,
   },
 });

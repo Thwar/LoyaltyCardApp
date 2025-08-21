@@ -135,7 +135,7 @@ export class BusinessService {
         facebook: data.facebook,
         tiktok: data.tiktok,
         categories: data.categories,
-        createdAt: data.createdAt.toDate(),
+        createdAt: safeTimestampToDate(data.createdAt),
         isActive: data.isActive,
       };
     } catch (error: any) {
@@ -162,7 +162,7 @@ export class BusinessService {
           facebook: data.facebook,
           tiktok: data.tiktok,
           categories: data.categories,
-          createdAt: data.createdAt.toDate(),
+          createdAt: safeTimestampToDate(data.createdAt),
           isActive: data.isActive,
         } as Business;
       });

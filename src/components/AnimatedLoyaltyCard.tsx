@@ -139,7 +139,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       cleanupAnimations();
 
       // Allow completion animations on Android, but skip other animations
-      if (isAndroid && !isCompleted) {
+      if (!isCompleted) {
         return;
       }
 
@@ -183,7 +183,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
 
       // Return cleanup function for this effect
       return cleanupAnimations;
-    }, [isCompleted, shouldShowCompletionAnimation, cleanupAnimations, isAndroid]);
+    }, [isCompleted, shouldShowCompletionAnimation, cleanupAnimations]);
 
     // Separate effect for border glow that doesn't depend on card completion
     useEffect(() => {
@@ -383,7 +383,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
         />
         {/* Reward Description */}
         <View style={styles.rewardContainer}>
-          <Text style={styles.rewardDescription} numberOfLines={2}>
+          <Text style={styles.rewardDescription} numberOfLines={5}>
             🎁 {card.rewardDescription}
           </Text>
         </View>

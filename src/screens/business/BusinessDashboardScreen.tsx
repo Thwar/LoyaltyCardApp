@@ -49,7 +49,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
 
   // Dashboard data cache with timestamp
   const [dashboardCache, setDashboardCache] = useState<DashboardCache | null>(null);
-  
+
   // Ref to prevent multiple simultaneous loads
   const loadingRef = useRef(false);
 
@@ -62,7 +62,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
   const loadDashboardData = useCallback(
     async (isRefresh = false, forceReload = false) => {
       if (!user) return;
-      
+
       // Prevent multiple simultaneous loads
       if (loadingRef.current && !isRefresh) {
         console.log("⏳ Load already in progress, skipping");
@@ -71,7 +71,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
 
       // Check if we have valid cached data and no force reload
       const now = Date.now();
-      if (!forceReload && !isRefresh && dashboardCache && (now - dashboardCache.timestamp) < CACHE_DURATION) {
+      if (!forceReload && !isRefresh && dashboardCache && now - dashboardCache.timestamp < CACHE_DURATION) {
         console.log("📦 Using cached dashboard data");
         setBusiness(dashboardCache.business);
         setLoyaltyCards(dashboardCache.loyaltyCards);
@@ -171,13 +171,13 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
       const checkRefreshFlags = async () => {
         // Check if we need to refresh based on flags
         const shouldRefreshDashboard = await refreshFlags.shouldRefreshBusinessDashboard();
-        
+
         if (shouldRefreshDashboard) {
           console.log("🔄 Dashboard refresh needed based on flags");
-          
+
           // Clear the refresh flag
           await refreshFlags.clearBusinessDashboardRefresh();
-          
+
           // Force reload the data
           loadDashboardData(false, true);
         } else {
@@ -271,7 +271,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
         {/* Quick Actions */}
         <View style={styles.actionsContainer}>
           <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-          {loyaltyCards.length === 0 && <Button title="Crear Nueva Tarjeta de Lealtad" onPress={() => setCreateModalVisible(true)} size="large" style={styles.actionButton} />}
+          {loyaltyCards.length === 0 && <Button title="Crear Tarjeta de Lealtad" onPress={() => setCreateModalVisible(true)} size="large" style={styles.actionButton} />}
           <Button title="Agregar Sello" onPress={handleNavigateToAddStamp} size="large" style={styles.actionButton} />
           <Button title="Ver Todos los Clientes" onPress={handleNavigateToCustomers} variant="outline" size="large" style={styles.actionButton} />
         </View>

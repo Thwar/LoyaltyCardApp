@@ -3,6 +3,7 @@ import { auth, db } from "./firebase";
 import { FIREBASE_COLLECTIONS } from "../constants";
 import { Business, LoyaltyCard } from "../types";
 import { BusinessService } from "./businessService";
+import { safeTimestampToDate } from "./utils";
 
 export class LoyaltyCardService {
   static async createLoyaltyCard(cardData: Omit<LoyaltyCard, "id" | "createdAt">): Promise<LoyaltyCard> {
@@ -36,7 +37,7 @@ export class LoyaltyCardService {
         cardColor: data.cardColor,
         stampShape: data.stampShape,
         backgroundImage: data.backgroundImage,
-        createdAt: data.createdAt.toDate(),
+        createdAt: safeTimestampToDate(data.createdAt),
         isActive: data.isActive,
       } as LoyaltyCard;
     });
@@ -68,7 +69,7 @@ export class LoyaltyCardService {
         cardColor: data.cardColor,
         stampShape: data.stampShape,
         backgroundImage: data.backgroundImage,
-        createdAt: data.createdAt.toDate(),
+        createdAt: safeTimestampToDate(data.createdAt),
         isActive: data.isActive,
       } as LoyaltyCard;
     });
@@ -133,7 +134,7 @@ export class LoyaltyCardService {
       cardColor: data.cardColor,
       stampShape: data.stampShape,
       backgroundImage: data.backgroundImage,
-      createdAt: data.createdAt.toDate(),
+      createdAt: safeTimestampToDate(data.createdAt),
       isActive: data.isActive,
     } as LoyaltyCard;
   }
@@ -178,7 +179,7 @@ export class LoyaltyCardService {
         cardColor: data.cardColor,
         stampShape: data.stampShape,
         backgroundImage: data.backgroundImage,
-        createdAt: data.createdAt.toDate(),
+        createdAt: safeTimestampToDate(data.createdAt),
         isActive: data.isActive,
       } as LoyaltyCard;
     });

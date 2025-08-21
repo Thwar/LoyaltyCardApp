@@ -77,9 +77,9 @@ export const Typography: React.FC<TypographyProps> = ({ variant = "body1", weigh
   const variantStyle = getVariantStyle();
 
   // Debug logging (remove in production)
-  if (__DEV__) {
-    console.log(`Typography ${variant} using font: ${variantStyle.fontFamily}`);
-  }
+  // if (__DEV__) {
+  //   console.log(`Typography ${variant} using font: ${variantStyle.fontFamily}`);
+  // }
 
   return (
     <Text style={[variantStyle, { color }, style]} {...props}>

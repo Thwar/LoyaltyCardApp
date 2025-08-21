@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
 
@@ -17,6 +17,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   const { user, logout } = useAuth();
   const { showAlert } = useAlert();
   const [business, setBusiness] = useState<Business | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   // Bolivian cities dropdown options
   const bolivianCities = [
@@ -62,8 +63,8 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       if (userBusiness) {
         setBusiness(userBusiness);
         setFormData({
-          name: userBusiness.name,
-          description: userBusiness.description,
+          name: userBusiness.name || "",
+          description: userBusiness.description || "",
           address: userBusiness.address || "",
           phone: userBusiness.phone || "",
           city: userBusiness.city || "",
@@ -96,11 +97,14 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   };
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.name.trim()) {
+
+    // Safe check for name field
+    if (!formData.name || !formData.name.trim()) {
       newErrors.name = "El nombre del negocio es requerido";
     }
 
-    if (!formData.description.trim()) {
+    // Safe check for description field
+    if (!formData.description || !formData.description.trim()) {
       newErrors.description = "La descripción es requerida";
     }
 
@@ -139,9 +143,34 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   };
 
   const handleSave = async () => {
-    if (!validateForm() || !user) return;
+    const isFormValid = validateForm();
+
+    if (!isFormValid) {
+      // Create a more specific error message based on missing fields
+      const missingFields = [];
+      if (!formData.name || !formData.name.trim()) missingFields.push("Nombre del Negocio");
+      if (!formData.description || !formData.description.trim()) missingFields.push("Descripción");
+
+      // Scroll to top to show the error fields
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+
+      showAlert({
+        title: "Campos Requeridos",
+        message: `Los siguientes campos son obligatorios:\n\n• ${missingFields.join("\n• ")}\n\nPor favor completa todos los campos marcados en rojo.`,
+      });
+      return;
+    }
+
+    if (!user) {
+      showAlert({
+        title: "Error de Autenticación",
+        message: "Debes estar autenticado para realizar esta acción. Por favor inicia sesión nuevamente.",
+      });
+      return;
+    }
 
     setSaving(true);
+
     try {
       let logoUrl = formData.logoUrl;
       let currentBusinessId = business?.id;
@@ -152,9 +181,6 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
         // If a new image was selected (local URI), upload it
         if (formData.logoUrl && !formData.logoUrl.startsWith("http") && currentBusinessId) {
           try {
-            console.log("Uploading logo for existing business ID:", currentBusinessId);
-            console.log("User ID:", user.id);
-
             logoUrl = await ImageUploadService.uploadBusinessLogo(formData.logoUrl, currentBusinessId);
           } catch (uploadError) {
             console.error("Error uploading logo:", uploadError);
@@ -177,7 +203,6 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
           isActive: true,
         };
 
-        console.log("Updating business data:", businessData);
         await BusinessService.updateBusiness(business.id, businessData);
 
         // Update the form data with the uploaded logo URL
@@ -204,7 +229,6 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
           isActive: true,
         };
 
-        console.log("Creating business without logo first:", businessDataWithoutLogo);
         const newBusiness = await BusinessService.createBusiness(businessDataWithoutLogo);
         setBusiness(newBusiness);
         currentBusinessId = newBusiness.id;
@@ -212,13 +236,9 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
         // Now upload the logo with the real business ID
         if (formData.logoUrl && !formData.logoUrl.startsWith("http")) {
           try {
-            console.log("Uploading logo for new business ID:", currentBusinessId);
-            console.log("User ID:", user.id);
-
             logoUrl = await ImageUploadService.uploadBusinessLogo(formData.logoUrl, currentBusinessId);
 
             // Update the business with the logo URL
-            console.log("Updating business with logo URL:", logoUrl);
             await BusinessService.updateBusiness(currentBusinessId, { logoUrl });
 
             // Update local business object
@@ -245,9 +265,12 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       }
     } catch (error) {
       console.error("Error saving business:", error);
+
+      const errorMessage = error instanceof Error ? error.message : "Error al guardar el perfil del negocio";
+
       showAlert({
-        title: "Error",
-        message: error instanceof Error ? error.message : "Error al guardar el perfil del negocio",
+        title: "Error al Guardar",
+        message: `No se pudo guardar el perfil del negocio.\n\nDetalle: ${errorMessage}\n\nPor favor revisa tu conexión a internet e intenta nuevamente.`,
       });
     } finally {
       setSaving(false);
@@ -349,7 +372,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.keyboardAvoid}>
-        <ScrollView style={styles.scrollView} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollViewRef} style={styles.scrollView} keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
             <Text style={styles.title}>Datos sobre tu Negocio</Text>
             <Text style={styles.subtitle}>{business ? "Actualiza la información de tu negocio" : "Configura el perfil de tu negocio"}</Text>
@@ -437,7 +460,8 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
                 error={errors.tiktok}
               />
             </View>
-            <Button title={business ? "Actualizar Perfil" : "Crear Perfil"} onPress={handleSave} loading={saving} size="large" style={styles.saveButton} />
+
+            <Button title={saving ? "Guardando..." : business ? "Actualizar Perfil" : "Crear Perfil"} onPress={handleSave} loading={saving} disabled={saving} size="large" style={styles.saveButton} />
           </View>
 
           {/* Account Section */}
