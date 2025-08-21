@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
@@ -8,6 +8,7 @@ import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { LoyaltyCardService } from "../../services/api";
 import { ImageUploadService } from "../../services/imageUpload";
 import { LoyaltyCard } from "../../types";
+import { imageCache, refreshFlags } from "../../utils";
 
 interface EditLoyaltyCardModalProps {
   visible: boolean;
@@ -86,20 +87,31 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
         if (oldBackgroundImage && oldBackgroundImage.startsWith("https://")) {
           try {
             await ImageUploadService.deleteLoyaltyCardBackground(oldBackgroundImage);
+            // Clear the image from cache
+            imageCache.clearImage(oldBackgroundImage);
           } catch (deleteError) {
             console.warn("Could not delete old background image:", deleteError);
             // Don't fail the update if deletion fails
           }
         }
       }
-      // If there's a new background image and it's a data URL (not already uploaded), upload it
-      else if (formData.backgroundImage && formData.backgroundImage.startsWith("data:")) {
+      // If there's a new background image and it's not already an HTTP URL, upload it
+      else if (formData.backgroundImage && !formData.backgroundImage.startsWith("http")) {
         try {
+          console.log("🔄 Uploading background image from:", formData.backgroundImage.substring(0, 100) + "...");
           backgroundImageUrl = await ImageUploadService.uploadLoyaltyCardBackground(formData.backgroundImage, loyaltyCard.id);
+          console.log("✅ Successfully uploaded new background image:", backgroundImageUrl);
 
-          // Don't delete old background image when replacing, since the new image
-          // uses the same storage path and would overwrite the old one anyway.
-          // Deleting here would actually delete the newly uploaded image!
+          // Delete old background image after successful upload since we now use unique filenames
+          if (oldBackgroundImage && oldBackgroundImage.startsWith("https://")) {
+            try {
+              await ImageUploadService.deleteLoyaltyCardBackground(oldBackgroundImage);
+              console.log("🗑️ Deleted old background image:", oldBackgroundImage);
+            } catch (deleteError) {
+              console.warn("Could not delete old background image:", deleteError);
+              // Don't fail the update if deletion fails - continue with the update
+            }
+          }
         } catch (uploadError) {
           console.error("Error uploading background image:", uploadError);
           showAlert({
@@ -113,6 +125,17 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       // If it's already an HTTP URL (existing image), keep it as is
       // backgroundImageUrl = formData.backgroundImage (already set above)
 
+      // Safety check: Never store local file URIs in the database
+      if (backgroundImageUrl && (backgroundImageUrl.startsWith("file://") || backgroundImageUrl.startsWith("content://"))) {
+        console.error("❌ Preventing storage of local file URI in database:", backgroundImageUrl);
+        showAlert({
+          title: "Error",
+          message: "Error: la imagen no se subió correctamente. Por favor, intenta de nuevo.",
+        });
+        setSaving(false);
+        return;
+      }
+
       const updates = {
         totalSlots: parseInt(formData.totalSlots),
         rewardDescription: formData.rewardDescription.trim(),
@@ -120,7 +143,30 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
         stampShape: formData.stampShape,
         backgroundImage: backgroundImageUrl,
       };
+
+      console.log("🔄 Updating loyalty card with:", {
+        ...updates,
+        backgroundImage: backgroundImageUrl?.substring(0, 100) + "..." || "NO IMAGE",
+      });
+
       await LoyaltyCardService.updateLoyaltyCard(loyaltyCard.id, updates);
+
+      console.log("✅ Loyalty card updated successfully in database");
+
+      // Set refresh flags to trigger fresh data fetch in customer screens
+      await refreshFlags.setRefreshForAllScreens();
+
+      // Clear old background image from cache if it was changed
+      if (oldBackgroundImage && oldBackgroundImage !== backgroundImageUrl) {
+        imageCache.clearImage(oldBackgroundImage);
+        console.log("🗑️ Cleared old background image from cache:", oldBackgroundImage);
+      }
+
+      // Also clear the entire loyalty card images from cache to ensure fresh display
+      imageCache.clearLoyaltyCardImages({
+        backgroundImage: backgroundImageUrl,
+        businessLogo: loyaltyCard.businessLogo,
+      });
 
       // Close modal immediately after successful update
       onClose();
@@ -143,8 +189,8 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
   const handleDeactivateCard = () => {
     console.log("🔴 handleDeactivateCard called");
 
-    // For web, let's use the native browser confirm for now
-    if (typeof window !== "undefined") {
+    // For web, use native browser confirm
+    if (Platform.OS === "web") {
       const confirmed = window.confirm(
         "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando."
       );
@@ -155,11 +201,11 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       return;
     }
 
-    // For mobile - use our custom Alert
-    showAlert({
-      title: "Desactivar Tarjeta de Lealtad",
-      message: "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando.",
-      buttons: [
+    // For mobile - use React Native's native Alert
+    Alert.alert(
+      "Desactivar Tarjeta de Lealtad",
+      "¿Estás seguro que quieres desactivar esta tarjeta de lealtad? Los clientes ya no podrán unirse a este programa, pero las tarjetas existentes seguirán funcionando.",
+      [
         {
           text: "Cancelar",
           style: "cancel",
@@ -176,8 +222,42 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
             confirmDeactivateCard();
           },
         },
-      ],
-    });
+      ]
+    );
+  };
+
+  const handleActivateCard = () => {
+    console.log("🟢 handleActivateCard called");
+
+    // For web, use native browser confirm
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm("¿Estás seguro que quieres activar esta tarjeta de lealtad? Los clientes podrán unirse a este programa nuevamente.");
+      if (confirmed) {
+        onClose();
+        confirmActivateCard();
+      }
+      return;
+    }
+
+    // For mobile - use React Native's native Alert
+    Alert.alert("Activar Tarjeta de Lealtad", "¿Estás seguro que quieres activar esta tarjeta de lealtad? Los clientes podrán unirse a este programa nuevamente.", [
+      {
+        text: "Cancelar",
+        style: "cancel",
+        onPress: () => {
+          console.log("🟢 Cancel activate pressed");
+        },
+      },
+      {
+        text: "Activar",
+        style: "default",
+        onPress: () => {
+          console.log("🟢 Confirm activate pressed");
+          onClose();
+          confirmActivateCard();
+        },
+      },
+    ]);
   };
 
   const confirmDeactivateCard = async () => {
@@ -209,11 +289,40 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
     }
   };
 
+  const confirmActivateCard = async () => {
+    if (!loyaltyCard) return;
+
+    setSaving(true);
+    try {
+      await LoyaltyCardService.activateLoyaltyCard(loyaltyCard.id);
+      showAlert({
+        title: "Éxito",
+        message: "¡Tarjeta de lealtad activada exitosamente!",
+        buttons: [
+          {
+            text: "OK",
+            onPress: () => {
+              // Modal is already closed, just trigger success callback
+              onSuccess?.();
+            },
+          },
+        ],
+      });
+    } catch (error) {
+      showAlert({
+        title: "Error",
+        message: error instanceof Error ? error.message : "Error al activar la tarjeta de lealtad",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDeleteCard = () => {
     console.log("🗑️ handleDeleteCard called");
 
-    // For web, let's use the native browser confirm for now
-    if (typeof window !== "undefined") {
+    // For web, use native browser confirm
+    if (Platform.OS === "web") {
       const confirmed = window.confirm(
         "⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE la tarjeta de lealtad y TODOS los datos relacionados, incluyendo las tarjetas de clientes, sellos y actividades. Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro?"
       );
@@ -224,12 +333,11 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       return;
     }
 
-    // For mobile - use our custom Alert
-    showAlert({
-      title: "Eliminar Tarjeta de Lealtad",
-      message:
-        "⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE la tarjeta de lealtad y TODOS los datos relacionados, incluyendo las tarjetas de clientes, sellos y actividades. Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro?",
-      buttons: [
+    // For mobile - use React Native's native Alert
+    Alert.alert(
+      "Eliminar Tarjeta de Lealtad",
+      "⚠️ ATENCIÓN: Esta acción eliminará PERMANENTEMENTE la tarjeta de lealtad y TODOS los datos relacionados, incluyendo las tarjetas de clientes, sellos y actividades. Esta acción NO se puede deshacer.\n\n¿Estás completamente seguro?",
+      [
         {
           text: "Cancelar",
           style: "cancel",
@@ -246,8 +354,8 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
             confirmDeleteCard();
           },
         },
-      ],
-    });
+      ]
+    );
   };
   const confirmDeleteCard = async () => {
     if (!loyaltyCard) return;
@@ -258,6 +366,8 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
       if (loyaltyCard.backgroundImage && loyaltyCard.backgroundImage.startsWith("https://")) {
         try {
           await ImageUploadService.deleteLoyaltyCardBackground(loyaltyCard.backgroundImage);
+          // Clear the image from cache
+          imageCache.clearImage(loyaltyCard.backgroundImage);
         } catch (deleteError) {
           console.warn("Could not delete background image:", deleteError);
           // Don't fail the deletion if image cleanup fails
@@ -354,7 +464,11 @@ export const EditLoyaltyCardModal: React.FC<EditLoyaltyCardModalProps> = ({ visi
               </View>
               <View style={styles.buttonContainer}>
                 <Button title="Actualizar Tarjeta" onPress={handleUpdateCard} loading={saving} style={styles.updateButton} />
-                <Button title="Desactivar Tarjeta" onPress={handleDeactivateCard} variant="outline" loading={saving} style={styles.deactivateButton} textStyle={{ color: COLORS.warning }} />
+                {loyaltyCard?.isActive ? (
+                  <Button title="Desactivar Tarjeta" onPress={handleDeactivateCard} variant="outline" loading={saving} style={styles.deactivateButton} textStyle={{ color: COLORS.warning }} />
+                ) : (
+                  <Button title="Activar Tarjeta" onPress={handleActivateCard} variant="outline" loading={saving} style={styles.activateButton} textStyle={{ color: COLORS.success }} />
+                )}
                 <Button title="Eliminar Permanentemente" onPress={handleDeleteCard} variant="outline" loading={saving} style={styles.deleteButton} textStyle={{ color: COLORS.error }} />
               </View>
             </View>
@@ -425,6 +539,11 @@ const styles = StyleSheet.create({
   deactivateButton: {
     borderWidth: 1,
     borderColor: COLORS.warning,
+    marginBottom: SPACING.md,
+  },
+  activateButton: {
+    borderWidth: 1,
+    borderColor: COLORS.success,
     marginBottom: SPACING.md,
   },
   deleteButton: {

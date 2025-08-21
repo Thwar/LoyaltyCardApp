@@ -299,7 +299,16 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     const CardContent = () => (
       <View style={styles.container}>
         {/* Business Logo Background - Only show if no custom background image */}
-        {backgroundImageSource && <Image source={backgroundImageSource} style={styles.backgroundLogo} resizeMode="cover" />}
+        {backgroundImageSource && (
+          <Image
+            source={backgroundImageSource}
+            style={styles.backgroundLogo}
+            resizeMode="cover"
+            onError={(error) => {
+              console.warn("Failed to load background image:", backgroundImageSource.uri, error.nativeEvent.error);
+            }}
+          />
+        )}
 
         {/* Glass Border Effect - Only on iOS for performance */}
         {shouldShowGlassEffects && (
@@ -342,7 +351,16 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
         {/* Header - Business Name and Progress */}
         <View style={[styles.header, !card.backgroundImage && styles.headerNoBackground]}>
           <View style={styles.businessInfo}>
-            {businessLogoSource && !card.backgroundImage && <Image source={businessLogoSource} style={styles.businessLogo} resizeMode="contain" />}
+            {businessLogoSource && !card.backgroundImage && (
+              <Image
+                source={businessLogoSource}
+                style={styles.businessLogo}
+                resizeMode="contain"
+                onError={(error) => {
+                  console.warn("Failed to load business logo:", businessLogoSource.uri, error.nativeEvent.error);
+                }}
+              />
+            )}
 
             <Text style={styles.businessName} numberOfLines={1}>
               {card.businessName}
@@ -374,6 +392,8 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     const cardStyle = [
       isAndroid ? styles.cardWrapperAndroid : styles.cardWrapper,
       style,
+      // Apply opacity for inactive cards
+      !card.isActive && { opacity: 0.6 },
       {
         transform: shouldShowAnimations
           ? [

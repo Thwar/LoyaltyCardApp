@@ -220,6 +220,54 @@ class ImageCacheManager {
   }
 
   /**
+   * Clear specific image from cache
+   * @param uri Image URI to remove from cache
+   */
+  clearImage(uri: string): void {
+    if (this.cache.has(uri)) {
+      this.cache.delete(uri);
+      this.persistCache(); // Persist the updated state
+      console.log("🗑️ Cleared image from cache:", uri);
+    }
+  }
+
+  /**
+   * Clear multiple images from cache
+   * @param uris Array of image URIs to remove from cache
+   */
+  clearImages(uris: string[]): void {
+    let cleared = false;
+    uris.forEach((uri) => {
+      if (this.cache.has(uri)) {
+        this.cache.delete(uri);
+        cleared = true;
+        console.log("🗑️ Cleared image from cache:", uri);
+      }
+    });
+    if (cleared) {
+      this.persistCache(); // Persist the updated state
+    }
+  }
+
+  /**
+   * Clear all images related to a specific loyalty card
+   * @param loyaltyCard Loyalty card object containing image URLs
+   */
+  clearLoyaltyCardImages(loyaltyCard: { backgroundImage?: string; businessLogo?: string }): void {
+    const imagesToClear: string[] = [];
+    if (loyaltyCard.backgroundImage) {
+      imagesToClear.push(loyaltyCard.backgroundImage);
+    }
+    if (loyaltyCard.businessLogo) {
+      imagesToClear.push(loyaltyCard.businessLogo);
+    }
+    if (imagesToClear.length > 0) {
+      this.clearImages(imagesToClear);
+      console.log("🗑️ Cleared loyalty card images from cache");
+    }
+  }
+
+  /**
    * Load cache from AsyncStorage
    */
   private async loadPersistedCache(): Promise<void> {

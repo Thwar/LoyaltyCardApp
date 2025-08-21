@@ -194,7 +194,9 @@ export class ImageUploadService {
    * @returns Promise<string> Download URL of uploaded background image
    */
   static async uploadLoyaltyCardBackground(imageUri: string, loyaltyCardId: string): Promise<string> {
-    const fileName = `${loyaltyCardId}_background.jpg`;
+    // Include timestamp in filename to ensure unique URLs and force cache busting
+    const timestamp = Date.now();
+    const fileName = `${loyaltyCardId}_background_${timestamp}.jpg`;
     return this.uploadImage(imageUri, "loyalty-card-backgrounds", fileName);
   }
 

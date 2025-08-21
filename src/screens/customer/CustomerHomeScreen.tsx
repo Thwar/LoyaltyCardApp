@@ -11,7 +11,7 @@ import { CustomerCardDetailsModal } from "./CustomerCardDetailsScreen";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
 import { CustomerCard, LoyaltyCard as LoyaltyCardType, CustomerTabParamList } from "../../types";
-import { imageCache } from "../../utils";
+import { imageCache, refreshFlags } from "../../utils";
 
 interface CustomerHomeScreenProps {
   navigation: StackNavigationProp<any>;
@@ -90,16 +90,30 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
         navigation.setParams({ showSuccessModal: undefined, cardCode: undefined });
       }
 
-      // Load cards if it's the first time, or if a refresh is forced via navigation params.
-      if (!hasLoadedInitially.current || route.params?.timestamp) {
-        loadCards();
-        hasLoadedInitially.current = true;
-        if (route.params?.timestamp) {
-          // Clear the timestamp to prevent re-loading on subsequent focuses
-          navigation.setParams({ timestamp: undefined });
+      // Check for refresh flags
+      const checkRefreshFlags = async () => {
+        const shouldRefresh = await refreshFlags.shouldRefreshCustomerHome();
+        if (shouldRefresh) {
+          console.log("🚩 CustomerHome refresh flag detected - forcing refresh");
+          await refreshFlags.clearCustomerHomeRefresh();
+          loadCards();
+          hasLoadedInitially.current = true;
+          return;
         }
-      }
-    }, [user, route?.params?.timestamp, route?.params?.showSuccessModal, route?.params?.cardCode, navigation])
+
+        // Load cards if it's the first time, or if a refresh is forced via navigation params.
+        if (!hasLoadedInitially.current || route.params?.timestamp) {
+          loadCards();
+          hasLoadedInitially.current = true;
+          if (route.params?.timestamp) {
+            // Clear the timestamp to prevent re-loading on subsequent focuses
+            navigation.setParams({ timestamp: undefined });
+          }
+        }
+      };
+
+      checkRefreshFlags();
+    }, [user, route?.params?.timestamp, route?.params?.showSuccessModal, route?.params?.cardCode, navigation, loadCards])
   );
 
   const handleCardPress = (card: CustomerCard) => {

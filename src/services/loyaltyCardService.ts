@@ -82,6 +82,10 @@ export class LoyaltyCardService {
     await updateDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId), { isActive: false, deactivatedAt: serverTimestamp() });
   }
 
+  static async activateLoyaltyCard(cardId: string): Promise<void> {
+    await updateDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, cardId), { isActive: true, reactivatedAt: serverTimestamp() });
+  }
+
   static async deleteLoyaltyCard(cardId: string): Promise<void> {
     const customerCardsQuery = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("loyaltyCardId", "==", cardId));
     const customerCardsSnapshot = await getDocs(customerCardsQuery);

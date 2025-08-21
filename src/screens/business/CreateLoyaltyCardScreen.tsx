@@ -81,16 +81,25 @@ export const CreateLoyaltyCardModal: React.FC<CreateLoyaltyCardModalProps> = ({ 
       // Set refresh flags to trigger data refresh in all relevant screens
       await refreshFlags.setRefreshForAllScreens();
 
-      // If there's a background image and it's a data URL, upload it
+      // If there's a background image and it's not already an HTTP URL, upload it
       let uploadSuccess = true;
-      if (formData.backgroundImage && formData.backgroundImage.startsWith("data:")) {
+      if (formData.backgroundImage && !formData.backgroundImage.startsWith("http")) {
         try {
+          console.log("🔄 Uploading background image from:", formData.backgroundImage.substring(0, 100) + "...");
           const backgroundImageUrl = await ImageUploadService.uploadLoyaltyCardBackground(formData.backgroundImage, createdCard.id);
+          console.log("✅ Successfully uploaded background image:", backgroundImageUrl);
+
+          // Safety check: Ensure we got a valid Firebase Storage URL
+          if (!backgroundImageUrl || !backgroundImageUrl.startsWith("https://")) {
+            throw new Error("Invalid upload response - expected HTTPS URL");
+          }
 
           // Update the card with the uploaded background image URL
           await LoyaltyCardService.updateLoyaltyCard(createdCard.id, {
             backgroundImage: backgroundImageUrl,
           });
+
+          console.log("✅ Updated loyalty card with background image URL");
         } catch (uploadError) {
           console.error("Error uploading background image:", uploadError);
           uploadSuccess = false;
