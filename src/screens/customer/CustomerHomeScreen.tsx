@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { View, Text, StyleSheet, FlatList, RefreshControl, SafeAreaView, TouchableOpacity, Image, Modal, ActivityIndicator, Alert } from "react-native";
+import { View, Text, StyleSheet, FlatList, RefreshControl, SafeAreaView, TouchableOpacity, Image, Modal, ActivityIndicator, Alert, Animated } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RouteProp } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import { useAuth } from "../../context/AuthContext";
-import { AnimatedLoyaltyCard, LoadingState, EmptyState } from "../../components";
+import { AnimatedLoyaltyCard, LoadingState, EmptyState, Dropdown } from "../../components";
 import { CustomerCardDetailsModal } from "./CustomerCardDetailsScreen";
 import { COLORS, FONT_SIZES, SPACING } from "../../constants";
 import { CustomerCardService } from "../../services/api";
@@ -21,6 +21,8 @@ interface CustomerHomeScreenProps {
 export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigation, route }) => {
   const { user } = useAuth();
   const [cards, setCards] = useState<CustomerCard[]>([]);
+  const [filteredCards, setFilteredCards] = useState<CustomerCard[]>([]);
+  const [filterType, setFilterType] = useState<string>("newest");
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,10 +30,46 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
   const [modalVisible, setModalVisible] = useState(false);
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [newCardCode, setNewCardCode] = useState<string>("");
-  const [successModalKey, setSuccessModalKey] = useState<number>(0);
-  const [pendingSuccessModal, setPendingSuccessModal] = useState<string | null>(null);
-  const [isShowingSuccessModal, setIsShowingSuccessModal] = useState(false);
   const hasLoadedInitially = useRef(false);
+
+  // Scroll animation state
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const lastScrollY = useRef(0);
+  const scrollDirection = useRef<"up" | "down">("up");
+  const filterOpacity = useRef(new Animated.Value(1)).current;
+  const filterHeight = useRef(new Animated.Value(95)).current; // Sufficient height for dropdown (48 + padding)
+
+  // Filter options for sorting cards
+  const filterOptions = [
+    { label: "Más Recientes", value: "newest" },
+    { label: "Más Sellos", value: "mostStamps" },
+    { label: "Última Actividad", value: "lastActivity" },
+  ];
+
+  // Function to sort cards based on filter type
+  const sortCards = (cardsToSort: CustomerCard[], filter: string): CustomerCard[] => {
+    const sorted = [...cardsToSort];
+
+    switch (filter) {
+      case "mostStamps":
+        return sorted.sort((a, b) => b.currentStamps - a.currentStamps);
+      case "lastActivity":
+        return sorted.sort((a, b) => {
+          const aDate = a.lastStampDate || a.createdAt;
+          const bDate = b.lastStampDate || b.createdAt;
+          return bDate.getTime() - aDate.getTime();
+        });
+      case "newest":
+      default:
+        return sorted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+    }
+  };
+
+  // Update filtered cards when cards or filter changes
+  const updateFilteredCards = (newCards: CustomerCard[], newFilter: string) => {
+    const sorted = sortCards(newCards, newFilter);
+    setFilteredCards(sorted);
+  };
 
   const loadCards = async (isRefresh = false) => {
     if (!user) return;
@@ -46,6 +84,7 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
 
       const customerCards = await CustomerCardService.getUnclaimedRewardCustomerCards(user.id);
       setCards(customerCards);
+      updateFilteredCards(customerCards, filterType);
 
       // Pre-load all card images in the background for smooth experience
       const imagesToPreload: string[] = [];
@@ -75,11 +114,16 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
     useCallback(() => {
       console.log("🏠 CustomerHomeScreen focused - refreshing cards, timestamp:", route?.params?.timestamp);
 
+      // Reset filter animation when screen is focused
+      filterOpacity.setValue(1);
+      filterHeight.setValue(95);
+      lastScrollY.current = 0;
+      scrollDirection.current = "up";
+
       // Check for success modal parameters from navigation
       if (route?.params?.showSuccessModal && route?.params?.cardCode) {
         console.log("🎉 Showing success modal from navigation params with code:", route.params.cardCode);
         setNewCardCode(route.params.cardCode);
-        setSuccessModalKey((prev) => prev + 1);
 
         // Small delay to ensure the screen is fully loaded before showing modal
         setTimeout(() => {
@@ -116,6 +160,65 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
     }, [user, route?.params?.timestamp, route?.params?.showSuccessModal, route?.params?.cardCode, navigation, loadCards])
   );
 
+  const handleFilterChange = (newFilter: string) => {
+    setFilterType(newFilter);
+    updateFilteredCards(cards, newFilter);
+  };
+
+  // Handle scroll events to show/hide filter
+  const handleScroll = Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+    useNativeDriver: false,
+    listener: (event: any) => {
+      const currentScrollY = event.nativeEvent.contentOffset.y;
+      const diff = currentScrollY - lastScrollY.current;
+
+      // Only animate if we have enough cards to scroll
+      if (filteredCards.length < 3) return;
+
+      // Lower threshold for better sensitivity to slow scrolling
+      if (Math.abs(diff) > 2) {
+        const newDirection = diff > 0 ? "down" : "up";
+
+        // More sensitive detection - animate on smaller movements too
+        if (newDirection !== scrollDirection.current || Math.abs(diff) > 5) {
+          scrollDirection.current = newDirection;
+
+          if (newDirection === "down" && currentScrollY > 20) {
+            // Hide filter when scrolling down (lowered threshold)
+            Animated.parallel([
+              Animated.timing(filterOpacity, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: false,
+              }),
+              Animated.timing(filterHeight, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: false,
+              }),
+            ]).start();
+          } else if (newDirection === "up" && currentScrollY <= 10) {
+            // Show filter only when scrolled back to the very top
+            Animated.parallel([
+              Animated.timing(filterOpacity, {
+                toValue: 1,
+                duration: 200,
+                useNativeDriver: false,
+              }),
+              Animated.timing(filterHeight, {
+                toValue: 95,
+                duration: 200,
+                useNativeDriver: false,
+              }),
+            ]).start();
+          }
+        }
+      }
+
+      lastScrollY.current = currentScrollY;
+    },
+  });
+
   const handleCardPress = (card: CustomerCard) => {
     setSelectedCard(card);
     // Small delay to improve modal animation on Android
@@ -140,7 +243,6 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
     console.log("🔴 handleCloseSuccessModal called - current state:", { successModalVisible, newCardCode });
     setSuccessModalVisible(false);
     setNewCardCode("");
-    setIsShowingSuccessModal(false);
   };
 
   const handleJoinSuccess = (cardCode: string) => {
@@ -198,8 +300,23 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
             <Text style={styles.nameText}>{user?.displayName}</Text>
           </View>
         </View>
+        {cards.length > 0 && (
+          <Animated.View
+            style={[
+              styles.filterContainer,
+              {
+                opacity: filterOpacity,
+                height: filterHeight,
+                alignItems: "stretch",
+                justifyContent: "flex-start",
+              },
+            ]}
+          >
+            <Dropdown label="" value={filterType} options={filterOptions} onSelect={handleFilterChange} placeholder="Ordenar por..." />
+          </Animated.View>
+        )}
       </View>
-      {cards.length === 0 ? (
+      {filteredCards.length === 0 ? (
         <EmptyState
           icon="card"
           title="Aún No Tienes Tarjetas de Lealtad"
@@ -211,12 +328,14 @@ export const CustomerHomeScreen: React.FC<CustomerHomeScreenProps> = ({ navigati
         />
       ) : (
         <FlatList
-          data={cards}
+          data={filteredCards}
           renderItem={renderCard}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.cardsList}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => loadCards(true)} colors={[COLORS.primary]} tintColor={COLORS.primary} />}
           showsVerticalScrollIndicator={false}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
         />
       )}
 
@@ -271,7 +390,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: SPACING.xl,
-    paddingVertical: SPACING.lg,
+    paddingTop: SPACING.lg,
     backgroundColor: COLORS.white,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.inputBorder,
@@ -279,6 +398,13 @@ const styles = StyleSheet.create({
   headerContent: {
     flexDirection: "row",
     alignItems: "center",
+  },
+  filterContainer: {
+    paddingHorizontal: 0,
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.xs,
+    justifyContent: "center",
+    margin: 0,
   },
   profileContainer: {
     marginRight: SPACING.md,

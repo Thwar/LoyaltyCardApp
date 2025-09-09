@@ -34,7 +34,8 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
     const isAndroid = Platform.OS === "android";
     const shouldShowAnimations = showAnimation && !isAndroid; // Disable general animations on Android
     const shouldShowCompletionAnimation = showAnimation && isCompleted; // Allow completion animation on both platforms
-    const shouldShowTextures = !isAndroid; // Disable texture overlays on Android
+    // Re-enable lightweight textures on Android
+    const shouldShowTextures = true;
     const shouldShowGlassEffects = !isAndroid; // Disable glass effects on Android
 
     // Memoize image sources to prevent unnecessary re-renders
@@ -46,9 +47,10 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
       return card.businessLogo ? { uri: card.businessLogo } : null;
     }, [card.businessLogo]);
 
-    // Memoize texture dots to prevent re-creation on every render - skip on Android for performance
+    // Memoize texture dots to prevent re-creation on every render - keep disabled for Android for performance
     const textureDots = useMemo(() => {
-      if (!shouldShowTextures) return null; // Skip on Android for performance
+      if (!shouldShowTextures) return null;
+      if (isAndroid) return null; // Skip dots on Android to keep it light
 
       return Array.from({ length: 12 }, (_, i) => (
         <View
@@ -63,7 +65,7 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
           ]}
         />
       ));
-    }, [shouldShowTextures]);
+    }, [shouldShowTextures, isAndroid]);
 
     // Pre-load images when component mounts or URLs change
     useEffect(() => {
@@ -328,9 +330,9 @@ export const AnimatedLoyaltyCard: React.FC<AnimatedLoyaltyCardProps> = React.mem
         {/* Subtle Texture Overlay - Only when no background image and only on iOS for performance */}
         {!card.backgroundImage && shouldShowTextures && (
           <View style={styles.textureOverlay}>
-            <View style={styles.texturePattern} />
-            <View style={[styles.texturePattern, styles.texturePattern2]} />
-            <View style={[styles.texturePattern, styles.texturePattern3]} />
+            <View style={[styles.texturePattern, isAndroid && styles.androidNoShadow]} />
+            <View style={[styles.texturePattern, styles.texturePattern2, isAndroid && styles.androidNoShadow]} />
+            {!isAndroid && <View style={[styles.texturePattern, styles.texturePattern3]} />}
             {/* Add multiple small dots for texture */}
             {textureDots}
           </View>
@@ -569,6 +571,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
     transform: [{ rotate: "-45deg" }],
+  },
+  // Remove shadows/elevation when applied to Android for performance
+  androidNoShadow: {
+    shadowOpacity: 0,
+    elevation: 0,
   },
   textureDot: {
     position: "absolute",
