@@ -25,7 +25,8 @@
     "env:list": "eas secret:list",
     "type-check": "tsc --noEmit",
     "build:web": "node scripts/build-web.cjs",
-    "dev:site": "npx serve site -l 8081"
+    "dev:site": "npx serve site -l 8081",
+    "lint": "eslint . --ext .ts,.tsx"
   },
   "dependencies": {
     "@expo/metro-runtime": "~5.0.4",
@@ -75,7 +76,12 @@
   "devDependencies": {
     "@babel/core": "^7.28.0",
     "@types/react": "~19.0.10",
-    "typescript": "~5.8.3"
+    "typescript": "~5.8.3",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/parser": "^7.10.0",
+    "@typescript-eslint/eslint-plugin": "^7.10.0",
+    "eslint-plugin-react": "^7.34.1",
+    "eslint-plugin-react-hooks": "^4.6.0"
   },
   "private": true
 }
