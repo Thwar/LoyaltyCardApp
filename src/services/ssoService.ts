@@ -39,7 +39,7 @@ export class SSOService {
         const config: any = {
           webClientId: GOOGLE_CONFIG.webClientId,
           // Do NOT pass androidClientId here; GoogleSignIn resolves Android client from google-services.json
-          scopes: ['profile', 'email'],
+          scopes: ["profile", "email"],
           // Keep config minimal to reduce DEVELOPER_ERROR causes
         };
 
@@ -101,7 +101,7 @@ export class SSOService {
           });
         } catch (playServicesError) {
           console.error("Google Play Services error:", playServicesError);
-          
+
           // Fallback: Try web-based auth for Android if native fails
           console.log("Falling back to web-based Google Sign-In due to Play Services issue");
           try {
@@ -183,13 +183,15 @@ export class SSOService {
         console.error("Web Client ID should be:", GOOGLE_CONFIG.webClientId);
         console.error("Android Client ID should be:", GOOGLE_CONFIG.androidClientId);
         console.error("Full error details:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-        
+
         // Developer error detected - provide helpful guidance
         console.log("Attempting web-based Google authentication as fallback...");
-        
-        // Since we're in development and native auth is failing, 
+
+        // Since we're in development and native auth is failing,
         // let's inform the user about the ongoing build
-        throw new Error("Google Sign-In necesita una nueva compilación. Una nueva versión está siendo creada ahora con la configuración actualizada. Por favor, espera unos minutos e instala la nueva versión.");
+        throw new Error(
+          "Google Sign-In necesita una nueva compilación. Una nueva versión está siendo creada ahora con la configuración actualizada. Por favor, espera unos minutos e instala la nueva versión."
+        );
       } else {
         console.error("Unexpected Google Sign-In error:", error);
         throw new Error(error.message || "Error al iniciar sesión con Google");
