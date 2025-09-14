@@ -298,8 +298,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   const handleLogoutAllDevices = () => {
     showAlert({
       title: "Cerrar sesión en todos los dispositivos",
-      message:
-        "Esto cerrará la sesión en todos los demás dispositivos donde esté iniciada con esta cuenta. Úsalo cuando un empleado deja de trabajar o se pierde un dispositivo. ¿Deseas continuar?",
+      message: "Esto cerrará la sesión en todos los demás dispositivos donde esté iniciada con esta cuenta. Úsalo cuando un empleado deja de trabajar o se pierde un dispositivo. ¿Deseas continuar?",
       buttons: [
         { text: "Cancelar", style: "cancel" },
         {
