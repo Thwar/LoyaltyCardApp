@@ -44,6 +44,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+development-build.apk
 
 # typescript
 *.tsbuildinfo
@@ -54,6 +55,7 @@ yarn-error.*
 credentials.json
 android/app/keystores/*.keystore
 !android/app/debug.keystore
+
 
 # Firebase Config Files
 google-services.json
