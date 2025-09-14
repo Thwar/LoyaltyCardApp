@@ -3,6 +3,9 @@ import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { AuthService } from "../services/api";
 import { User, AuthUser } from "../types";
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../services/firebase";
+import { UserService } from "../services/userService";
 
 interface AuthContextType {
   user: User | null;
@@ -38,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginHasFailed, setLoginHasFailed] = useState(false);
+  const sessionUnsubRef = useRef<null | (() => void)>(null);
 
   // Timeout management
   const timeoutRefs = useRef<NodeJS.Timeout[]>([]);
@@ -101,6 +105,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (userData) {
             setUser(userData);
             console.log("User data loaded from Firestore:", userData.email);
+
+            // Persist initial sessionVersion locally if present
+            try {
+              const userDocRef = doc(db, "users", firebaseUser.uid);
+              const deviceId = await UserService.getOrCreateDeviceId();
+              // Subscribe to changes for forced-logout handling
+              if (sessionUnsubRef.current) {
+                sessionUnsubRef.current();
+              }
+              let firstSnapshot = true;
+              sessionUnsubRef.current = onSnapshot(userDocRef, async (snap) => {
+                const data = snap.data() as any;
+                if (!data) return;
+                const remoteVersion = (data.sessionVersion as number) || 0;
+                const initiator = (data.lastInitiatorDeviceId as string) || "";
+                const localVersion = await UserService.getLocalSessionVersion(firebaseUser.uid);
+
+                if (firstSnapshot) {
+                  // On initial subscribe after login, sync local to remote and don't force logout
+                  await UserService.setLocalSessionVersion(firebaseUser.uid, remoteVersion);
+                  firstSnapshot = false;
+                  return;
+                }
+
+                // If the remote version increased and this device wasn't the initiator, force logout
+                if (remoteVersion > localVersion && initiator && initiator !== deviceId) {
+                  console.log("Detected forced logout from another device. Signing out...");
+                  try {
+                    await AuthService.logout();
+                  } catch (e) {
+                    console.warn("Error during forced logout:", e);
+                  } finally {
+                    setAuthUser(null);
+                    setUser(null);
+                  }
+                } else if (remoteVersion >= 0 && remoteVersion !== localVersion) {
+                  // Keep local version in sync to avoid repeated sign-outs
+                  await UserService.setLocalSessionVersion(firebaseUser.uid, remoteVersion);
+                }
+              });
+            } catch (e) {
+              console.warn("Failed to set up session listener:", e);
+            }
           } else {
             console.log("No user data found in Firestore after retries, signing out");
             await AuthService.logout();
@@ -109,6 +156,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log("No Firebase user, clearing state");
           setAuthUser(null);
           setUser(null);
+          if (sessionUnsubRef.current) {
+            sessionUnsubRef.current();
+            sessionUnsubRef.current = null;
+          }
         }
       } catch (error) {
         console.error("Error in auth state change:", error);
@@ -128,6 +179,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       unsubscribe();
       clearAllTimeouts();
+      if (sessionUnsubRef.current) {
+        sessionUnsubRef.current();
+        sessionUnsubRef.current = null;
+      }
     };
   }, [loginHasFailed, clearAllTimeouts]);
 

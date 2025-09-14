@@ -49,6 +49,7 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
   const [reloading, setReloading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoggingOutAll, setIsLoggingOutAll] = useState(false);
 
   useEffect(() => {
     loadBusiness();
@@ -294,6 +295,38 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
     });
   };
 
+  const handleLogoutAllDevices = () => {
+    showAlert({
+      title: "Cerrar sesión en todos los dispositivos",
+      message:
+        "Esto cerrará la sesión en todos los demás dispositivos donde esté iniciada con esta cuenta. Úsalo cuando un empleado deja de trabajar o se pierde un dispositivo. ¿Deseas continuar?",
+      buttons: [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Cerrar en otros",
+          style: "destructive",
+          onPress: async () => {
+            setIsLoggingOutAll(true);
+            try {
+              await UserService.logoutAllDevicesExceptCurrent();
+              showAlert({
+                title: "Listo",
+                message: "Se pidió cerrar sesión en los otros dispositivos. Puede tardar unos segundos.",
+              });
+            } catch (e: any) {
+              showAlert({
+                title: "Error",
+                message: e?.message || "No se pudo cerrar sesión en los otros dispositivos.",
+              });
+            } finally {
+              setIsLoggingOutAll(false);
+            }
+          },
+        },
+      ],
+    });
+  };
+
   const handleDeleteAccount = () => {
     showAlert({
       title: "⚠️ ELIMINAR CUENTA",
@@ -473,6 +506,16 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
             </View>
             <Button title="Cerrar Sesión" onPress={handleLogout} variant="outline" size="large" style={styles.logoutButton} />
 
+            <Button
+              title={isLoggingOutAll ? "Cerrando en otros..." : "Cerrar sesión de todos los dispositivos"}
+              onPress={handleLogoutAllDevices}
+              variant="outline"
+              size="large"
+              style={styles.logoutAllButton}
+              loading={isLoggingOutAll}
+              disabled={isLoggingOutAll}
+            />
+
             {/* Danger Zone */}
             <View style={styles.dangerZone}>
               <Button
@@ -565,6 +608,10 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     borderColor: COLORS.error,
+  },
+  logoutAllButton: {
+    marginTop: SPACING.md,
+    borderColor: COLORS.warning,
   },
   dangerZone: {
     backgroundColor: "#FEF2F2",
