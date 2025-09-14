@@ -12,8 +12,7 @@
       },
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug",
-        "credentialsSource": "local"
+        "credentialsSource": "remote"
       },
       "ios": {
         "buildConfiguration": "Debug"
@@ -42,9 +41,7 @@
       "env": {
         "APP_ENV": "production"
       },
-      "android": {
-        "credentialsSource": "local"
-      }
+      "android": {}
     }
   },
   "submit": {

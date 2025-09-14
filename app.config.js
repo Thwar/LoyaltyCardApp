@@ -14,7 +14,7 @@ export default ({ config }) => {
   const isDev = process.env.NODE_ENV === "development";
   const isProduction = process.env.APP_ENV === "production";
   const FACEBOOK_APP_ID = process.env.FACEBOOK_APP_ID || "1119577610065940"; // fallback for dev only
-  const androidGoogleServicesPath = process.env.ANDROID_GOOGLE_SERVICES_FILE || "./google-services.json";
+  const androidGoogleServicesPath = "./google-services.json";
   const resolvedAndroidGSPath = path.resolve(process.cwd(), androidGoogleServicesPath);
   const hasAndroidGoogleServices = fs.existsSync(resolvedAndroidGSPath);
   if (!hasAndroidGoogleServices) {
@@ -37,6 +37,7 @@ export default ({ config }) => {
     newArchEnabled: true,
     plugins: [
       "expo-dev-client",
+      "expo-audio",
       [
         "@react-native-google-signin/google-signin",
         {
@@ -119,7 +120,7 @@ export default ({ config }) => {
         "com.android.alarm.permission.SET_ALARM",
       ],
       package: "com.thwar077.CaseroApp",
-      ...(hasAndroidGoogleServices ? { googleServicesFile: androidGoogleServicesPath } : {}),
+      googleServicesFile: androidGoogleServicesPath,
       intentFilters: [
         {
           action: "VIEW",
@@ -172,10 +173,10 @@ export default ({ config }) => {
 
       // Social Auth
       GOOGLE_WEB_CLIENT_ID: process.env.GOOGLE_WEB_CLIENT_ID,
-  // Ensure the runtime always has a Facebook App ID. Fall back to the same
-  // value used for native configuration so Android doesn't generate
-  // fb://authorize (empty id) which causes a Play Store 404.
-  FACEBOOK_APP_ID: FACEBOOK_APP_ID,
+      // Ensure the runtime always has a Facebook App ID. Fall back to the same
+      // value used for native configuration so Android doesn't generate
+      // fb://authorize (empty id) which causes a Play Store 404.
+      FACEBOOK_APP_ID: FACEBOOK_APP_ID,
     },
     runtimeVersion: process.env.APP_VERSION || "1.0.0",
     updates: {

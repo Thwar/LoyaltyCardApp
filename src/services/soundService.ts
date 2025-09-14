@@ -1,124 +1,83 @@
-import { Audio } from "expo-av";
-import { Platform } from "react-native";
+import { createAudioPlayer, setAudioModeAsync } from "expo-audio";
 
-// Queue for thread-safe audio operations
-const audioQueue: (() => void)[] = [];
-let isProcessingQueue = false;
+// Lightweight wrapper migrating from expo-av to expo-audio while preserving API.
+// expo-audio exposes a player-centric API; we’ll preload small UI sounds and reuse them.
+
+interface LoadedSound {
+  player: ReturnType<typeof createAudioPlayer>;
+}
 
 export class SoundService {
-  private static sounds: { [key: string]: Audio.Sound } = {};
+  private static sounds: Record<string, LoadedSound> = {};
+  private static initialized = false;
 
-  // Process audio queue on main thread
-  private static processAudioQueue(): void {
-    if (isProcessingQueue || audioQueue.length === 0) return;
-
-    isProcessingQueue = true;
-    const operation = audioQueue.shift();
-
-    if (operation) {
-      setTimeout(() => {
-        operation();
-        isProcessingQueue = false;
-        // Process next item in queue
-        if (audioQueue.length > 0) {
-          this.processAudioQueue();
-        }
-      }, 0);
-    } else {
-      isProcessingQueue = false;
-    }
-  }
-
-  // Queue audio operation for main thread execution
-  private static queueAudioOperation(operation: () => void): void {
-    audioQueue.push(operation);
-    this.processAudioQueue();
-  }
-
-  // Initialize audio mode
-  static async initializeAudio(): Promise<void> {
+  private static async ensureAudioMode() {
+    if (this.initialized) return;
     try {
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        staysActiveInBackground: false,
-        playsInSilentModeIOS: true,
-        shouldDuckAndroid: false, // Changed to false to prevent audio focus issues
-        playThroughEarpieceAndroid: false,
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+        allowsRecording: false,
+        // background playback not needed for short UI sounds
+        shouldPlayInBackground: false,
       });
-    } catch (error) {
-      console.error("Error initializing audio:", error);
+      this.initialized = true;
+    } catch (e) {
+      console.warn("SoundService: audio mode init failed", e);
     }
   }
 
-  // Load a sound file (with better error handling)
-  static async loadSound(soundName: string, soundFile: any): Promise<void> {
+  static async loadSound(name: string, asset: any) {
     try {
-      // Unload existing sound if any
-      if (this.sounds[soundName]) {
-        await this.sounds[soundName].unloadAsync();
+      await this.ensureAudioMode();
+      // If already loaded, unload before reloading
+      if (this.sounds[name]) {
+        try {
+          this.sounds[name].player.remove();
+        } catch {}
       }
-
-      const { sound } = await Audio.Sound.createAsync(soundFile, {
-        shouldPlay: false,
-        isLooping: false,
-        volume: 1.0,
-      });
-      this.sounds[soundName] = sound;
-    } catch (error) {
-      console.error(`Error loading sound ${soundName}:`, error);
-    }
-  }
-
-  // Play a sound (ensuring main thread execution)
-  static playSound(soundName: string): void {
-    this.queueAudioOperation(async () => {
+      const player = createAudioPlayer(asset);
       try {
-        const sound = this.sounds[soundName];
-        if (sound) {
-          await sound.setPositionAsync(0); // Reset to beginning
-          await sound.playAsync();
-        } else {
-          console.warn(`Sound ${soundName} not found`);
-        }
-      } catch (error) {
-        console.error(`Error playing sound ${soundName}:`, error);
-      }
-    });
-  }
-
-  // Preload common sounds
-  static async preloadSounds(): Promise<void> {
-    try {
-      await this.initializeAudio();
-
-      // Load actual MP3 sound files from assets
-      await this.loadSound("success", require("../../assets/sounds/success.mp3"));
-      await this.loadSound("complete", require("../../assets/sounds/complete.mp3"));
-    } catch (error) {
-      console.error("Error preloading sounds:", error);
+        player.volume = 1;
+      } catch {}
+      this.sounds[name] = { player };
+    } catch (e) {
+      console.error(`SoundService: failed to load ${name}`, e);
     }
   }
 
-  // Play success sound
-  static playSuccessSound(): void {
+  static async preloadSounds() {
+    await this.loadSound("success", require("../../assets/sounds/success.mp3"));
+    await this.loadSound("complete", require("../../assets/sounds/complete.mp3"));
+  }
+
+  static async playSound(name: string) {
+    const entry = this.sounds[name];
+    if (!entry) return console.warn(`SoundService: sound ${name} not loaded`);
+    try {
+      try {
+        await entry.player.seekTo(0);
+      } catch {}
+      entry.player.play();
+    } catch (e) {
+      console.error(`SoundService: play error for ${name}`, e);
+    }
+  }
+
+  static playSuccessSound() {
     this.playSound("success");
   }
-
-  // Play completion sound
-  static playCompleteSound(): void {
+  static playCompleteSound() {
     this.playSound("complete");
   }
 
-  // Cleanup sounds
-  static async cleanup(): Promise<void> {
-    try {
-      for (const soundName in this.sounds) {
-        const sound = this.sounds[soundName];
-        await sound.unloadAsync();
-      }
-      this.sounds = {};
-    } catch (error) {
-      console.error("Error cleaning up sounds:", error);
-    }
+  static async cleanup() {
+    const unloads = Object.values(this.sounds).map(async ({ player }) => {
+      try {
+        player.remove();
+      } catch {}
+    });
+    await Promise.all(unloads);
+    this.sounds = {};
+    this.initialized = false;
   }
 }

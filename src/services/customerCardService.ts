@@ -37,7 +37,7 @@ export class CustomerCardService {
         throw new Error("El negocio asociado a esta tarjeta no existe. Intenta más tarde o contacta soporte.");
       }
 
-      const cardCode = await generateUniqueCardCode(businessId, customerId);
+      const cardCode = await generateUniqueCardCode(businessId, customerId, (code, bId) => this.getUnclaimedCustomerCardByCodeAndBusiness(code, bId));
 
       let customerName = "";
       try {
