@@ -13,6 +13,7 @@ import { handleFirestoreError } from "./utils";
 export class CustomerCardService {
   static async joinLoyaltyProgram(customerId: string, loyaltyCardId: string): Promise<CustomerCard & { cardCode: string }> {
     try {
+      // 1. Check if already joined (this query is allowed as it filters by OWN customerId)
       const q = query(
         collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS),
         where("customerId", "==", customerId),
@@ -23,21 +24,19 @@ export class CustomerCardService {
       const existingCards = await getDocs(q);
       if (!existingCards.empty) throw new Error("Ya estás inscrito en este programa de fidelidad");
 
+      // 2. Validate Loyalty Card and Business
       const loyaltyCardDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.LOYALTY_CARDS, loyaltyCardId));
       if (!loyaltyCardDoc.exists()) throw new Error("Tarjeta de fidelidad no encontrada");
       const loyaltyCardData = loyaltyCardDoc.data();
       const businessId = loyaltyCardData.businessId as string | null | undefined;
 
       if (!businessId) {
-        throw new Error("Esta tarjeta de fidelidad no tiene un negocio asociado todavía. Pide al negocio que configure la tarjeta correctamente.");
+        throw new Error("Esta tarjeta de fidelidad no tiene un negocio asociado todavía.");
       }
-      // Ensure business exists before attempting create (avoids opaque permission errors)
       const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
       if (!businessDoc.exists()) {
-        throw new Error("El negocio asociado a esta tarjeta no existe. Intenta más tarde o contacta soporte.");
+        throw new Error("El negocio asociado a esta tarjeta no existe.");
       }
-
-      const cardCode = await generateUniqueCardCode(businessId, customerId, (code, bId) => this.getUnclaimedCustomerCardByCodeAndBusiness(code, bId));
 
       let customerName = "";
       try {
@@ -45,37 +44,66 @@ export class CustomerCardService {
         if (userDoc.exists()) customerName = userDoc.data().displayName || "";
       } catch {}
 
-      const customerCardData = {
-        customerId,
-        loyaltyCardId,
-        businessId,
-        currentStamps: 0,
-        isRewardClaimed: false,
-        createdAt: serverTimestamp(),
-        customerName,
-        cardCode,
-      };
+      // 3. Generate a Code using "takenCodes" check
+      // We pass a checker that uses the PUBLIC takenCodes collection
+      const cardCode = await generateUniqueCardCode(businessId, customerId, async (code, bId) => {
+        const takenRef = doc(db, `businesses/${bId}/takenCodes/${code}`);
+        const snap = await getDoc(takenRef);
+        return snap.exists();
+      });
 
-      const docRef = await addDoc(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), customerCardData);
+      // 4. Transactional Create: Card + TakenCode reservation
+      const result = await runTransaction(db, async (tx) => {
+        const takenCodeRef = doc(db, `businesses/${businessId}/takenCodes/${cardCode}`);
+        const takenSnap = await tx.get(takenCodeRef);
+        if (takenSnap.exists()) {
+          throw new Error("RETRY_CODE_GENERATION"); // Signal to retry
+        }
 
-      return {
-        id: docRef.id,
-        customerId,
-        loyaltyCardId,
-        businessId,
-        currentStamps: 0,
-        isRewardClaimed: false,
-        createdAt: new Date(),
-        customerName,
-        cardCode,
-      };
+        const newCardRef = doc(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS));
+        
+        const customerCardData = {
+          customerId,
+          loyaltyCardId,
+          businessId,
+          currentStamps: 0,
+          isRewardClaimed: false,
+          createdAt: serverTimestamp(),
+          customerName,
+          cardCode,
+        };
+
+        // Reserve the code
+        tx.set(takenCodeRef, {
+          customerId,
+          createdAt: serverTimestamp(),
+          cardId: newCardRef.id
+        });
+
+        // Create the card
+        tx.set(newCardRef, customerCardData);
+
+        return {
+          id: newCardRef.id,
+          ...customerCardData,
+          createdAt: new Date()
+        };
+      });
+
+      return result as CustomerCard & { cardCode: string };
+
     } catch (error: any) {
       console.error("❌ DEBUG - joinLoyaltyProgram error", { error: error.message, code: error?.code, customerId, loyaltyCardId });
-      // Surface clearer message for Firestore security rule denials
+      
+      if (error.message === "RETRY_CODE_GENERATION") {
+        // Simple recursion for retry (should be rare with 3 digits for small businesses, but possible)
+        return this.joinLoyaltyProgram(customerId, loyaltyCardId);
+      }
+
       const code = error?.code || error?.name;
       if (code === "permission-denied") {
         throw new Error(
-          "No tienes permisos para unirte a esta tarjeta. Asegúrate de estar autenticado y que la tarjeta pertenezca al mismo negocio. Si el problema persiste, pide al negocio que verifique su configuración."
+          "No tienes permisos para unirte a esta tarjeta. Verifica tu conexión e inténtalo de nuevo."
         );
       }
       throw new Error(error.message || "Error al unirse al programa de fidelidad");
@@ -680,17 +708,31 @@ export class CustomerCardService {
         throw new Error("No tienes permisos para eliminar esta tarjeta");
       }
 
-      // Query and delete related documents
-      const stampActivitiesQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY), where("customerCardId", "==", customerCardId));
+      // Query and delete related documents - include customerId to satisfy strict list rules
+      const userId = auth.currentUser.uid;
+      
+      const stampActivitiesQuery = query(
+        collection(db, FIREBASE_COLLECTIONS.STAMP_ACTIVITY), 
+        where("customerCardId", "==", customerCardId),
+        where("customerId", "==", userId)
+      );
       const stampActivitiesSnapshot = await getDocs(stampActivitiesQuery);
 
-      const stampsQuery = query(collection(db, FIREBASE_COLLECTIONS.STAMPS), where("customerCardId", "==", customerCardId));
+      const stampsQuery = query(
+        collection(db, FIREBASE_COLLECTIONS.STAMPS), 
+        where("customerCardId", "==", customerCardId),
+        where("customerId", "==", userId)
+      );
       const stampsSnapshot = await getDocs(stampsQuery);
 
-      const rewardsQuery = query(collection(db, FIREBASE_COLLECTIONS.REWARDS), where("customerCardId", "==", customerCardId));
+      const rewardsQuery = query(
+        collection(db, FIREBASE_COLLECTIONS.REWARDS), 
+        where("customerCardId", "==", customerCardId),
+        where("customerId", "==", userId)
+      );
       const rewardsSnapshot = await getDocs(rewardsQuery);
 
-      // Execute deletions in sequence to isolate which one fails
+      // Execute deletions in sequence
       for (const stampActivityDoc of stampActivitiesSnapshot.docs) {
         await deleteDoc(stampActivityDoc.ref);
       }
@@ -705,6 +747,16 @@ export class CustomerCardService {
 
       // Finally, delete the customer card itself
       await deleteDoc(doc(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS, customerCardId));
+
+      // Also clean up the taken code reservation if it exists
+      if (customerCardData.businessId && customerCardData.cardCode) {
+        try {
+          const takenCodeRef = doc(db, `businesses/${customerCardData.businessId}/takenCodes/${customerCardData.cardCode}`);
+          await deleteDoc(takenCodeRef);
+        } catch (e) {
+          console.warn("DEBUG: Failed to delete takenCode reservation (non-fatal)", e);
+        }
+      }
     } catch (error: any) {
       console.error("Error deleting customer card:", error);
 

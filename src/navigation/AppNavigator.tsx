@@ -148,6 +148,9 @@ const BusinessNavigator = () => {
         headerTitleStyle: {
           fontWeight: "bold",
         },
+        // Use the logo component as the header title and align it left across all business tabs
+        headerTitle: () => <LogoHeader title="" />,
+        headerTitleAlign: "left",
       })}
     >
       <BusinessTab.Screen
@@ -155,9 +158,6 @@ const BusinessNavigator = () => {
         component={BusinessDashboardScreen}
         options={{
           tabBarLabel: "Panel",
-          headerTitle: "",
-          headerLeft: () => <LogoHeader title="" />,
-          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
       <BusinessTab.Screen
@@ -165,9 +165,6 @@ const BusinessNavigator = () => {
         component={LoyaltyProgramScreen}
         options={{
           tabBarLabel: "Mi Programa",
-          headerTitle: "",
-          headerLeft: () => <LogoHeader title="" />,
-          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
       <BusinessTab.Screen
@@ -175,9 +172,6 @@ const BusinessNavigator = () => {
         component={AddStampScreen}
         options={{
           tabBarLabel: "Sellar",
-          headerTitle: "",
-          headerLeft: () => <LogoHeader title="" />,
-          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
           tabBarIcon: ({ focused, color, size }) => (
             <View
               style={{
@@ -210,9 +204,6 @@ const BusinessNavigator = () => {
         component={CustomerManagementScreen}
         options={{
           tabBarLabel: "Clientes",
-          headerTitle: "",
-          headerLeft: () => <LogoHeader title="" />,
-          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
       <BusinessTab.Screen
@@ -220,9 +211,6 @@ const BusinessNavigator = () => {
         component={BusinessSettingsScreen}
         options={{
           tabBarLabel: "Perfil",
-          headerTitle: "",
-          headerLeft: () => <LogoHeader title="" />,
-          headerLeftContainerStyle: { left: 0, paddingLeft: 0 },
         }}
       />
     </BusinessTab.Navigator>

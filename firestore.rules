@@ -65,6 +65,13 @@ service cloud.firestore {
       allow update, delete: if isSignedIn() && isOwnerOfBusiness(businessId) &&
                              // ownerId cannot change
                              request.resource.data.ownerId == resource.data.ownerId;
+      
+      // PUBLIC CODE DIRECTORY: For uniqueness checks
+      match /takenCodes/{code} {
+        allow read: if isSignedIn();
+        allow create: if isSignedIn(); // Anyone can claim a code if they are creating a card
+        allow delete: if isSignedIn(); // Cleanup allowed
+      }
     }
 
     // LOYALTY CARDS: Created/managed by business owners
@@ -85,8 +92,6 @@ service cloud.firestore {
                     isUser(resource.data.customerId) ||
                     isOwnerOfBusiness(resource.data.businessId)
                   );
-      // Allow querying for card code uniqueness (needed during card generation) - simplified check
-      allow list: if isSignedIn();
       allow create: if isSignedIn() &&
                     request.resource.data.keys().hasAll(['customerId','loyaltyCardId','businessId']) &&
                     request.resource.data.customerId == request.auth.uid;
@@ -101,8 +106,6 @@ service cloud.firestore {
       allow read: if isSignedIn() && resource != null && (
                     isUser(resource.data.customerId) || isOwnerOfBusiness(resource.data.businessId)
                   );
-      // Allow listing for queries when signed in (needed for deletion cleanup)
-      allow list: if isSignedIn();
       allow create: if isSignedIn() &&
                     request.resource.data.keys().hasAll(['customerCardId','customerId','businessId','loyaltyCardId','timestamp']) &&
                     customerCardExists(request.resource.data.customerCardId) &&
@@ -124,8 +127,6 @@ service cloud.firestore {
       allow read: if isSignedIn() && resource != null && (
                     isUser(resource.data.customerId) || isOwnerOfBusiness(resource.data.businessId)
                   );
-      // Allow listing for queries when signed in (needed for deletion cleanup)
-      allow list: if isSignedIn();
       allow create: if isSignedIn() &&
                     request.resource.data.keys().hasAll(['customerCardId','customerId','businessId','loyaltyCardId','claimedAt','isRedeemed']) &&
                     customerCardExists(request.resource.data.customerCardId) &&
@@ -145,8 +146,25 @@ service cloud.firestore {
       allow read: if isSignedIn() && resource != null && (
                     isUser(resource.data.customerId) || isOwnerOfBusiness(resource.data.businessId)
                   );
-      // Allow listing for queries when signed in (needed for deletion cleanup)
-      allow list: if isSignedIn();
+      allow create: if isSignedIn() &&
+                    request.resource.data.keys().hasAll(['customerCardId','customerId','businessId','loyaltyCardId','timestamp','stampCount']) &&
+                    customerCardExists(request.resource.data.customerCardId) &&
+                    request.resource.data.customerId == customerIdOfCard(request.resource.data.customerCardId) &&
+                    request.resource.data.businessId == businessIdOfCard(request.resource.data.customerCardId) &&
+                    request.resource.data.loyaltyCardId == get(/databases/$(database)/documents/customerCards/$(request.resource.data.customerCardId)).data.loyaltyCardId &&
+                    (isUser(request.resource.data.customerId) || isOwnerOfBusiness(request.resource.data.businessId));
+      allow update: if false;
+      allow delete: if isSignedIn() && resource != null && (
+                      isUser(resource.data.customerId) || isOwnerOfBusiness(resource.data.businessId)
+                    );
+    }
+
+    // STAMP ACTIVITY: Created alongside stamp events; readable by related parties. 
+    // Can be deleted by customer who owns the card or business owner when deleting customer card.
+    match /stampActivity/{activityId} {
+      allow read: if isSignedIn() && resource != null && (
+                    isUser(resource.data.customerId) || isOwnerOfBusiness(resource.data.businessId)
+                  );
       allow create: if isSignedIn() &&
                     request.resource.data.keys().hasAll(['customerCardId','customerId','businessId','loyaltyCardId','timestamp','stampCount']) &&
                     customerCardExists(request.resource.data.customerCardId) &&

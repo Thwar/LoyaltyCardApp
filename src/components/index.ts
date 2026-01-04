@@ -18,3 +18,5 @@ export { default as SSOButton } from "./SSOButton";
 export { Typography } from "./Typography";
 export { LogoHeader } from "./LogoHeader";
 export { AddStampsInteractive } from "./AddStampsInteractive";
+export { BusinessDiscoverySuccessModal } from "./BusinessDiscoverySuccessModal";
+export { BusinessDiscoveryEmptyState } from "./BusinessDiscoveryEmptyState";

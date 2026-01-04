@@ -3,6 +3,9 @@ import { View, Image, StyleSheet, Text } from "react-native";
 import { COLORS, SPACING, FONT_SIZES } from "../constants";
 import { getFontFamily } from "../utils/fontLoader";
 
+// Note: Prefer using this component as `headerTitle` (with headerTitleAlign:"left")
+// instead of `headerLeft` to avoid occasional clipping/visibility issues on
+// some navigators and platforms.
 interface LogoHeaderProps {
   title: string;
 }

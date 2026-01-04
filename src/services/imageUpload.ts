@@ -13,14 +13,9 @@ export class ImageUploadService {
     let storageRef: any; // Declare early for error logging
 
     try {
-      // Check if user is authenticated and wait for auth state to be ready
+      // Check if user is authenticated
       if (!auth.currentUser) {
-        // Wait a bit for auth state to sync
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
-        if (!auth.currentUser) {
           throw new Error("User must be authenticated to upload images");
-        }
       }
 
       // Force token refresh to ensure we have a valid token

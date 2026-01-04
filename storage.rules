@@ -26,8 +26,7 @@ service firebase.storage {
 
     match /user-profiles/{uid}/{fileName} {
       allow read: if true;
-      // Temporary: allow any authenticated user to write user profiles for debugging
-      allow write: if isSignedIn() && isImage();
+      allow write: if isSignedIn() && request.auth.uid == uid && isImage();
       allow delete: if isSignedIn() && request.auth.uid == uid;
     }
 

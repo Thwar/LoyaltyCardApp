@@ -198,11 +198,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = await AuthService.login(email, password);
       console.log("AuthService.login completed successfully");
 
-      // Wait a moment to ensure Firebase auth state has stabilized
-      const timeout = setTimeout(() => {
-        // Timeout completion - this is just for timing, no action needed
-      }, 100);
-      timeoutRefs.current.push(timeout);
+      // No arbitrary timeout needed
     } catch (error) {
       console.error("Login failed in AuthContext:", error);
       setLoginHasFailed(true);
@@ -276,11 +272,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set the user immediately to prevent the auth state change from signing them out
       setUser(userData);
 
-      // Wait a moment to ensure Firebase auth state has stabilized
-      const timeout = setTimeout(() => {
-        // Timeout completion - this is just for timing, no action needed
-      }, 100);
-      timeoutRefs.current.push(timeout);
+      // No arbitrary timeout needed; state updates via onAuthStateChanged or explicit setUser above
     } catch (error) {
       console.error("Google Sign-In failed in AuthContext:", error);
       setLoginHasFailed(true);
@@ -308,11 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set the user immediately to prevent the auth state change from signing them out
       setUser(userData);
 
-      // Wait a moment to ensure Firebase auth state has stabilized
-      const timeout = setTimeout(() => {
-        // Timeout completion - this is just for timing, no action needed
-      }, 100);
-      timeoutRefs.current.push(timeout);
+      // No arbitrary timeout needed; state updates via onAuthStateChanged or explicit setUser above
     } catch (error) {
       console.error("Facebook Sign-In failed in AuthContext:", error);
       setLoginHasFailed(true);
