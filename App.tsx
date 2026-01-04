@@ -10,11 +10,22 @@ import { useCustomFonts } from "./src/utils/fontLoader";
 import { LoadingState } from "./src/components";
 import { NotificationService } from "./src/services/notificationService";
 import { SoundService } from "./src/services/soundService";
+import * as Sentry from "@sentry/react-native";
+import { env } from "./config/env";
 
 // Import Firebase services to ensure they're initialized early
 import "./src/services/firebase";
 
-export default function App() {
+// Initialize Sentry before the App component
+Sentry.init({
+  dsn: env.SENTRY_DSN,
+  debug: env.ENABLE_DEBUG_LOGS,
+  tracesSampleRate: 1.0, // Capture 100% of transactions for performance monitoring
+  // Set to false in production to save quota, or lower rate
+  enabled: env.ENABLE_CRASH_REPORTING,
+});
+
+function App() {
   const fontsLoaded = useCustomFonts();
 
   useEffect(() => {
@@ -41,6 +52,7 @@ export default function App() {
         console.log("Services initialized successfully");
       } catch (error) {
         console.error("Error initializing services:", error);
+        Sentry.captureException(error);
       }
     };
 
@@ -64,3 +76,6 @@ export default function App() {
     </SafeAreaProvider>
   );
 }
+
+// Wrap with Sentry
+export default Sentry.wrap(App);

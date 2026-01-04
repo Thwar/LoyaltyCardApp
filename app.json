@@ -11,6 +11,7 @@
       "package": "com.thwar077.CaseroApp",
       "googleServicesFile": "./google-services.json"
     },
-    "scheme": ["caseroapp"]
+    "scheme": ["caseroapp"],
+    "plugins": ["@sentry/react-native/expo"]
   }
 }

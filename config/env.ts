@@ -40,6 +40,9 @@ export interface EnvConfig {
   GOOGLE_WEB_CLIENT_ID?: string;
   FACEBOOK_APP_ID?: string;
   FACEBOOK_CLIENT_TOKEN?: string;
+
+  // Monitoring
+  SENTRY_DSN: string;
 }
 
 // Get environment from Expo Constants or fallback to development
@@ -170,6 +173,9 @@ const buildConfig = (): EnvConfig => {
     GOOGLE_WEB_CLIENT_ID: getEnvValue("GOOGLE_WEB_CLIENT_ID", ""),
     FACEBOOK_APP_ID: getEnvValue("FACEBOOK_APP_ID", ""),
     FACEBOOK_CLIENT_TOKEN: getEnvValue("FACEBOOK_CLIENT_TOKEN", ""),
+
+    // Monitoring
+    SENTRY_DSN: getEnvValue("SENTRY_DSN", "https://90615718d3b898401213fe3f0399cabf@o4510653024108545.ingest.us.sentry.io/4510653028040704"), // Placeholder
   };
 };
 

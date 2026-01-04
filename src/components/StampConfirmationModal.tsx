@@ -66,26 +66,13 @@ export const StampConfirmationModal: React.FC<StampConfirmationModalProps> = ({ 
                 <Text style={styles.infoLabel}>Nombre:</Text>
                 <Text style={styles.infoValue}>{customerCard.customerName || "Cliente"}</Text>
               </View>
-              {/* <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Código de Tarjeta:</Text>
-                <Text style={styles.infoValue}>{customerCard.cardCode}</Text>
-              </View> */}
             </View>
           </View>
           {loyaltyCard && (
             <View style={styles.loyaltyCardSection}>
               <View style={styles.cardContainer}>
-                {/* <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{loyaltyCard.businessName}</Text>
-                  <Text style={styles.rewardDescription}>{loyaltyCard.rewardDescription}</Text>
-                </View> */}
-
                 <View style={styles.stampsSection}>
-                  {/* <Text style={styles.stampsLabel}>
-                    Sellos Actuales: {customerCard.currentStamps} de {loyaltyCard.totalSlots}
-                    {canRedeem && ""}
-                    {isAlreadyRedeemed && " ¡CANJEADA!"}
-                  </Text> */}
+
                   {!canRedeem && !isAlreadyRedeemed && loyaltyCard && (
                     <View style={[styles.nextStampPreview]}>
                       <AddStampsInteractive
@@ -287,6 +274,7 @@ const styles = StyleSheet.create({
   },
   stampsSection: {
     alignItems: "center",
+    justifyContent: "center",
     flexDirection: "row",
   },
   stampsLabel: {

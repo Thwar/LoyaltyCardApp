@@ -295,9 +295,8 @@ export class CustomerCardService {
       });
 
       // Play sound immediately after transaction
-      if (!result.isCompleted) {
-        SoundService.playSuccessSound();
-      }
+      // Play sound immediately after transaction
+      SoundService.playSuccessSound();
 
       // Background tasks
       Promise.all([
@@ -578,9 +577,8 @@ export class CustomerCardService {
       });
 
       // Play sound immediately after transaction usage (optimistic UI feeling)
-      if (!result.isCompleted) {
-        SoundService.playSuccessSound(); // Fire and forget
-      }
+      // Play sound immediately after transaction usage (optimistic UI feeling)
+      SoundService.playSuccessSound(); // Fire and forget
 
       // Record activity and send notifications in background (don't await to speed up UI)
       Promise.all([
@@ -639,7 +637,7 @@ export class CustomerCardService {
       try {
         const businessDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.BUSINESSES, businessId));
         const businessName = businessDoc.exists() ? (businessDoc.data() as any).name : "el negocio";
-        await NotificationService.sendRewardRedeemedNotification(businessName);
+        SoundService.playCompleteSound();
         try {
           const customerUser = await UserService.getUser(customerCard.customerId);
           if (customerUser?.pushToken) {

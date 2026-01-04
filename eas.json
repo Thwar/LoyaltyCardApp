@@ -41,7 +41,13 @@
       "env": {
         "APP_ENV": "production"
       },
-      "android": {}
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "ios": {
+        "distribution": "store",
+        "buildConfiguration": "Release"
+      }
     }
   },
   "submit": {

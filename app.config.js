@@ -21,8 +21,8 @@ export default ({ config }) => {
     // Helpful message during prebuild when the file is missing
     console.warn(
       `expo-config: android google-services.json not found at ${resolvedAndroidGSPath}.\n` +
-        "Prebuild will continue, but building/running Android with Firebase/Notifications will require this file.\n" +
-        "Place your google-services.json at the project root or set ANDROID_GOOGLE_SERVICES_FILE and update config."
+      "Prebuild will continue, but building/running Android with Firebase/Notifications will require this file.\n" +
+      "Place your google-services.json at the project root or set ANDROID_GOOGLE_SERVICES_FILE and update config."
     );
   }
 
@@ -75,6 +75,7 @@ export default ({ config }) => {
           mode: "production", // or "development"
         },
       ],
+      "@sentry/react-native/expo",
     ],
     splash: {
       image: "./assets/splash.png",
