@@ -108,9 +108,7 @@ _.swo
 
 # Package manager lock files (will be regenerated)
 
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
+
 
 # API deployment files (if separate deployment)
 
