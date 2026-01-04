@@ -4,6 +4,25 @@
       "collectionGroup": "customerCards",
       "queryScope": "COLLECTION",
       "fields": [
+        { "fieldPath": "loyaltyCardId", "order": "ASCENDING" },
+        { "fieldPath": "businessId", "order": "ASCENDING" },
+        { "fieldPath": "isRewardClaimed", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "customerCards",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "loyaltyCardId", "order": "ASCENDING" },
+        { "fieldPath": "businessId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "customerCards",
+      "queryScope": "COLLECTION",
+      "fields": [
         { "fieldPath": "cardCode", "order": "ASCENDING" },
         { "fieldPath": "loyaltyCardId", "order": "ASCENDING" }
       ]
@@ -145,6 +164,5 @@
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
-  ],
-  "fieldOverrides": []
+  ]
 }

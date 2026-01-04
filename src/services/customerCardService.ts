@@ -440,9 +440,15 @@ export class CustomerCardService {
     }
   }
 
-  static async getActiveCustomerCardsWithUnclaimedRewards(loyaltyCardId: string): Promise<CustomerCard[]> {
+  static async getActiveCustomerCardsWithUnclaimedRewards(loyaltyCardId: string, businessId: string): Promise<CustomerCard[]> {
     try {
-      const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("loyaltyCardId", "==", loyaltyCardId), where("isRewardClaimed", "==", false), orderBy("createdAt", "desc"));
+      const q = query(
+        collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), 
+        where("loyaltyCardId", "==", loyaltyCardId), 
+        where("businessId", "==", businessId),
+        where("isRewardClaimed", "==", false), 
+        orderBy("createdAt", "desc")
+      );
       const querySnapshot = await getDocs(q);
       const customerCards = await Promise.all(
         querySnapshot.docs.map(async (docSnapshot) => {
@@ -651,9 +657,14 @@ export class CustomerCardService {
     }
   }
 
-  static async getAllCustomerCardsByLoyaltyCard(loyaltyCardId: string): Promise<CustomerCard[]> {
+  static async getAllCustomerCardsByLoyaltyCard(loyaltyCardId: string, businessId: string): Promise<CustomerCard[]> {
     try {
-      const q = query(collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), where("loyaltyCardId", "==", loyaltyCardId), orderBy("createdAt", "desc"));
+      const q = query(
+        collection(db, FIREBASE_COLLECTIONS.CUSTOMER_CARDS), 
+        where("loyaltyCardId", "==", loyaltyCardId), 
+        where("businessId", "==", businessId),
+        orderBy("createdAt", "desc")
+      );
       const querySnapshot = await getDocs(q);
       const customerCards = await Promise.all(
         querySnapshot.docs.map(async (docSnapshot) => {

@@ -120,7 +120,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
 
         // Process loyalty cards in parallel for better performance
         const customerCardPromises = currentLoyaltyCards.map(async (loyaltyCard) => {
-          const customerCards = await CustomerCardService.getActiveCustomerCardsWithUnclaimedRewards(loyaltyCard.id);
+          const customerCards = await CustomerCardService.getActiveCustomerCardsWithUnclaimedRewards(loyaltyCard.id, loyaltyCard.businessId);
 
           // Fetch user profile data for each customer in parallel
           const customerCardsWithUserData = await Promise.all(
@@ -209,7 +209,7 @@ export const CustomerManagementScreen: React.FC<CustomerManagementScreenProps> =
     try {
       // Process loyalty cards in parallel for better performance
       const customerCardPromises = cards.map(async (loyaltyCard) => {
-        const customerCards = await CustomerCardService.getActiveCustomerCardsWithUnclaimedRewards(loyaltyCard.id);
+        const customerCards = await CustomerCardService.getActiveCustomerCardsWithUnclaimedRewards(loyaltyCard.id, loyaltyCard.businessId);
 
         // Fetch user profile data for each customer in parallel
         const customerCardsWithUserData = await Promise.all(

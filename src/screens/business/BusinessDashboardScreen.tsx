@@ -113,7 +113,7 @@ export const BusinessDashboardScreen: React.FC<BusinessDashboardScreenProps> = (
 
           if (businessLoyaltyCards.length > 0) {
             // Get all customer cards for all loyalty cards in parallel
-            const customerCardsPromises = businessLoyaltyCards.map((card) => CustomerCardService.getAllCustomerCardsByLoyaltyCard(card.id));
+            const customerCardsPromises = businessLoyaltyCards.map((card) => CustomerCardService.getAllCustomerCardsByLoyaltyCard(card.id, card.businessId));
 
             const allCustomerCardsArrays = await Promise.all(customerCardsPromises);
             const allCustomerCards = allCustomerCardsArrays.flat();

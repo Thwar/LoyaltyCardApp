@@ -1,26 +1,62 @@
 // Removed direct service import to avoid circular dependency (services -> utils -> services)
 // The generator now accepts a lookup function so services can inject their own query logic.
 
-const MAX_CODE_GENERATION_ATTEMPTS = 1000;
+const MAX_ATTEMPTS_PER_LENGTH = 10;
+const START_LENGTH = 3;
 
-const generateRandomCode = (): string => Math.floor(100 + Math.random() * 900).toString();
+/**
+ * Generates a random numeric string of a given length.
+ * e.g. length 3 => "100" to "999"
+ */
+const generateRandomCode = (length: number): string => {
+  const min = Math.pow(10, length - 1); // e.g., 100
+  const max = Math.pow(10, length) - 1; // e.g., 999
+  // Range size: 900 for length 3 (100..999)
+  const range = max - min + 1;
+  return Math.floor(min + Math.random() * range).toString();
+};
 
 export type CustomerCardLookupFn = (code: string, businessId: string) => Promise<any | null>;
 
 /**
- * Generate a unique 3‑digit numeric code (100-999) for a business.
- * The caller provides a lookup function that returns an existing card (or null)
- * so we can test uniqueness without importing service layers here.
+ * Generate a unique numeric code for a business.
+ * 
+ * Scalability Strategy:
+ * - Starts trying to generate 3-digit codes (100-999).
+ * - If it fails to find a unique code after MAX_ATTEMPTS_PER_LENGTH (e.g., 10),
+ *   it assumes the 3-digit space is crowded and automatically switches to 4 digits.
+ * - Continues expanding length as needed (3 -> 4 -> 5...).
+ * 
+ * This ensures small businesses get short codes, while allowing infinite scaling
+ * for larger businesses without running out of unique codes.
  */
 export const generateUniqueCardCode = async (
   businessId: string,
-  _customerId: string, // kept for backwards compatibility; not currently used in uniqueness check
+  _customerId: string,
   findExisting: CustomerCardLookupFn
 ): Promise<string> => {
-  for (let attempts = 0; attempts < MAX_CODE_GENERATION_ATTEMPTS; attempts++) {
-    const code = generateRandomCode();
-    const exists = await findExisting(code, businessId);
-    if (!exists) return code;
+  let length = START_LENGTH;
+  let totalAttempts = 0;
+  const GLOBAL_MAX_ATTEMPTS = 50; // Safety valve to prevent infinite loops
+
+  while (totalAttempts < GLOBAL_MAX_ATTEMPTS) {
+    // Try a few times at the current length
+    for (let i = 0; i < MAX_ATTEMPTS_PER_LENGTH; i++) {
+        const code = generateRandomCode(length);
+        const exists = await findExisting(code, businessId);
+        
+        if (!exists) {
+          return code;
+        }
+        
+        totalAttempts++;
+        if (totalAttempts >= GLOBAL_MAX_ATTEMPTS) break;
+    }
+    
+    // If we haven't found a code yet, the current length space is likely crowded.
+    // Increase length and try again.
+    length++;
   }
+
   throw new Error("Unable to generate unique card code. Please try again.");
 };
