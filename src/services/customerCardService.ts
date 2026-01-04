@@ -294,31 +294,33 @@ export class CustomerCardService {
         return { newStampCount, totalSlots, isCompleted, customerName: cardData.customerName || "", businessName: businessSnap.exists() ? (businessSnap.data() as any).name : "el negocio" };
       });
 
-      await StampActivityService.createStampActivity(customerCardId, customerId, businessId, loyaltyCardId, result.newStampCount, "Sello agregado");
-
-      const notificationData: StampNotificationData = {
-        customerName: result.customerName,
-        businessName: result.businessName,
-        currentStamps: result.newStampCount,
-        totalSlots: result.totalSlots,
-        isCompleted: result.isCompleted,
-      };
-
-      try {
-        try {
-          const customerUser = await UserService.getUser(customerId);
-          if (customerUser?.pushToken) {
-            await NotificationService.sendStampNotificationViaPush([customerUser.pushToken], notificationData);
-          }
-        } catch (pushErr) {
-          console.warn("addStamp: push notification error", pushErr);
-        }
-        if (!result.isCompleted) {
-          await SoundService.playSuccessSound();
-        }
-      } catch (notifErr) {
-        console.warn("addStamp: notification/sound error", notifErr);
+      // Play sound immediately after transaction
+      if (!result.isCompleted) {
+        SoundService.playSuccessSound();
       }
+
+      // Background tasks
+      Promise.all([
+        StampActivityService.createStampActivity(customerCardId, customerId, businessId, loyaltyCardId, result.newStampCount, "Sello agregado"),
+        (async () => {
+          const notificationData: StampNotificationData = {
+            customerName: result.customerName,
+            businessName: result.businessName,
+            currentStamps: result.newStampCount,
+            totalSlots: result.totalSlots,
+            isCompleted: result.isCompleted,
+          };
+          try {
+            const customerUser = await UserService.getUser(customerId);
+            if (customerUser?.pushToken) {
+              await NotificationService.sendStampNotificationViaPush([customerUser.pushToken], notificationData);
+            }
+          } catch (notifErr) {
+            console.warn("addStamp: notification error", notifErr);
+          }
+        })()
+      ]).catch(err => console.warn("Background tasks error:", err));
+
     } catch (error: any) {
       handleFirestoreError(error, "agregar sello");
       throw error;
@@ -575,31 +577,33 @@ export class CustomerCardService {
         return { newStampCount, totalSlots, isCompleted, toAdd, customerName: cardData.customerName || "", businessName: businessSnap.exists() ? (businessSnap.data() as any).name : "el negocio" };
       });
 
-      // Activity with final count
-      await StampActivityService.createStampActivity(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId, result.newStampCount, `Se agregaron ${result.toAdd} sello(s)`);
-
-      const notificationData: StampNotificationData = {
-        customerName: result.customerName,
-        businessName: result.businessName,
-        currentStamps: result.newStampCount,
-        totalSlots: result.totalSlots,
-        isCompleted: result.isCompleted,
-      };
-      try {
-        try {
-          const customerUser = await UserService.getUser(customerCard.customerId);
-          if (customerUser?.pushToken) {
-            await NotificationService.sendStampNotificationViaPush([customerUser.pushToken], notificationData);
-          }
-        } catch (pushErr) {
-          console.warn("addStampByCardCodeAndBusiness(bulk): push notification error", pushErr);
-        }
-        if (!result.isCompleted) {
-          await SoundService.playSuccessSound();
-        }
-      } catch (notifErr) {
-        console.warn("addStampByCardCodeAndBusiness(bulk): notification/sound error", notifErr);
+      // Play sound immediately after transaction usage (optimistic UI feeling)
+      if (!result.isCompleted) {
+        SoundService.playSuccessSound(); // Fire and forget
       }
+
+      // Record activity and send notifications in background (don't await to speed up UI)
+      Promise.all([
+        StampActivityService.createStampActivity(customerCard.id, customerCard.customerId, businessId, customerCard.loyaltyCardId, result.newStampCount, `Se agregaron ${result.toAdd} sello(s)`),
+        (async () => {
+          const notificationData: StampNotificationData = {
+            customerName: result.customerName,
+            businessName: result.businessName,
+            currentStamps: result.newStampCount,
+            totalSlots: result.totalSlots,
+            isCompleted: result.isCompleted,
+          };
+          try {
+            const customerUser = await UserService.getUser(customerCard.customerId);
+            if (customerUser?.pushToken) {
+              await NotificationService.sendStampNotificationViaPush([customerUser.pushToken], notificationData);
+            }
+          } catch (notifErr) {
+            console.warn("addStampByCardCodeAndBusiness(bulk): notification error", notifErr);
+          }
+        })()
+      ]).catch(err => console.warn("Background tasks error:", err));
+
     } catch (error: any) {
       throw new Error(error.message || "Error al agregar sellos por código de tarjeta y negocio");
     }
