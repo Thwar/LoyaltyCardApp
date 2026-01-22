@@ -12,6 +12,50 @@ This repo is configured so `/` serves a static landing page and `/web` serves th
 
 This guide explains how to deploy your LoyaltyCardApp with the environment variables already configured in EAS.
 
+## 🚀 Deploying to Vercel (Web)
+
+Your project is fully configured for Vercel deployment. It serves a static landing page at `/` and the Expo Web App at `/web`.
+
+### Prerequisites
+- [Vercel CLI](https://vercel.com/docs/cli) installed (`npm i -g vercel`)
+- A Vercel account
+
+### Deployment Steps
+
+1. **Login to Vercel**
+   ```bash
+   npx vercel login
+   ```
+
+2. **Deploy**
+   Run the following command in the project root:
+   ```bash
+   npx vercel
+   ```
+   - Follow the prompts (Select scope, Link to existing project: No (first time), Project Name: `caseroapp`).
+   - For "In which directory is your code located?", keep default `./`.
+   - It should auto-detect the build settings from `vercel.json` (Output: `dist`).
+
+3. **Configure Environment Variables (CRITICAL)**
+   The build *will fail* or the app *will crash* if you don't set your environment variables in Vercel.
+   - Go to your Vercel Project Dashboard > Settings > Environment Variables.
+   - Add all variables from your `.env` or `config/env.ts` (Production values).
+   - **Required:**
+     - `APP_ENV=production`
+     - `FIREBASE_API_KEY`
+     - `FIREBASE_AUTH_DOMAIN`
+     - `FIREBASE_PROJECT_ID`
+     - `FIREBASE_STORAGE_BUCKET`
+     - `FIREBASE_MESSAGING_SENDER_ID`
+     - `FIREBASE_APP_ID`
+     - `API_BASE_URL` (e.g. `https://www.caseroapp.com/api`)
+
+4. **Production Deployment**
+   Once verified, deploy to production:
+   ```bash
+   npx vercel --prod
+   ```
+
 ## 📋 Table of Contents
 
 1. [Local Development Setup](#local-development-setup)
