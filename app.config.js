@@ -44,6 +44,8 @@ export default ({ config }) => {
     plugins: [
       ...(config.plugins || []),
       "expo-dev-client",
+      "expo-web-browser",
+      "expo-asset",
       "expo-audio",
       [
         "@react-native-google-signin/google-signin",
@@ -153,7 +155,7 @@ export default ({ config }) => {
       ...(config.extra || {}),
       eas: {
         ...(config.extra && config.extra.eas ? config.extra.eas : {}),
-        projectId: (config.extra && config.extra.eas && config.extra.eas.projectId) || process.env.EXPO_PROJECT_ID || "dfe2bd78-90b2-4031-bec7-4cd519f6334a",
+        projectId: (config.extra && config.extra.eas && config.extra.eas.projectId) || process.env.EXPO_PROJECT_ID || "dc1566c6-aafc-47fa-afe6-ec49158b37f7",
       },
       // Environment variables to be accessible in the app
       APP_ENV: (config.extra && config.extra.APP_ENV) || process.env.APP_ENV || (isDev ? "development" : "production"),
