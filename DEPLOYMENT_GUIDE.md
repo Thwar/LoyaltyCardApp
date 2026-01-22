@@ -17,27 +17,31 @@ This guide explains how to deploy your LoyaltyCardApp with the environment varia
 Your project is fully configured for Vercel deployment. It serves a static landing page at `/` and the Expo Web App at `/web`.
 
 ### Prerequisites
+
 - [Vercel CLI](https://vercel.com/docs/cli) installed (`npm i -g vercel`)
 - A Vercel account
 
 ### Deployment Steps
 
 1. **Login to Vercel**
+
    ```bash
    npx vercel login
    ```
 
 2. **Deploy**
    Run the following command in the project root:
+
    ```bash
    npx vercel
    ```
+
    - Follow the prompts (Select scope, Link to existing project: No (first time), Project Name: `caseroapp`).
    - For "In which directory is your code located?", keep default `./`.
    - It should auto-detect the build settings from `vercel.json` (Output: `dist`).
 
 3. **Configure Environment Variables (CRITICAL)**
-   The build *will fail* or the app *will crash* if you don't set your environment variables in Vercel.
+   The build _will fail_ or the app _will crash_ if you don't set your environment variables in Vercel.
    - Go to your Vercel Project Dashboard > Settings > Environment Variables.
    - Add all variables from your `.env` or `config/env.ts` (Production values).
    - **Required:**
@@ -48,7 +52,7 @@ Your project is fully configured for Vercel deployment. It serves a static landi
      - `FIREBASE_STORAGE_BUCKET`
      - `FIREBASE_MESSAGING_SENDER_ID`
      - `FIREBASE_APP_ID`
-     - `API_BASE_URL` (e.g. `https://www.caseroapp.com/api`)
+   - `API_BASE_URL` (e.g. `https://www.soycasero.com/api`)
 
 4. **Production Deployment**
    Once verified, deploy to production:
@@ -313,13 +317,11 @@ eas secret:delete --name VAR_NAME
 ### Common Issues
 
 1. **"Environment variable X is not defined"**
-
    - Check if the variable is set in your `.env.local` file
    - Verify the variable name matches exactly
    - For EAS builds, ensure the secret is set with `eas secret:create`
 
 2. **"Firebase configuration error"**
-
    - Verify all Firebase environment variables are set
    - Check that the Firebase project ID matches your actual project
    - Ensure Firebase services are enabled in your project

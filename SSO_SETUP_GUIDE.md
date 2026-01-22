@@ -1,6 +1,6 @@
 # SSO Integration Setup Guide
 
-This guide explains how to complete the setup of Google and Facebook SSO for your CaseroApp.
+This guide explains how to complete the setup of Google and Facebook SSO for your SoyCasero.
 
 ## 🔧 What's Been Implemented
 
@@ -39,17 +39,17 @@ Create **THREE** separate client IDs:
 **Web Application Client ID:**
 
 ```
-Name: CaseroApp Web
+Name: SoyCasero Web
 Application type: Web application
 Authorized redirect URIs:
 - http://localhost:19006 (for Expo development)
-- https://auth.expo.io/@thwar077/CaseroApp (for production)
+- https://auth.expo.io/@thwar077/SoyCasero (for production)
 ```
 
 **Android Client ID:**
 
 ```
-Name: CaseroApp Android
+Name: SoyCasero Android
 Application type: Android
 Package name: com.thwar077.CaseroApp
 SHA-1 certificate fingerprint: [See SHA-1 section below]
@@ -58,7 +58,7 @@ SHA-1 certificate fingerprint: [See SHA-1 section below]
 **iOS Client ID:**
 
 ```
-Name: CaseroApp iOS
+Name: SoyCasero iOS
 Application type: iOS
 Bundle ID: com.thwar077.CaseroApp
 ```
@@ -240,8 +240,7 @@ The `YOUR_FIREBASE_API_KEY_FOR_ANDROID` is **NOT** the Google OAuth client ID. T
 
 Add these redirect URIs in Facebook Login settings:
 
-- `https://auth.expo.io/@thwar077/CaseroApp`
-- `caseroapp://` (custom scheme)
+- `https://auth.expo.io/@thwar077/SoyCasero`
 
 #### Step 3: Update Configuration
 
@@ -250,7 +249,7 @@ Add these redirect URIs in Facebook Login settings:
 ```typescript
 const FACEBOOK_CONFIG = {
   appId: "YOUR_FACEBOOK_APP_ID",
-  appName: "CaseroApp",
+  appName: "SoyCasero",
 };
 ```
 
@@ -280,7 +279,7 @@ const FACEBOOK_CONFIG = {
 ### iOS
 
 1. **Download GoogleService-Info.plist** from Firebase Console
-2. **Place in iOS folder** (create if needed): `ios/CaseroApp/GoogleService-Info.plist`
+2. **Place in iOS folder** (create if needed): `ios/SoyCasero/GoogleService-Info.plist`
 3. **Update Info.plist** with URL schemes:
 
 ```xml
@@ -334,14 +333,12 @@ npx expo run:android
 ### Test Scenarios
 
 1. **New User Registration via Google**
-
    - Should create Firebase user
    - Should create Firestore user document
    - Should default to "customer" user type
    - Should send welcome email
 
 2. **New User Registration via Facebook**
-
    - Should create Firebase user
    - Should create Firestore user document
    - Should default to "customer" user type

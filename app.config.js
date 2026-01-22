@@ -21,8 +21,8 @@ export default ({ config }) => {
     // Helpful message during prebuild when the file is missing
     console.warn(
       `expo-config: android google-services.json not found at ${resolvedAndroidGSPath}.\n` +
-      "Prebuild will continue, but building/running Android with Firebase/Notifications will require this file.\n" +
-      "Place your google-services.json at the project root or set ANDROID_GOOGLE_SERVICES_FILE and update config."
+        "Prebuild will continue, but building/running Android with Firebase/Notifications will require this file.\n" +
+        "Place your google-services.json at the project root or set ANDROID_GOOGLE_SERVICES_FILE and update config.",
     );
   }
 
@@ -34,8 +34,8 @@ export default ({ config }) => {
     // Start from any values provided by a static app.json (config)
     ...config,
     // Prefer config values if present so external tools (like VS Code Launch) can edit app.json
-    name: config.name || process.env.APP_NAME || "CaseroApp",
-    slug: config.slug || "CaseroApp",
+    name: config.name || process.env.APP_NAME || "SoyCasero",
+    slug: config.slug || "SoyCasero",
     version: config.version || process.env.APP_VERSION || "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon-background-red.png",
@@ -55,7 +55,7 @@ export default ({ config }) => {
         "react-native-fbsdk-next",
         {
           appID: FACEBOOK_APP_ID,
-          displayName: process.env.APP_NAME || "CaseroApp",
+          displayName: config.name || process.env.APP_NAME || "SoyCasero",
           scheme: `fb${FACEBOOK_APP_ID}`,
           advertiserIDCollectionEnabled: false,
           autoLogAppEventsEnabled: false,
@@ -157,7 +157,7 @@ export default ({ config }) => {
       },
       // Environment variables to be accessible in the app
       APP_ENV: (config.extra && config.extra.APP_ENV) || process.env.APP_ENV || (isDev ? "development" : "production"),
-      APP_NAME: (config.extra && config.extra.APP_NAME) || process.env.APP_NAME || "CaseroApp",
+      APP_NAME: (config.extra && config.extra.APP_NAME) || config.name || process.env.APP_NAME || "SoyCasero",
       APP_VERSION: (config.extra && config.extra.APP_VERSION) || process.env.APP_VERSION || "1.0.0",
 
       // Firebase Configuration
@@ -170,7 +170,7 @@ export default ({ config }) => {
       FIREBASE_MEASUREMENT_ID: (config.extra && config.extra.FIREBASE_MEASUREMENT_ID) || process.env.FIREBASE_MEASUREMENT_ID,
 
       // API Configuration
-      API_BASE_URL: (config.extra && config.extra.API_BASE_URL) || process.env.API_BASE_URL || "https://www.caseroapp.com/api",
+      API_BASE_URL: (config.extra && config.extra.API_BASE_URL) || process.env.API_BASE_URL || "https://www.soycasero.com/api",
       API_TIMEOUT: (config.extra && config.extra.API_TIMEOUT) || process.env.API_TIMEOUT,
 
       // Feature Flags

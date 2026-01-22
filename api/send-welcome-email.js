@@ -84,7 +84,7 @@ module.exports = async (req, res) => {
     }
 
     // Get email subject based on user type
-    const subject = userType === "business" ? "🚀 ¡Bienvenido a CaseroApp! Tu plataforma de fidelización está lista" : "🎉 ¡Bienvenido a CaseroApp! Tu billetera de recompensas";
+    const subject = userType === "business" ? "🚀 ¡Bienvenido a SoyCasero! Tu plataforma de fidelización está lista" : "🎉 ¡Bienvenido a SoyCasero! Tu billetera de recompensas";
 
     // SendGrid API payload
     const emailData = {
@@ -96,7 +96,7 @@ module.exports = async (req, res) => {
       ],
       from: {
         email: "admin@caseroapp.com",
-        name: "CaseroApp",
+        name: "SoyCasero",
       },
       content: [{ type: "text/html", value: html }],
     };

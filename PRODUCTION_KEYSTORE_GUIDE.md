@@ -2,7 +2,7 @@
 
 ## Overview
 
-A production keystore is required to sign your Android app for release on Google Play Store. This document explains how to generate and configure a production keystore for CaseroApp.
+A production keystore is required to sign your Android app for release on Google Play Store. This document explains how to generate and configure a production keystore for SoyCasero.
 
 ## 🔑 What is a Keystore?
 

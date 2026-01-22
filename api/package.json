@@ -1,7 +1,7 @@
 {
   "name": "casero-app-api",
   "version": "1.0.0",
-  "description": "Serverless functions for CaseroApp using SendGrid and Expo push notifications",
+  "description": "Serverless functions for SoyCasero using SendGrid and Expo push notifications",
   "dependencies": {
     "expo-server-sdk": "^3.10.0"
   }

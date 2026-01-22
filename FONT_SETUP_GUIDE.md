@@ -1,8 +1,8 @@
-# Font Installation Instructions for CaseroApp
+# Font Installation Instructions for SoyCasero
 
 ## BalooBhaijaan2 Font Setup
 
-To complete the font setup for your CaseroApp, you need to add the BalooBhaijaan2 font files to the `/assets/fonts/` directory.
+To complete the font setup for your SoyCasero, you need to add the BalooBhaijaan2 font files to the `/assets/fonts/` directory.
 
 ### Required Font Files:
 
@@ -85,4 +85,4 @@ const styles = StyleSheet.create({
 - **bold**: BalooBhaijaan2-Bold
 - **extraBold**: BalooBhaijaan2-ExtraBold
 
-The font setup is modern, supports RTL languages, and provides excellent readability for your CaseroApp!
+The font setup is modern, supports RTL languages, and provides excellent readability for your SoyCasero!

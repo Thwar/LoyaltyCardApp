@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SoyCasero — Política de Privacidad</title>
+    <meta name="description" content="Conoce cómo SoyCasero recopila, usa y protege tus datos en la app y en el sitio web." />
+    <link rel="icon" href="/landing/assets/favicon.png" />
+    <link rel="preload" href="/landing/assets/fonts/BalooBhaijaan2-Regular.ttf" as="font" type="font/ttf" crossorigin />
+    <style>
+      :root {
+        --primary: #e53935;
+        --primaryDark: #c62828;
+        --text: #2c3e50;
+        --textSecondary: #7f8c8d;
+        --white: #ffffff;
+        --light: #f8f9fa;
+        --border: rgba(44, 62, 80, 0.12);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family:
+          "BalooBhaijaan2",
+          system-ui,
+          -apple-system,
+          Segoe UI,
+          Roboto,
+          Ubuntu,
+          "Helvetica Neue",
+          "Noto Sans",
+          sans-serif;
+        color: var(--text);
+        background: linear-gradient(135deg, var(--primary), var(--primaryDark));
+      }
+      @font-face {
+        font-family: "BalooBhaijaan2";
+        src: url("/landing/assets/fonts/BalooBhaijaan2-Regular.ttf") format("truetype");
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        min-height: 100%;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 48px 18px;
+      }
+      .card {
+        width: min(980px, 100%);
+        background: var(--white);
+        border-radius: 16px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+        padding: 28px;
+      }
+      .topbar {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        padding-bottom: 14px;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 18px;
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+      }
+      .brand h1 {
+        margin: 0;
+        font-size: 26px;
+        line-height: 1.2;
+      }
+      .meta {
+        color: var(--textSecondary);
+        font-size: 14px;
+      }
+      .nav {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .pill {
+        display: inline-block;
+        padding: 8px 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        text-decoration: none;
+        font-weight: 700;
+        font-size: 14px;
+        background: var(--light);
+      }
+      h2 {
+        margin: 24px 0 10px;
+        font-size: 20px;
+      }
+      p {
+        margin: 10px 0;
+        line-height: 1.6;
+      }
+      ul {
+        margin: 10px 0 0 22px;
+        line-height: 1.6;
+      }
+      .toc {
+        background: var(--light);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+      }
+      .toc a {
+        text-decoration: none;
+        border-bottom: 1px dotted rgba(44, 62, 80, 0.35);
+      }
+      .section {
+        scroll-margin-top: 12px;
+      }
+      .footer {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        color: var(--textSecondary);
+        font-size: 13px;
+      }
+      .footer a {
+        color: var(--textSecondary);
+      }
+      code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        font-size: 0.95em;
+        background: rgba(44, 62, 80, 0.06);
+        padding: 2px 6px;
+        border-radius: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <main class="card">
+        <header class="topbar">
+          <div class="brand">
+            <h1>Política de Privacidad</h1>
+            <div class="meta">Última actualización: 22 de enero de 2026</div>
+          </div>
+          <nav class="nav" aria-label="Navegación">
+            <a class="pill" href="/">Inicio</a>
+            <a class="pill" href="#indice">Índice</a>
+            <a class="pill" href="#contacto">Contacto</a>
+          </nav>
+        </header>
+
+        <section class="section" id="resumen">
+          <p>
+            Esta Política de Privacidad describe cómo <strong>SoyCasero</strong> (la “App” y el “Sitio”) recopila, utiliza y protege tu información cuando usas nuestros servicios en
+            <code>https://www.soycasero.com</code>.
+          </p>
+          <p>Si tienes dudas, revisa el índice y contáctanos. Cuando sea necesario, también verás avisos específicos dentro de la App.</p>
+        </section>
+
+        <section class="section toc" id="indice" aria-label="Índice">
+          <h2 style="margin-top: 0">Índice</h2>
+          <ul>
+            <li><a href="#responsable">1. Responsable del tratamiento</a></li>
+            <li><a href="#datos">2. Qué datos recopilamos</a></li>
+            <li><a href="#finalidades">3. Para qué usamos tus datos</a></li>
+            <li><a href="#base-legal">4. Base legal (si aplica)</a></li>
+            <li><a href="#cookies">5. Cookies y tecnologías similares</a></li>
+            <li><a href="#terceros">6. Proveedores y servicios de terceros</a></li>
+            <li><a href="#compartimos">7. Con quién compartimos información</a></li>
+            <li><a href="#transferencias">8. Transferencias internacionales</a></li>
+            <li><a href="#retencion">9. Conservación de la información</a></li>
+            <li><a href="#seguridad">10. Seguridad</a></li>
+            <li><a href="#derechos">11. Tus derechos y opciones</a></li>
+            <li><a href="#menores">12. Privacidad de menores</a></li>
+            <li><a href="#cambios">13. Cambios a esta política</a></li>
+            <li><a href="#contacto">14. Contacto</a></li>
+          </ul>
+        </section>
+
+        <section class="section" id="responsable">
+          <h2>1. Responsable del tratamiento</h2>
+          <p>El responsable del tratamiento de los datos es SoyCasero. Si necesitas información adicional (por ejemplo, razón social o dirección), contáctanos y te la proporcionaremos.</p>
+        </section>
+
+        <section class="section" id="datos">
+          <h2>2. Qué datos recopilamos</h2>
+          <p>Dependiendo de cómo uses la App y el Sitio, podemos recopilar:</p>
+          <ul>
+            <li><strong>Datos de cuenta</strong>: nombre, correo electrónico u otros datos que proporciones al registrarte o iniciar sesión.</li>
+            <li><strong>Datos de uso</strong>: interacción con pantallas/funciones, eventos de la App, errores, rendimiento.</li>
+            <li><strong>Datos del dispositivo</strong>: modelo, sistema operativo, identificadores del dispositivo, idioma y zona horaria.</li>
+            <li><strong>Contenido que ingresas</strong>: por ejemplo, información relacionada a tarjetas/programas de lealtad (según las funciones que utilices).</li>
+            <li>
+              <strong>SSO (inicio de sesión con terceros)</strong>: si eliges iniciar sesión con un proveedor (p. ej., Facebook), recibiremos los datos que ese proveedor nos comparta según tu
+              configuración y permisos.
+            </li>
+          </ul>
+          <p>
+            No recopilamos deliberadamente información sensible (p. ej., datos financieros completos o identificaciones gubernamentales), salvo que sea estrictamente necesaria y se te informe
+            previamente.
+          </p>
+        </section>
+
+        <section class="section" id="finalidades">
+          <h2>3. Para qué usamos tus datos</h2>
+          <ul>
+            <li>Proveer y operar la App/Sitio (crear cuenta, iniciar sesión, mostrar tu progreso y recompensas).</li>
+            <li>Mejorar el rendimiento, diagnosticar errores y optimizar la experiencia.</li>
+            <li>Soporte al cliente y comunicación relacionada con el servicio.</li>
+            <li>Seguridad, prevención de fraude y cumplimiento de obligaciones legales.</li>
+          </ul>
+        </section>
+
+        <section class="section" id="base-legal">
+          <h2>4. Base legal (si aplica)</h2>
+          <p>
+            Dependiendo de tu jurisdicción, nuestras bases legales pueden incluir: ejecución de un contrato (prestar el servicio), interés legítimo (mejoras y seguridad) y/o consentimiento (por
+            ejemplo, ciertas cookies o comunicaciones).
+          </p>
+        </section>
+
+        <section class="section" id="cookies">
+          <h2>5. Cookies y tecnologías similares</h2>
+          <p>El Sitio puede usar cookies o tecnologías similares para recordar preferencias, mantener sesiones y medir uso. Puedes controlar cookies desde la configuración de tu navegador.</p>
+        </section>
+
+        <section class="section" id="terceros">
+          <h2>6. Proveedores y servicios de terceros</h2>
+          <p>Para operar SoyCasero, podemos integrar servicios de terceros (según corresponda), por ejemplo:</p>
+          <ul>
+            <li><strong>Google Firebase</strong>: autenticación, base de datos/almacenamiento, mensajería y monitoreo.</li>
+            <li><strong>Expo</strong>: herramientas para ejecutar, actualizar y habilitar funciones móviles.</li>
+            <li><strong>Meta (Facebook)</strong>: inicio de sesión con Facebook cuando lo eliges.</li>
+            <li><strong>Apple/Google</strong>: tiendas, distribución y servicios del sistema operativo.</li>
+          </ul>
+          <p>Estos proveedores pueden procesar datos en nuestro nombre para prestar sus servicios. Sus prácticas también están sujetas a sus propias políticas de privacidad.</p>
+        </section>
+
+        <section class="section" id="compartimos">
+          <h2>7. Con quién compartimos información</h2>
+          <p>Podemos compartir información únicamente cuando sea necesario:</p>
+          <ul>
+            <li>Con proveedores (encargados) que nos ayudan a operar la App/Sitio.</li>
+            <li>Con negocios/programas de lealtad con los que interactúas, según la funcionalidad utilizada.</li>
+            <li>Para cumplir la ley, responder a procesos legales o proteger derechos y seguridad.</li>
+            <li>En una transacción corporativa (fusión/adquisición), con las salvaguardas correspondientes.</li>
+          </ul>
+        </section>
+
+        <section class="section" id="transferencias">
+          <h2>8. Transferencias internacionales</h2>
+          <p>
+            Tus datos pueden ser procesados en países distintos al tuyo (por ejemplo, donde operan nuestros proveedores). Cuando aplique, usaremos salvaguardas apropiadas para proteger tu información.
+          </p>
+        </section>
+
+        <section class="section" id="retencion">
+          <h2>9. Conservación de la información</h2>
+          <p>
+            Conservamos tus datos solo el tiempo necesario para prestar el servicio, cumplir obligaciones legales, resolver disputas y hacer cumplir acuerdos. Puedes solicitar la eliminación de tu
+            cuenta (ver sección de derechos).
+          </p>
+        </section>
+
+        <section class="section" id="seguridad">
+          <h2>10. Seguridad</h2>
+          <p>
+            Implementamos medidas técnicas y organizativas razonables para proteger tus datos. Sin embargo, ningún sistema es 100% seguro. Recomendamos usar contraseñas fuertes y mantener tu
+            dispositivo protegido.
+          </p>
+        </section>
+
+        <section class="section" id="derechos">
+          <h2>11. Tus derechos y opciones</h2>
+          <p>Según tu país/estado, puedes tener derechos como:</p>
+          <ul>
+            <li>Acceder, corregir o actualizar tus datos.</li>
+            <li>Solicitar eliminación de tu cuenta/datos (cuando corresponda).</li>
+            <li>Oponerte o limitar ciertos tratamientos.</li>
+            <li>Retirar tu consentimiento (si el tratamiento se basa en consentimiento).</li>
+          </ul>
+          <p>Para ejercerlos, contáctanos usando los datos de la sección “Contacto”.</p>
+        </section>
+
+        <section class="section" id="menores">
+          <h2>12. Privacidad de menores</h2>
+          <p>SoyCasero no está dirigido a menores de edad. Si crees que un menor nos proporcionó datos personales, contáctanos para que podamos eliminarlos.</p>
+        </section>
+
+        <section class="section" id="cambios">
+          <h2>13. Cambios a esta política</h2>
+          <p>Podemos actualizar esta política ocasionalmente. Publicaremos la versión vigente en esta misma página e indicaremos la fecha de “Última actualización”.</p>
+        </section>
+
+        <section class="section" id="contacto">
+          <h2>14. Contacto</h2>
+          <p>
+            Para preguntas sobre privacidad o solicitudes relacionadas a tus datos, contáctanos en:
+            <a href="mailto:admin@soycasero.com">admin@soycasero.com</a>
+          </p>
+        </section>
+
+        <div class="footer">
+          <div>
+            <a href="#resumen">Volver arriba</a>
+            <span style="margin: 0 8px">·</span>
+            <a href="/">Inicio</a>
+          </div>
+          <div style="margin-top: 8px">© 2026 SoyCasero</div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

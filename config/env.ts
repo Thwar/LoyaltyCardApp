@@ -104,21 +104,21 @@ const APP_ENV = getEnvironment();
 
 // Environment-specific configurations
 const developmentConfig: Partial<EnvConfig> = {
-  API_BASE_URL: "https://www.caseroapp.com/api",
+  API_BASE_URL: "https://www.soycasero.com/api",
   ENABLE_DEBUG_LOGS: true,
   ENABLE_ANALYTICS: false,
   ENABLE_CRASH_REPORTING: false,
 };
 
 const stagingConfig: Partial<EnvConfig> = {
-  API_BASE_URL: "https://www.caseroapp.com/api",
+  API_BASE_URL: "https://www.soycasero.com/api",
   ENABLE_DEBUG_LOGS: true,
   ENABLE_ANALYTICS: true,
   ENABLE_CRASH_REPORTING: true,
 };
 
 const productionConfig: Partial<EnvConfig> = {
-  API_BASE_URL: "https://www.caseroapp.com/api",
+  API_BASE_URL: "https://www.soycasero.com/api",
   ENABLE_DEBUG_LOGS: false,
   ENABLE_ANALYTICS: true,
   ENABLE_CRASH_REPORTING: true,
@@ -145,7 +145,7 @@ const buildConfig = (): EnvConfig => {
   return {
     // App Configuration
     APP_ENV,
-    APP_NAME: getEnvValue("APP_NAME", "CaseroApp"),
+    APP_NAME: getEnvValue("APP_NAME", "SoyCasero"),
     APP_VERSION: getEnvValue("APP_VERSION", Constants.expoConfig?.version || "1.0.0"),
 
     // Firebase Configuration
