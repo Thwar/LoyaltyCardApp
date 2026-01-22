@@ -5,6 +5,9 @@
   "framework": null,
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/privacy-policy", "destination": "/landing/privacy-policy/index.html" },
+    { "source": "/privacy-policy/", "destination": "/landing/privacy-policy/index.html" },
+    { "source": "/privacy-policy/(.*)", "destination": "/landing/privacy-policy/index.html" },
     { "source": "/web/_expo/(.*)", "destination": "/web/_expo/$1" },
     { "source": "/web/assets/(.*)", "destination": "/web/assets/$1" },
     { "source": "/web/favicon.ico", "destination": "/web/favicon.ico" },
