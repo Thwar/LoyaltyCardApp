@@ -17,7 +17,7 @@ interface RegisterScreenProps {
 }
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
-  const { register, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { register, signInWithGoogle, signInWithFacebook, signInWithApple } = useAuth();
   const { showAlert } = useAlert();
   const [formData, setFormData] = useState({
     email: "",
@@ -29,6 +29,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [facebookLoading, setFacebookLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -179,6 +180,44 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       setFacebookLoading(false);
     }
   };
+
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+    try {
+      console.log("RegisterScreen: Starting Apple Sign-In process");
+      await signInWithApple(true, formData.userType);
+      console.log("RegisterScreen: Apple Sign-In process completed successfully");
+
+      // If registering as business via Apple, create the business profile automatically
+      if (formData.userType === "business") {
+        try {
+          const currentUser = auth.currentUser;
+          if (currentUser) {
+            await BusinessService.createBusiness({
+              name: formData.displayName || currentUser.displayName || "Mi Negocio",
+              description: "",
+              ownerId: currentUser.uid,
+              isActive: true,
+            });
+          }
+        } catch (businessError) {
+          console.error("Error creating business profile:", businessError);
+          showAlert({
+            title: "Advertencia",
+            message: "Tu cuenta fue creada exitosamente, pero hubo un problema al crear el perfil del negocio. Puedes completarlo más tarde en la configuración.",
+          });
+        }
+      }
+    } catch (error) {
+      console.error("RegisterScreen: Apple Sign-In error caught:", error);
+      showAlert({
+        title: "Error de Apple",
+        message: error instanceof Error ? error.message : "Error al registrarse con Apple",
+      });
+    } finally {
+      setAppleLoading(false);
+    }
+  };
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => {
       // If changing user type, clear the display name since the field meaning changes
@@ -274,6 +313,9 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             <View style={styles.ssoContainer}>
               <SSOButton provider="google" onPress={handleGoogleSignIn} loading={googleLoading} disabled={loading || facebookLoading} style={styles.ssoButton} />
               <SSOButton provider="facebook" onPress={handleFacebookSignIn} loading={facebookLoading} disabled={loading || googleLoading} style={styles.ssoButton} />
+              {Platform.OS === "ios" && (
+                <SSOButton provider="apple" onPress={handleAppleSignIn} loading={appleLoading} disabled={loading || googleLoading || facebookLoading} style={styles.ssoButton} />
+              )}
             </View>
           </View>
           <View style={styles.footer}>

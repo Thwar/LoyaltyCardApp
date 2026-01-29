@@ -1,9 +1,10 @@
 import { Platform } from "react-native";
-import { signInWithCredential, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, OAuthCredential, UserCredential } from "firebase/auth";
+import { signInWithCredential, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, OAuthCredential, UserCredential, OAuthProvider } from "firebase/auth";
 import { auth, googleProvider, facebookProvider } from "./firebase";
 import { GoogleSignin, statusCodes } from "@react-native-google-signin/google-signin";
 import * as AuthSession from "expo-auth-session";
 import * as WebBrowser from "expo-web-browser";
+import * as AppleAuthentication from "expo-apple-authentication";
 import env from "../../config/env";
 
 // Configure WebBrowser for auth sessions
@@ -398,6 +399,69 @@ export class SSOService {
       return await this.signInWithFacebookWeb();
     } else {
       return await this.signInWithFacebookNative();
+    }
+  }
+
+  // Apple Sign-In
+  static async signInWithApple(): Promise<UserCredential & { appleFullName?: { givenName?: string; familyName?: string }; appleEmail?: string }> {
+    try {
+      if (Platform.OS === "web") {
+        throw new Error("Apple Sign-In is not supported on web yet.");
+      }
+
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailable) {
+        throw new Error("Apple Sign-In is not available on this device.");
+      }
+
+      console.log("Requesting Apple authentication...");
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [AppleAuthentication.AppleAuthenticationScope.FULL_NAME, AppleAuthentication.AppleAuthenticationScope.EMAIL],
+      });
+
+      console.log("Apple authentication successful, credential received.");
+
+      // Verify the identity token exists
+      if (!credential.identityToken) {
+        throw new Error("Apple Sign-In failed - no identity token received.");
+      }
+
+      // Create a specific provider instance for Apple
+      const provider = new OAuthProvider("apple.com");
+      
+      // Create a credential from the token
+      const oauthCredential = provider.credential({
+        idToken: credential.identityToken,
+        accessToken: credential.authorizationCode || undefined, // rawNonce is optional, usually handled by Firebase SDK if using createCredential
+      });
+
+      // Sign in with Firebase
+      console.log("Signing in to Firebase with Apple credential...");
+      const result = await signInWithCredential(auth, oauthCredential);
+      console.log("Firebase sign-in with Apple successful.");
+
+      // Attach additional Apple-specific info (only available on first login)
+      // We attach it to the result object so AuthService can use it for profile creation
+      const extendedResult = result as UserCredential & { appleFullName?: { givenName?: string; familyName?: string }; appleEmail?: string };
+      
+      if (credential.fullName) {
+        extendedResult.appleFullName = {
+            givenName: credential.fullName.givenName || undefined,
+            familyName: credential.fullName.familyName || undefined
+        };
+      }
+      if (credential.email) {
+        extendedResult.appleEmail = credential.email;
+      }
+      
+      return extendedResult;
+
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') { // Common Expo cancellation error code
+         throw new Error("Inicio de sesión con Apple cancelado");
+      }
+      console.error("Apple Sign-In error:", error);
+      throw new Error(error.message || "Error al iniciar sesión con Apple");
     }
   }
 

@@ -16,6 +16,7 @@ interface AuthContextType {
   register: (email: string, password: string, displayName: string, userType: "customer" | "business") => Promise<User>;
   signInWithGoogle: (isRegistering?: boolean, userType?: "customer" | "business") => Promise<void>;
   signInWithFacebook: (isRegistering?: boolean, userType?: "customer" | "business") => Promise<void>;
+  signInWithApple: (isRegistering?: boolean, userType?: "customer" | "business") => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -316,6 +317,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoggingIn(false);
     }
   };
+  const signInWithApple = async (isRegistering: boolean = false, userType: "customer" | "business" = "customer"): Promise<void> => {
+    setIsLoggingIn(true);
+    setLoginHasFailed(false);
+    try {
+      console.log("Attempting Apple Sign-In");
+      const userData = await AuthService.signInWithApple(isRegistering, userType);
+      console.log("Apple Sign-In completed successfully, user created/retrieved:", userData.email);
+
+      // Set the user immediately to prevent the auth state change from signing them out
+      setUser(userData);
+    } catch (error) {
+      console.error("Apple Sign-In failed in AuthContext:", error);
+      setLoginHasFailed(true);
+      
+      // Ensure we're signed out if login fails
+      try {
+         await AuthService.logout();
+      } catch (logoutError) {
+         console.error("Error during cleanup logout:", logoutError);
+      }
+      throw error;
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
 
   const value: AuthContextType = {
     user,
@@ -326,6 +353,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     signInWithGoogle,
     signInWithFacebook,
+    signInWithApple,
     logout,
     resetPassword,
     refreshUser,

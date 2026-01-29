@@ -319,6 +319,96 @@ export class AuthService {
     }
   }
 
+  static async signInWithApple(isRegistering: boolean = false, userType: "customer" | "business" = "customer"): Promise<User> {
+    try {
+      const userCredentialWithExtras = await SSOService.signInWithApple();
+      const firebaseUser = userCredentialWithExtras.user;
+      
+      console.log("Apple sign-in completed:", {
+        firebaseEmail: firebaseUser.email,
+        firebaseDisplayName: firebaseUser.displayName,
+        appleEmail: userCredentialWithExtras.appleEmail,
+        appleName: userCredentialWithExtras.appleFullName,
+      });
+
+      const userDoc = await getDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid));
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const createdAt = safeTimestampToDate(userData.createdAt);
+        return {
+          id: firebaseUser.uid,
+          email: userData.email,
+          displayName: userData.displayName,
+          userType: userData.userType,
+          createdAt,
+          profileImage: userData.profileImage,
+        };
+      } else {
+        if (isRegistering) {
+          // Construct best possible profile data
+          const email = firebaseUser.email || userCredentialWithExtras.appleEmail || "";
+          
+          // Construct display name from Apple parts if available, or fall back
+          let displayName = firebaseUser.displayName || "";
+          if (!displayName && userCredentialWithExtras.appleFullName) {
+             const { givenName, familyName } = userCredentialWithExtras.appleFullName;
+             if (givenName && familyName) displayName = `${givenName} ${familyName}`;
+             else if (givenName) displayName = givenName;
+          }
+          if (!displayName) displayName = "Usuario de Apple"; // Fallback
+
+          console.log("Creating new user with Apple data:", {
+            email,
+            displayName,
+          });
+          
+          // For Apple users without email (if relay hidden failed or something), generate placeholder
+          let finalEmail = email;
+          if (!finalEmail) {
+            finalEmail = `apple_${firebaseUser.uid}@placeholder.local`;
+            console.log("Generated placeholder email for Apple user without email:", finalEmail);
+          }
+
+          const userData: Omit<User, "id"> = {
+            email: finalEmail,
+            displayName,
+            userType: userType,
+            createdAt: new Date(),
+          };
+
+          await setDoc(doc(db, FIREBASE_COLLECTIONS.USERS, firebaseUser.uid), {
+            email: userData.email,
+            displayName: userData.displayName,
+            userType: userData.userType,
+            createdAt: serverTimestamp(),
+          });
+
+          // Send welcome email only if we have a real email address
+          if (email && !email.includes("@placeholder.local")) {
+            EmailService.sendWelcomeEmail({
+              email: userData.email,
+              displayName: userData.displayName,
+              userType: userData.userType,
+            }).catch((emailError) => {
+              console.error("Failed to send welcome email:", emailError);
+            });
+          }
+
+          return { id: firebaseUser.uid, ...userData };
+        } else {
+          await signOut(auth);
+          throw new Error("La cuenta no existe. Por favor, regístrese primero.");
+        }
+      }
+    } catch (error: any) {
+      try {
+        await signOut(auth);
+      } catch {}
+      throw new Error(error.message || "Error al iniciar sesión con Apple");
+    }
+  }
+
   static async deleteAccount(): Promise<void> {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("Usuario no autenticado");

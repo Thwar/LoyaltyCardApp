@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS, FONT_SIZES, SPACING } from "../constants";
 
 interface SSOButtonProps {
-  provider: "google" | "facebook";
+  provider: "google" | "facebook" | "apple";
   onPress: () => void;
   loading?: boolean;
   disabled?: boolean;
@@ -29,6 +29,14 @@ export const SSOButton: React.FC<SSOButtonProps> = ({ provider, onPress, loading
           textColor: "#FFFFFF",
           icon: "logo-facebook" as keyof typeof Ionicons.glyphMap,
           text: "Continuar con Facebook",
+        };
+      case "apple":
+        return {
+          backgroundColor: "#000000",
+          borderColor: "#000000",
+          textColor: "#FFFFFF",
+          icon: "logo-apple" as keyof typeof Ionicons.glyphMap,
+          text: "Continuar con Apple",
         };
       default:
         return {

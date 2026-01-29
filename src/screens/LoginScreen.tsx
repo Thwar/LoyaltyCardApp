@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, KeyboardAvoidingView, Platform, Image } from "react-native";
 import { StackNavigationProp } from "@react-navigation/stack";
+import * as AppleAuthentication from "expo-apple-authentication";
 
 import { useAuth } from "../context/AuthContext";
 import { Button, InputField, useAlert, SSOButton } from "../components";
@@ -14,7 +15,7 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
-  const { login, resetPassword, signInWithGoogle, signInWithFacebook } = useAuth();
+  const { login, resetPassword, signInWithGoogle, signInWithFacebook, signInWithApple } = useAuth();
   const { showAlert } = useAlert();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -22,6 +23,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [facebookLoading, setFacebookLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const validateForm = () => {
@@ -131,6 +133,23 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+    try {
+      console.log("LoginScreen: Starting Apple Sign-In process");
+      await signInWithApple();
+      console.log("LoginScreen: Apple Sign-In process completed successfully");
+    } catch (error) {
+      console.error("LoginScreen: Apple Sign-In error caught:", error);
+      showAlert({
+        title: "Error de Apple",
+        message: error instanceof Error ? error.message : "Error al iniciar sesión con Apple",
+      });
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   const navigateToRegister = () => {
     navigation.navigate("Register");
   };
@@ -178,6 +197,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             <View style={styles.ssoContainer}>
               <SSOButton provider="google" onPress={handleGoogleSignIn} loading={googleLoading} disabled={loading || facebookLoading} style={styles.ssoButton} />
               <SSOButton provider="facebook" onPress={handleFacebookSignIn} loading={facebookLoading} disabled={loading || googleLoading} style={styles.ssoButton} />
+              {Platform.OS === "ios" && (
+                <SSOButton provider="apple" onPress={handleAppleSignIn} loading={appleLoading} disabled={loading || googleLoading || facebookLoading} style={styles.ssoButton} />
+              )}
             </View>
           </View>
           <View style={styles.footer}>
