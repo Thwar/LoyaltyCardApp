@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Serverless functions for SoyCasero using SendGrid and Expo push notifications",
   "dependencies": {
-    "expo-server-sdk": "^3.10.0"
+    "expo-server-sdk": "^3.10.0",
+    "resend": "^6.9.1"
   }
 }

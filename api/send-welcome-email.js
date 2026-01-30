@@ -45,15 +45,11 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Check if SendGrid API key is available
-    if (!process.env.SENDGRID_API_KEY) {
-      console.error("SENDGRID_API_KEY environment variable is not set");
-      return res.status(500).json({
-        success: false,
-        error: "Email service configuration error",
-        details: "Missing SendGrid API key configuration",
-      });
-    }
+    const { Resend } = require("resend");
+
+    // Initialize Resend with API key
+    // Fallback to provided key for development if env var is missing
+    const resend = new Resend(process.env.RESEND_API_KEY || "re_Z8yBGpLK_LSi7EVtoEaWYPUp2fNU5dBeP");
 
     const { email, displayName, userType } = req.body;
 
@@ -86,53 +82,32 @@ module.exports = async (req, res) => {
     // Get email subject based on user type
     const subject = userType === "business" ? "🚀 ¡Bienvenido a SoyCasero! Tu plataforma de fidelización está lista" : "🎉 ¡Bienvenido a SoyCasero! Tu billetera de recompensas";
 
-    // SendGrid API payload
-    const emailData = {
-      personalizations: [
-        {
-          to: [{ email: email, name: displayName }],
-          subject: subject,
-        },
-      ],
-      from: {
-        email: "admin@caseroapp.com",
-        name: "SoyCasero",
-      },
-      content: [{ type: "text/html", value: html }],
-    };
+    console.log("Sending email via Resend to:", email);
 
-    console.log("Sending email via SendGrid to:", email);
-
-    // Send email using SendGrid REST API
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(emailData),
+    // Send email using Resend SDK
+    const { data, error } = await resend.emails.send({
+      from: "SoyCasero <admin@soycasero.com>",
+      to: [email],
+      subject: subject,
+      html: html,
     });
 
-    if (response.ok) {
-      // SendGrid returns 202 for successful requests
-      const messageId = response.headers.get("x-message-id") || "success";
-      console.log("Welcome email sent successfully via SendGrid:", messageId);
-
-      res.status(200).json({
-        success: true,
-        messageId: messageId,
-        message: "Welcome email sent successfully via SendGrid",
-      });
-    } else {
-      const errorText = await response.text();
-      console.error("SendGrid API error:", response.status, errorText);
-
-      res.status(500).json({
+    if (error) {
+      console.error("Resend API error:", error);
+      return res.status(500).json({
         success: false,
-        error: "Failed to send email via SendGrid",
-        details: `SendGrid API returned ${response.status}: ${errorText}`,
+        error: "Failed to send email via Resend",
+        details: error.message,
       });
     }
+
+    console.log("Welcome email sent successfully via Resend:", data.id);
+
+    res.status(200).json({
+      success: true,
+      messageId: data.id,
+      message: "Welcome email sent successfully via Resend",
+    });
   } catch (error) {
     console.error("Error sending welcome email:", error);
     res.status(500).json({

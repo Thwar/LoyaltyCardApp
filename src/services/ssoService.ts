@@ -15,7 +15,7 @@ const GOOGLE_CONFIG = {
   webClientId: env.GOOGLE_WEB_CLIENT_ID || "853612097033-6nqf00qv5ei37ggspu0g1abqauposvb0.apps.googleusercontent.com",
   // Force the specific client ID for current SHA-1: da:bf:0e:77:ba:d5:eb:7d:12:b2:04:a2:4a:d8:70:51:cc:b4:6a:3a
   androidClientId: "853612097033-0oaa0q2sfc2u4vb3tstcbnab316fp80j.apps.googleusercontent.com",
-  iosClientId: "853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com",
+  iosClientId: "853612097033-p564p94gmsoaaq01pdnk145r4akvvnh1.apps.googleusercontent.com",
 };
 
 // Debug log the configuration

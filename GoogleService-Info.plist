@@ -3,9 +3,11 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba.apps.googleusercontent.com</string>
+	<string>853612097033-p564p94gmsoaaq01pdnk145r4akvvnh1.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba</string>
+	<string>com.googleusercontent.apps.853612097033-p564p94gmsoaaq01pdnk145r4akvvnh1</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>853612097033-0oaa0q2sfc2u4vb3tstcbnab316fp80j.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyCsfXjLweY2aXo6cTPGV4KzndfN0ZwRwUc</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +15,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.thwar077.LoyaltyCardApp</string>
+	<string>com.thwar077.CaseroApp</string>
 	<key>PROJECT_ID</key>
 	<string>casero-app</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:853612097033:ios:a5efa372bb468cd5ca52d8</string>
+	<string>1:853612097033:ios:0591d2239ed399b1ca52d8</string>
 </dict>
 </plist>
