@@ -356,10 +356,10 @@ export const BusinessSettingsScreen: React.FC<BusinessSettingsScreenProps> = ({ 
       console.error("Error deleting account:", error);
 
       // Handle the requires-recent-login error specifically
-      if (error instanceof Error && error.message.includes("autenticarte")) {
+      if (error instanceof Error && (error.message === "AUTH_REQUIRES_RECENT_LOGIN" || (error as any).code === "AUTH_REQUIRES_RECENT_LOGIN")) {
         showAlert({
           title: "Autenticación Requerida",
-          message: "Por seguridad, necesitas volver a iniciar sesión antes de eliminar tu cuenta. ¿Quieres cerrar sesión ahora para volver a autenticarte?",
+          message: "Por seguridad, para eliminar tu cuenta es necesario que hayas iniciado sesión recientemente. ¿Deseas cerrar sesión ahora para volver a ingresar?",
           buttons: [
             {
               text: "Cancelar",

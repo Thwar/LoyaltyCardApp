@@ -414,8 +414,19 @@ export class AuthService {
     if (!currentUser) throw new Error("Usuario no autenticado");
     const userId = currentUser.uid;
 
+    // Best-effort cleanup of the Firestore user document (ignore failures)
+    // We do this BEFORE deleting the auth user, because once the auth user is deleted,
+    // we lose permission to write to the Firestore document (rules require authentication).
     try {
-      // Attempt to delete the Auth user first; if recent login is required, surface a clear signal
+      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
+    } catch (e) {
+      console.warn("Failed to delete Firestore user document", e);
+      // We continue to delete the auth user even if firestore deletion fails,
+      // though ideally we'd want to handle this better.
+    }
+
+    try {
+      // Attempt to delete the Auth user
       await deleteUser(currentUser);
     } catch (err: any) {
       if (err?.code === "auth/requires-recent-login") {
@@ -426,13 +437,6 @@ export class AuthService {
         throw e;
       }
       throw err;
-    }
-
-    // Best-effort cleanup of the Firestore user document (ignore failures)
-    try {
-      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
-    } catch (e) {
-      console.warn("Failed to delete Firestore user document after auth deletion", e);
     }
   }
 
@@ -451,7 +455,11 @@ export class AuthService {
     const userId = currentUser.uid;
     await this.reauthenticateWithPassword(password);
     // Delete Firestore user first while session is valid, then Auth user
-    await deleteDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
+    try {
+      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
+    } catch (e) {
+      console.warn("Failed to delete Firestore user document", e);
+    }
     await deleteUser(currentUser);
   }
 }
