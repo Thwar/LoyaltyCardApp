@@ -412,29 +412,43 @@ export class AuthService {
   static async deleteAccount(): Promise<void> {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("Usuario no autenticado");
-    const userId = currentUser.uid;
-
-    // Best-effort cleanup of the Firestore user document (ignore failures)
-    // We do this BEFORE deleting the auth user, because once the auth user is deleted,
-    // we lose permission to write to the Firestore document (rules require authentication).
-    try {
-      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
-    } catch (e) {
-      console.warn("Failed to delete Firestore user document", e);
-      // We continue to delete the auth user even if firestore deletion fails,
-      // though ideally we'd want to handle this better.
-    }
 
     try {
-      // Attempt to delete the Auth user
-      await deleteUser(currentUser);
+      // Get the ID token to authenticate with our backend
+      const idToken = await currentUser.getIdToken();
+
+      // Call our backend API to handle atomic deletion
+      // Note: Make sure the API URL is correct for your environment (prod vs dev)
+      // In development, this might need to point to your local function runner
+      const apiUrl = "https://casero-app-api.vercel.app/api/delete-account"; // Replace with your actual production URL or dynamic env var
+      
+      const response = await fetch(apiUrl, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al eliminar la cuenta");
+      }
+
+      // If backend deletion succeeded, sign out the user locally
+      await signOut(auth);
+      
     } catch (err: any) {
+      console.error("Delete account error:", err);
       if (err?.code === "auth/requires-recent-login") {
-        // Signal the UI to prompt for password and call deleteAccountWithPassword
-        const e = new Error("AUTH_REQUIRES_RECENT_LOGIN");
-        // @ts-expect-error attach code for consumers who inspect it
-        e.code = "AUTH_REQUIRES_RECENT_LOGIN";
-        throw e;
+         // This might happen if getIdToken fails or if we fall back to client methods?
+         // Actually, getIdToken shouldn't require recent login usually, but if we needed to 
+         // re-auth for sensitive actions, we might handle it here.
+         // For now, let's keep the re-throw logic compatible with existing UI handling
+         const e = new Error("AUTH_REQUIRES_RECENT_LOGIN");
+         // @ts-expect-error attach code for consumers who inspect it
+         e.code = "AUTH_REQUIRES_RECENT_LOGIN";
+         throw e;
       }
       throw err;
     }
@@ -452,15 +466,35 @@ export class AuthService {
   static async deleteAccountWithPassword(password: string): Promise<void> {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("Usuario no autenticado");
-    const userId = currentUser.uid;
+    
+    // First, reauthenticate to ensure the user is who they say they are
     await this.reauthenticateWithPassword(password);
-    // Delete Firestore user first while session is valid, then Auth user
+    
+    // Then call the same API endpoint logic
     try {
-      await deleteDoc(doc(db, FIREBASE_COLLECTIONS.USERS, userId));
-    } catch (e) {
-      console.warn("Failed to delete Firestore user document", e);
+      const idToken = await currentUser.getIdToken(true); // Force refresh to get a fresh token
+
+      // Note: Make sure the API URL is correct for your environment
+      const apiUrl = "https://casero-app-api.vercel.app/api/delete-account";
+      
+      const response = await fetch(apiUrl, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al eliminar la cuenta");
+      }
+
+      await signOut(auth);
+    } catch (err) {
+      console.error("Delete account with password error:", err);
+      throw err;
     }
-    await deleteUser(currentUser);
   }
 }
 

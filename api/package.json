@@ -4,6 +4,7 @@
   "description": "Serverless functions for SoyCasero using SendGrid and Expo push notifications",
   "dependencies": {
     "expo-server-sdk": "^3.10.0",
+    "firebase-admin": "^13.6.0",
     "resend": "^6.9.1"
   }
 }

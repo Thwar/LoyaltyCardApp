@@ -1,4 +1,4 @@
-// SendGrid email service using REST API
+// Resend email service using REST API
 // Uses standalone HTML templates for easier editing
 
 const fs = require("fs");
