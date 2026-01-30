@@ -6,6 +6,7 @@ import { User } from "../types";
 import EmailService from "./emailService";
 import { SSOService } from "./ssoService";
 import { safeTimestampToDate } from "./utils";
+import { env } from "../../config/env";
 
 export class AuthService {
   static async register(email: string, password: string, displayName: string, userType: "customer" | "business"): Promise<User> {
@@ -420,7 +421,8 @@ export class AuthService {
       // Call our backend API to handle atomic deletion
       // Note: Make sure the API URL is correct for your environment (prod vs dev)
       // In development, this might need to point to your local function runner
-      const apiUrl = "https://casero-app-api.vercel.app/api/delete-account"; // Replace with your actual production URL or dynamic env var
+      // Use configured API base URL
+      const apiUrl = `${env.API_BASE_URL}/delete-account`;
       
       const response = await fetch(apiUrl, {
         method: "DELETE",
@@ -431,7 +433,14 @@ export class AuthService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        const responseText = await response.text();
+        try {
+            errorData = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Non-JSON response from server:", responseText);
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
         throw new Error(errorData.error || "Error al eliminar la cuenta");
       }
 
@@ -474,8 +483,8 @@ export class AuthService {
     try {
       const idToken = await currentUser.getIdToken(true); // Force refresh to get a fresh token
 
-      // Note: Make sure the API URL is correct for your environment
-      const apiUrl = "https://casero-app-api.vercel.app/api/delete-account";
+      // Use configured API base URL
+      const apiUrl = `${env.API_BASE_URL}/delete-account`;
       
       const response = await fetch(apiUrl, {
         method: "DELETE",
@@ -486,7 +495,14 @@ export class AuthService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        let errorData;
+        const responseText = await response.text();
+        try {
+            errorData = JSON.parse(responseText);
+        } catch (e) {
+            console.error("Non-JSON response from server:", responseText);
+            throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
         throw new Error(errorData.error || "Error al eliminar la cuenta");
       }
 
