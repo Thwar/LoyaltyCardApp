@@ -49,6 +49,12 @@ export default ({ config }) => {
       "expo-asset",
       "expo-audio",
       [
+        "expo-tracking-transparency",
+        {
+          userTrackingPermission: "This identifier will be used to deliver personalized ads to you.",
+        },
+      ],
+      [
         "@react-native-google-signin/google-signin",
         {
           iosUrlScheme: "com.googleusercontent.apps.853612097033-i8140tfvcdt6rd1537t7jb82uvp7luba",

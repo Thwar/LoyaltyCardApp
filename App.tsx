@@ -1,5 +1,6 @@
 import React, { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
+import { Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Constants from "expo-constants";
 import { AuthProvider } from "./src/context/AuthContext";
@@ -34,6 +35,36 @@ function App() {
       try {
         // Small delay to ensure Firebase initialization completes
         await new Promise((resolve) => setTimeout(resolve, 100));
+
+        console.log("[App.tsx] initializeServices started");
+        console.log("[App.tsx] Platform.OS:", Platform.OS);
+
+        // Request tracking permissions (ATT) - iOS only
+        if (Platform.OS === 'ios') {
+          console.log("[App.tsx] Attempting to request ATT permissions...");
+          try {
+            console.log("[App.tsx] Importing expo-tracking-transparency...");
+            const { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } = await import('expo-tracking-transparency');
+            
+            // Check current status first
+            const currentStatus = await getTrackingPermissionsAsync();
+            console.log("[App.tsx] Current ATT Status:", currentStatus);
+
+            console.log("[App.tsx] Requesting permission now...");
+            const result = await requestTrackingPermissionsAsync();
+            console.log("[App.tsx] ATT Request Result:", result);
+            
+            if (result.status === 'granted') {
+              console.log('[App.tsx] Yay! I have user permission to track data');
+            } else {
+              console.log('[App.tsx] Permission not granted. Status:', result.status);
+            }
+          } catch (error) {
+            console.error('[App.tsx] Error requesting tracking permissions:', error);
+          }
+        } else {
+            console.log("[App.tsx] Skipping ATT request (not iOS)");
+        }
 
         // Check if we're in a development client (not Expo Go)
         const isExpoGo = Constants.appOwnership === "expo";
