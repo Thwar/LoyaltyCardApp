@@ -360,7 +360,10 @@ function CardManager({
   const [busyActive, setBusyActive] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== "undefined") setJoinUrl(`${window.location.origin}/join/${card.id}`);
+    // Prefer the canonical domain so QR links never point customers at the
+    // redirecting apex; fall back to the current origin (local dev).
+    const base = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+    if (base) setJoinUrl(`${base}/join/${card.id}`);
   }, [card.id]);
 
   async function setActive(active: boolean) {
