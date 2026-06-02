@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { TiltCard } from "@/components/TiltCard";
 import { PageLoader } from "@/components/PageLoader";
+import { APPLE_WALLET_BADGE, GOOGLE_WALLET_BADGE } from "@/lib/walletBadges";
 
 interface PublicCard {
   id: string;
@@ -96,10 +97,6 @@ export default function JoinPage() {
 
   // Success screen
   if (result) {
-    // Load wallet badges from the canonical domain so they don't depend on which
-    // host served this page (the apex 307-redirects to www, and a cached failure
-    // on the apex can otherwise leave these broken).
-    const assetBase = process.env.NEXT_PUBLIC_BASE_URL || "";
     return (
       <div className="container">
         <div className="center" style={{ marginBottom: 18 }}>
@@ -148,14 +145,14 @@ export default function JoinPage() {
                   </p>
                   <a href={`/api/wallet/apple/pass/${result.customerCardId}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={`${assetBase}/apple-wallet.png`} alt="Añadir a Apple Wallet" style={{ height: 52, width: "auto" }} />
+                    <img src={APPLE_WALLET_BADGE} alt="Añadir a Apple Wallet" style={{ height: 52, width: "auto" }} />
                   </a>
                 </>
               )}
               {showGoogle && (
                 <a href={result.saveUrl!} target="_blank" rel="noreferrer">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={`${assetBase}/goole-wallet.svg`} alt="Añadir a Google Wallet" style={{ height: 52, width: "auto" }} />
+                  <img src={GOOGLE_WALLET_BADGE} alt="Añadir a Google Wallet" style={{ height: 52, width: "auto" }} />
                 </a>
               )}
             </div>

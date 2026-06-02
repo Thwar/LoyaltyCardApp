@@ -123,9 +123,9 @@ export default function Home() {
             </div>
             <div className="wallet-badges">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}/apple-wallet.png`} alt="Añadir a Apple Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
+              <img src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/apple-wallet.png?v=2`} alt="Añadir a Apple Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}/goole-wallet.svg`} alt="Añadir a Google Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
+              <img src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/goole-wallet.svg?v=2`} alt="Añadir a Google Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
             </div>
             <div style={{ marginTop: 22 }}>
               <span className="soon-pill" style={{ marginBottom: 0 }}>
