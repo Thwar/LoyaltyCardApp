@@ -142,6 +142,14 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard): Prom
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
     barcode: { type: "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
     textModulesData: loyaltyTextModules(card, customer),
+    // Welcome message — Google surfaces this as a notification when the pass is saved.
+    messages: [
+      {
+        id: `welcome-${customer.id}`,
+        header: card.businessName || "SoyCasero",
+        body: card.welcomeMessage || `¡Bienvenido a ${card.businessName}! 🎉`,
+      },
+    ],
   };
   const res = await api("POST", `/loyaltyObject`, loyaltyObject);
   if (res.status !== 200 && res.status !== 409) {
@@ -174,12 +182,17 @@ export async function syncLoyaltyClass(card: LoyaltyCard): Promise<void> {
 
 // Push a customer's current state onto their Google pass: balance, reward text,
 // and ACTIVE/INACTIVE (INACTIVE greys it out when the program is deactivated).
-export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCard): Promise<void> {
+export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCard, message?: string): Promise<void> {
   const id = objectIdFor(customer.id);
   const res = await api("PATCH", `/loyaltyObject/${id}`, {
     state: card.isActive === false ? "INACTIVE" : "ACTIVE",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
     textModulesData: loyaltyTextModules(card, customer),
+    // A new message id triggers a Google Wallet notification; replacing the array
+    // (rather than appending) keeps only the latest event on the pass.
+    ...(message
+      ? { messages: [{ id: `evt-${Date.now()}`, header: card.businessName || "SoyCasero", body: message }] }
+      : {}),
   });
   if (res.status !== 200 && res.status !== 404) {
     throw new Error(`Error actualizando objeto de Wallet (${res.status}): ${await res.text()}`);

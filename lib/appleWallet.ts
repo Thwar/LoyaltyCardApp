@@ -107,7 +107,7 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
     {
       passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID!,
       teamIdentifier: process.env.APPLE_TEAM_ID!,
-      organizationName: "SoyCasero",
+      organizationName: card.businessName || "SoyCasero",
       description: `Tarjeta de ${card.businessName}`,
       serialNumber: customer.id,
       // Group passes by business so different businesses don't stack together.
@@ -131,6 +131,9 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
     key: "count",
     label: "SELLOS",
     value: `${Math.min(customer.currentStamps, card.totalSlots)}/${card.totalSlots}`,
+    // changeMessage turns each stamp/redeem (the count changes) into a lock-screen
+    // notification when the pass refreshes. %@ is the new value, e.g. "6/9".
+    changeMessage: "¡Tu tarjeta se actualizó! Sellos: %@",
   });
   pass.secondaryFields.push({ key: "lastVisit", label: "ÚLTIMA VISITA", value: formatVisit(customer.lastStampDate) });
   pass.auxiliaryFields.push({ key: "code", label: "TU CÓDIGO", value: customer.cardCode });
@@ -138,6 +141,9 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
   // total across completed cards (each redemption clears a full card of totalSlots).
   const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   pass.backFields.push({ key: "reward", label: "Recompensa", value: card.rewardDescription });
+  if (card.welcomeMessage) {
+    pass.backFields.push({ key: "welcome", label: "Bienvenida", value: card.welcomeMessage });
+  }
   pass.backFields.push({ key: "status", label: "Estado", value: card.isActive === false ? "Inactivo" : "Activo" });
   if (card.isActive === false) {
     // Apple's own "expired" banner on a voided pass is system text we can't

@@ -127,12 +127,10 @@ export default function DashboardPage() {
 
       {!data?.business ? (
         <BusinessSetupForm onSaved={load} />
-      ) : !data?.cards?.length ? (
-        <CardForm businessName={data.business.name} onSaved={load} />
       ) : (
         <CardManager
           business={data.business}
-          cards={data.cards}
+          cards={data.cards || []}
           customers={data.customers || []}
           count={data.count || 0}
           onChanged={load}
@@ -223,6 +221,10 @@ function fileToResizedPng(file: File, maxW = 480, maxH = 150): Promise<string> {
 function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard; businessName?: string; onSaved: () => void }) {
   const [totalSlots, setTotalSlots] = useState(existing?.totalSlots ?? CARD_DEFAULTS.DEFAULT_SLOTS);
   const [rewardDescription, setRewardDescription] = useState(existing?.rewardDescription ?? CARD_DEFAULTS.DEFAULT_REWARD);
+  const [welcomeMessage, setWelcomeMessage] = useState(
+    existing?.welcomeMessage ??
+      `¡Bienvenido a ${existing?.businessName || businessName || "nuestro club"}! 🎉 Colecciona sellos y gana tu recompensa.`
+  );
   const [cardColor, setCardColor] = useState(existing?.cardColor ?? CARD_COLOR_CHOICES[0]);
   const [textColor, setTextColor] = useState(existing?.textColor ?? "#FFFFFF");
   const [logo, setLogo] = useState<string | null>(existing?.logoPng ? `data:image/png;base64,${existing.logoPng}` : null);
@@ -234,7 +236,7 @@ function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard;
     setSaving(true);
     const res = await authedFetch("/api/business/card", {
       method: "POST",
-      body: JSON.stringify({ cardId: existing?.id, totalSlots, rewardDescription: rewardDescription.trim(), cardColor, textColor, logo }),
+      body: JSON.stringify({ cardId: existing?.id, totalSlots, rewardDescription: rewardDescription.trim(), welcomeMessage: welcomeMessage.trim(), cardColor, textColor, logo }),
     });
     const json = await res.json();
     setSaving(false);
@@ -296,6 +298,21 @@ function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard;
             onChange={(e) => setRewardDescription(e.target.value)}
             placeholder="Ej: Un café gratis"
           />
+        </div>
+
+        <div className="field">
+          <label>Mensaje de bienvenida</label>
+          <textarea
+            className="input"
+            rows={2}
+            value={welcomeMessage}
+            onChange={(e) => setWelcomeMessage(e.target.value)}
+            placeholder="¡Bienvenido! 🎉"
+            maxLength={240}
+          />
+          <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+            Se le envía al cliente cuando guarda tu tarjeta — notificación en Android, y visible en la tarjeta en iPhone.
+          </p>
         </div>
 
         <div className="field">
@@ -402,21 +419,25 @@ function CardManager({
 }) {
   const [selected, setSelected] = useState<Client | null>(null);
   const [tab, setTab] = useState<"resumen" | "tarjetas">("resumen");
-  const [editing, setEditing] = useState<LoyaltyCard | "new" | null>(null);
+  // No cards yet → open straight into the create form.
+  const [editing, setEditing] = useState<LoyaltyCard | "new" | null>(cards.length === 0 ? "new" : null);
   const planInfo = effectivePlan(business);
   const cardsById = new Map(cards.map((c) => [c.id, c]));
 
   if (editing) {
     return (
       <div>
-        <button className="btn btn-sm btn-ghost" onClick={() => setEditing(null)} style={{ marginBottom: 14 }}>
-          ← Volver
-        </button>
+        {cards.length > 0 && (
+          <button className="btn btn-sm btn-ghost" onClick={() => setEditing(null)} style={{ marginBottom: 14 }}>
+            ← Volver
+          </button>
+        )}
         <CardForm
           existing={editing === "new" ? undefined : editing}
           businessName={business.name}
           onSaved={() => {
             setEditing(null);
+            setTab("tarjetas"); // after creating/editing a card, land on the Tarjetas panel
             onChanged();
           }}
         />
@@ -460,7 +481,7 @@ function CardManager({
       )}
 
       {selected && (
-        <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onClose={() => setSelected(null)} />
+        <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onChanged={onChanged} onClose={() => setSelected(null)} />
       )}
     </div>
   );
@@ -869,21 +890,54 @@ function ClientModal({
   client,
   cardsById,
   plan,
+  onChanged,
   onClose,
 }: {
   client: Client;
   cardsById: Map<string, LoyaltyCard>;
   plan?: Business["plan"];
+  onChanged: () => void;
   onClose: () => void;
 }) {
   const paid = plan === "cafe" || plan === "negocio";
   const canSeeContact = paid && client.consent;
+  const hasRemovedPass = client.memberships.some((m) => m.passRemovedAt);
+  const totalRewards = client.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0), 0);
+  const totalStamps = client.memberships.reduce(
+    (s, m) => s + (m.rewardsRedeemed || 0) * (cardsById.get(m.loyaltyCardId)?.totalSlots ?? 0) + m.currentStamps,
+    0
+  );
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  async function deleteClient() {
+    const n = client.memberships.length;
+    const msg =
+      n > 1
+        ? `¿Eliminar a ${client.name} y sus ${n} tarjetas? Se borran sus datos. No se puede deshacer.`
+        : `¿Eliminar a ${client.name}? Se borra su tarjeta y datos. No se puede deshacer.`;
+    if (!confirm(msg)) return;
+    setBusy(true);
+    setErr("");
+    const res = await authedFetch("/api/business/customer", {
+      method: "DELETE",
+      body: JSON.stringify({ customerCardIds: client.memberships.map((m) => m.id) }),
+    });
+    setBusy(false);
+    if (res.ok) {
+      onChanged();
+      onClose();
+    } else {
+      const j = await res.json().catch(() => ({}));
+      setErr(j.error || "No se pudo eliminar.");
+    }
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -895,10 +949,29 @@ function ClientModal({
           </button>
         </div>
 
+        {hasRemovedPass && (
+          <div
+            className="warn-box"
+            style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}
+          >
+            <span style={{ fontSize: 14 }}>Este cliente eliminó su pase del wallet.</span>
+            <button
+              className="btn btn-sm"
+              style={{ width: "auto", background: "#c62828", color: "#fff", flex: "0 0 auto" }}
+              onClick={deleteClient}
+              disabled={busy}
+            >
+              {busy ? "Eliminando…" : "Eliminar cliente"}
+            </button>
+          </div>
+        )}
+        {err && <div className="error-box" style={{ marginBottom: 10 }}>{err}</div>}
+
         <div className="detail-list">
           <DetailRow label="Casero desde" value={fmtDate(client.createdAt)} />
           <DetailRow label="Última visita" value={fmtDate(client.lastStampDate)} />
-          <DetailRow label="Tarjetas" value={String(client.memberships.length)} />
+          <DetailRow label="Recompensas canjeadas" value={String(totalRewards)} />
+          <DetailRow label="Sellos acumulados" value={String(totalStamps)} />
         </div>
 
         <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>

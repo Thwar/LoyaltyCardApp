@@ -39,10 +39,12 @@ export async function POST(req: Request) {
     let newStamps: number;
     let completed = false;
     let redeemed = false;
+    let eventMessage = "";
 
     if (redeem) {
       newStamps = 0;
       redeemed = true;
+      eventMessage = "🎁 ¡Recompensa canjeada! Tu tarjeta se reinició.";
       await docRef.update({
         currentStamps: 0,
         isRewardClaimed: false,
@@ -64,6 +66,9 @@ export async function POST(req: Request) {
       }
       newStamps = current + 1;
       completed = newStamps >= totalSlots;
+      eventMessage = completed
+        ? `¡Tarjeta completa (${newStamps}/${totalSlots})! Ya puedes canjear tu recompensa 🎁`
+        : `¡Nuevo sello! Llevas ${newStamps}/${totalSlots}.`;
       await docRef.update({ currentStamps: FieldValue.increment(1), lastStampDate: Date.now(), appleUpdatedTag: Date.now() });
       await adminDb().collection(COLLECTIONS.STAMPS).add({
         customerCardId: docRef.id,
@@ -84,7 +89,7 @@ export async function POST(req: Request) {
           currentStamps: newStamps,
           rewardsRedeemed: redeemed ? Number(data.rewardsRedeemed || 0) + 1 : Number(data.rewardsRedeemed || 0),
         };
-        await syncLoyaltyObject(updated, loyalty);
+        await syncLoyaltyObject(updated, loyalty, eventMessage);
       } catch (we) {
         console.error("Wallet update error:", we);
       }

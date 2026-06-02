@@ -33,6 +33,7 @@ export interface LoyaltyCard {
   businessName: string;
   totalSlots: number;
   rewardDescription: string;
+  welcomeMessage?: string; // shown/notified when a customer joins (customizable per card)
   cardColor: string;
   textColor?: string;
   logoPng?: string; // optional business logo (base64 PNG), shown instead of the name
