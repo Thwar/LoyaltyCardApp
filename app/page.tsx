@@ -322,6 +322,10 @@ export default function Home() {
           <a href="mailto:admin@soycasero.com" style={{ color: "var(--text-secondary)" }}>
             admin@soycasero.com
           </a>
+          {" · "}
+          <a href="/privacy-policy" style={{ color: "var(--text-secondary)" }}>
+            Política de Privacidad
+          </a>
         </p>
       </footer>
     </main>
