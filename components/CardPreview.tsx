@@ -1,7 +1,5 @@
 // Stamp-card preview shown in the dashboard + enrollment page.
 // (The Apple Wallet pass renders its own strip image; this is just the web preview.)
-import type { ReactElement } from "react";
-
 export function CardPreview({
   businessName,
   totalSlots,
@@ -78,7 +76,7 @@ export function CardPreview({
         </div>
       </div>
 
-      {showBarcode && <PreviewBarcode seed={code} />}
+      {showBarcode && <PreviewBarcode />}
     </div>
   );
 }
@@ -86,39 +84,15 @@ export function CardPreview({
 // Decorative PDF417-style barcode for the web preview. The real wallet pass
 // carries the actual scannable code; this just mirrors its look. Pattern is a
 // pure function of the seed (no random/date) so server + client render match.
-function PreviewBarcode({ seed }: { seed: string }) {
-  const ROWS = 5;
-  const COLS = 42;
-  const CELL = 3;
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < seed.length; i++) h = Math.imul(h ^ seed.charCodeAt(i), 16777619) >>> 0;
-  const rnd = () => {
-    h ^= h << 13;
-    h >>>= 0;
-    h ^= h >>> 17;
-    h ^= h << 5;
-    h >>>= 0;
-    return h;
-  };
-  const rects: ReactElement[] = [];
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      const edge = c < 2 || c >= COLS - 2; // solid start/stop bars
-      if (edge || rnd() % 100 < 46) {
-        rects.push(<rect key={`${r}-${c}`} x={c * CELL} y={r * CELL} width={CELL} height={CELL} fill="#15151a" />);
-      }
-    }
-  }
+// Real PDF417 barcode (pre-generated with bwip-js, served as a static SVG). The
+// actual scannable code lives on the wallet pass; this just mirrors its look on
+// the landing preview. Loaded from the canonical domain so it survives the apex.
+function PreviewBarcode() {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com";
   return (
-    <div style={{ background: "#fff", borderRadius: 8, padding: "10px 12px", marginTop: 16 }}>
-      <svg
-        viewBox={`0 0 ${COLS * CELL} ${ROWS * CELL}`}
-        preserveAspectRatio="none"
-        style={{ width: "100%", height: 46, display: "block" }}
-        aria-hidden="true"
-      >
-        {rects}
-      </svg>
+    <div style={{ background: "#fff", borderRadius: 10, padding: "12px 18px", marginTop: 16 }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`${base}/homepage/barcode.svg`} alt="" aria-hidden="true" style={{ display: "block", width: "100%", height: "auto" }} />
     </div>
   );
 }
