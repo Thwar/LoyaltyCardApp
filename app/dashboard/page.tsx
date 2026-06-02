@@ -6,6 +6,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authedFetch } from "@/lib/clientApi";
 import { CARD_COLOR_CHOICES, CARD_DEFAULTS } from "@/lib/theme";
+import { getPlan, type PlanInfo } from "@/lib/plans";
 import { CardPreview } from "@/components/CardPreview";
 import { QrCode } from "@/components/QrCode";
 import { PageLoader } from "@/components/PageLoader";
@@ -92,7 +93,7 @@ export default function DashboardPage() {
       ) : !data?.card ? (
         <CardForm onSaved={load} />
       ) : (
-        <CardManager card={data.card} customers={data.customers || []} count={data.count || 0} onChanged={load} />
+        <CardManager card={data.card} customers={data.customers || []} count={data.count || 0} plan={data.business.plan} onChanged={load} />
       )}
 
       <SiteFooter />
@@ -342,19 +343,208 @@ function CardForm({ existing, onSaved }: { existing?: LoyaltyCard; onSaved: () =
   );
 }
 
-/* ---------- Manage an existing card: QR, stamping, customers ---------- */
+/* ---------- Manage an existing card: tabbed Resumen / Tarjetas ---------- */
 function CardManager({
   card,
   customers,
   count,
+  plan,
   onChanged,
 }: {
   card: LoyaltyCard;
   customers: CustomerCard[];
   count: number;
+  plan?: Business["plan"];
   onChanged: () => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState<CustomerCard | null>(null);
+  const [tab, setTab] = useState<"resumen" | "tarjetas">("resumen");
+  const planInfo = getPlan(plan);
+
+  if (editing) {
+    return (
+      <div>
+        <button className="btn btn-sm btn-ghost" onClick={() => setEditing(false)} style={{ marginBottom: 14 }}>
+          ← Volver
+        </button>
+        <CardForm
+          existing={card}
+          onSaved={() => {
+            setEditing(false);
+            onChanged();
+          }}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <h1 style={{ fontSize: 24, margin: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        {card.businessName}
+        <span className={`plan-badge plan-${planInfo.id}`}>{planInfo.label}</span>
+        {card.isActive === false ? (
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#c62828" }}>● Desactivado</span>
+        ) : null}
+      </h1>
+
+      <div className="tabs mt">
+        <button className={`tab${tab === "resumen" ? " active" : ""}`} onClick={() => setTab("resumen")}>
+          Resumen
+        </button>
+        <button className={`tab${tab === "tarjetas" ? " active" : ""}`} onClick={() => setTab("tarjetas")}>
+          Tarjetas
+        </button>
+      </div>
+
+      {tab === "resumen" ? (
+        <ResumenTab
+          card={card}
+          customers={customers}
+          count={count}
+          planInfo={planInfo}
+          onChanged={onChanged}
+          onSelect={setSelected}
+        />
+      ) : (
+        <TarjetasTab card={card} planInfo={planInfo} onEdit={() => setEditing(true)} onChanged={onChanged} />
+      )}
+
+      {selected && <CustomerModal customer={selected} card={card} plan={plan} onClose={() => setSelected(null)} />}
+    </div>
+  );
+}
+
+/* ---------- Resumen tab: analytics, client limit, stamping, recent clients ---------- */
+function ResumenTab({
+  card,
+  customers,
+  count,
+  planInfo,
+  onChanged,
+  onSelect,
+}: {
+  card: LoyaltyCard;
+  customers: CustomerCard[];
+  count: number;
+  planInfo: PlanInfo;
+  onChanged: () => void;
+  onSelect: (c: CustomerCard) => void;
+}) {
+  const [showAll, setShowAll] = useState(false);
+
+  const completed = customers.filter((c) => c.currentStamps >= card.totalSlots).length;
+  const rewards = customers.reduce((s, c) => s + (c.rewardsRedeemed || 0), 0);
+  const stampsGiven = customers.reduce((s, c) => s + (c.rewardsRedeemed || 0) * card.totalSlots + c.currentStamps, 0);
+
+  const limit = planInfo.maxClients; // null = unlimited (paid plans)
+  const pct = limit != null ? Math.min(100, Math.round((count / limit) * 100)) : 0;
+  const nearLimit = limit != null && count >= limit * 0.8;
+  const limitLabel = limit != null ? `${count} / ${limit}` : "";
+  const remainingText =
+    limit == null
+      ? ""
+      : count >= limit
+        ? "Alcanzaste el límite de tu plan. Mejora tu plan para inscribir más clientes."
+        : `Te quedan ${limit - count} clientes en tu plan ${planInfo.label}.`;
+  const shown = showAll ? customers : customers.slice(0, 12);
+
+  return (
+    <div>
+      <div className="stat-grid mt">
+        <StatCard label="Clientes" value={count} />
+        <StatCard label="Tarjetas completas" value={completed} />
+        <StatCard label="Recompensas canjeadas" value={rewards} />
+        <StatCard label="Sellos otorgados" value={stampsGiven} />
+      </div>
+
+      {limit != null && (
+        <div className="card mt">
+          <div className="row spread" style={{ marginBottom: 8 }}>
+            <h3 style={{ fontSize: 16, margin: 0 }}>Clientes activos</h3>
+            <span style={{ fontWeight: 800, color: nearLimit ? "#c62828" : "var(--text)" }}>{limitLabel}</span>
+          </div>
+          <div className="progress">
+            <div className="progress-fill" style={{ width: `${pct}%`, background: nearLimit ? "#c62828" : undefined }} />
+          </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: 8, marginBottom: 0 }}>
+            {remainingText}
+          </p>
+        </div>
+      )}
+
+      <StampBox onChanged={onChanged} />
+
+      <div className="card mt">
+        <div className="row spread">
+          <h3 style={{ fontSize: 18, margin: 0 }}>Clientes recientes</h3>
+          <span className="muted">{count} en total</span>
+        </div>
+        {customers.length === 0 ? (
+          <p className="muted mt">Aún no tienes clientes inscritos.</p>
+        ) : (
+          <div className="mt">
+            {shown.map((c) => (
+              <div
+                key={c.id}
+                className="cust-row clickable"
+                style={c.passRemovedAt ? { opacity: 0.55 } : undefined}
+                role="button"
+                tabIndex={0}
+                onClick={() => onSelect(c)}
+                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect(c)}
+              >
+                <div>
+                  <div style={{ fontWeight: 600 }}>
+                    {c.customerName || "Cliente"}
+                    {c.passRemovedAt ? (
+                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#c62828" }}>· pase eliminado</span>
+                    ) : null}
+                  </div>
+                  <div className="muted">
+                    {c.currentStamps}/{card.totalSlots} sellos
+                  </div>
+                </div>
+                <div className="row" style={{ width: "auto", gap: 10, alignItems: "center" }}>
+                  <span className="code-pill">{c.cardCode}</span>
+                  <span aria-hidden style={{ color: "var(--text-secondary)", fontSize: 20, lineHeight: 1 }}>›</span>
+                </div>
+              </div>
+            ))}
+            {customers.length > 12 && (
+              <button className="btn btn-sm btn-ghost mt" onClick={() => setShowAll((v) => !v)}>
+                {showAll ? "Ver menos" : `Ver todos (${customers.length})`}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="stat-card">
+      <div className="stat-value">{value}</div>
+      <div className="stat-label">{label}</div>
+    </div>
+  );
+}
+
+/* ---------- Tarjetas tab: card management, QR, program state ---------- */
+function TarjetasTab({
+  card,
+  planInfo,
+  onEdit,
+  onChanged,
+}: {
+  card: LoyaltyCard;
+  planInfo: PlanInfo;
+  onEdit: () => void;
+  onChanged: () => void;
+}) {
   const [joinUrl, setJoinUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [busyActive, setBusyActive] = useState(false);
@@ -379,39 +569,14 @@ function CardManager({
     }
   }
 
-  if (editing) {
-    return (
-      <div>
-        <button className="btn btn-sm btn-ghost" onClick={() => setEditing(false)} style={{ marginBottom: 14 }}>
-          ← Volver
-        </button>
-        <CardForm
-          existing={card}
-          onSaved={() => {
-            setEditing(false);
-            onChanged();
-          }}
-        />
-      </div>
-    );
-  }
-
   return (
     <div>
-      <div className="row spread">
-        <h1 style={{ fontSize: 24, margin: 0 }}>
-          {card.businessName}
-          {card.isActive === false ? (
-            <span style={{ marginLeft: 10, fontSize: 12, fontWeight: 700, color: "#c62828", verticalAlign: "middle" }}>
-              ● Desactivado
-            </span>
-          ) : null}
-        </h1>
-        <button className="btn btn-sm btn-ghost" onClick={() => setEditing(true)}>
+      <div className="row spread mt" style={{ alignItems: "center" }}>
+        <h3 style={{ fontSize: 18, margin: 0 }}>Tu tarjeta</h3>
+        <button className="btn btn-sm btn-ghost" onClick={onEdit}>
           Editar
         </button>
       </div>
-
       <div className="mt">
         <CardPreview
           businessName={card.businessName}
@@ -423,6 +588,21 @@ function CardManager({
           logoUrl={card.logoPng ? `data:image/png;base64,${card.logoPng}` : undefined}
         />
       </div>
+
+      {/* Add another card — disabled to encourage an upgrade */}
+      <button
+        className="add-card-tile mt"
+        disabled
+        title={planInfo.paid ? "Pronto podrás crear más tarjetas" : "Disponible en planes pagos"}
+      >
+        <span className="add-card-plus">＋</span>
+        <span>
+          Nueva tarjeta
+          <span className="add-card-hint">
+            {planInfo.paid ? "Próximamente" : "Mejora a un plan pago para crear más tarjetas"}
+          </span>
+        </span>
+      </button>
 
       {/* Enrollment QR */}
       <div className="card mt">
@@ -445,39 +625,6 @@ function CardManager({
             {copied ? "¡Copiado!" : "Copiar"}
           </button>
         </div>
-      </div>
-
-      {/* Stamping */}
-      <StampBox onChanged={onChanged} />
-
-      {/* Customers */}
-      <div className="card mt">
-        <div className="row spread">
-          <h3 style={{ fontSize: 18, margin: 0 }}>Clientes</h3>
-          <span className="muted">{count} en total</span>
-        </div>
-        {customers.length === 0 ? (
-          <p className="muted mt">Aún no tienes clientes inscritos.</p>
-        ) : (
-          <div className="mt">
-            {customers.map((c) => (
-              <div key={c.id} className="cust-row" style={c.passRemovedAt ? { opacity: 0.55 } : undefined}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {c.customerName || "Cliente"}
-                    {c.passRemovedAt ? (
-                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#c62828" }}>· pase eliminado</span>
-                    ) : null}
-                  </div>
-                  <div className="muted">
-                    {c.currentStamps}/{card.totalSlots} sellos
-                  </div>
-                </div>
-                <span className="code-pill">{c.cardCode}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Activate / deactivate the program */}
@@ -573,6 +720,99 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
       <button className="btn btn-outline mt-sm" style={{ marginTop: 10 }} onClick={() => act(true)} disabled={busy}>
         Canjear recompensa
       </button>
+    </div>
+  );
+}
+
+/* ---------- Customer detail modal ---------- */
+function fmtDate(ts?: number): string {
+  if (!ts) return "—";
+  try {
+    return new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+  } catch {
+    return "—";
+  }
+}
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="detail-row">
+      <span className="muted">{label}</span>
+      <span style={{ fontWeight: 600, textAlign: "right" }}>{value}</span>
+    </div>
+  );
+}
+
+function CustomerModal({
+  customer,
+  card,
+  plan,
+  onClose,
+}: {
+  customer: CustomerCard;
+  card: LoyaltyCard;
+  plan?: Business["plan"];
+  onClose: () => void;
+}) {
+  const paid = plan === "cafe" || plan === "negocio";
+  const canSeeContact = paid && customer.marketingConsent === true;
+  const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="row spread" style={{ alignItems: "flex-start", marginBottom: 6 }}>
+          <h3 style={{ margin: 0, fontSize: 20 }}>{customer.customerName || "Cliente"}</h3>
+          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+            ✕
+          </button>
+        </div>
+
+        {customer.passRemovedAt ? (
+          <div className="warn-box" style={{ marginBottom: 8 }}>Este cliente eliminó su pase del wallet.</div>
+        ) : null}
+
+        <div className="detail-list">
+          <DetailRow label="Código" value={<span className="code-pill">{customer.cardCode}</span>} />
+          <DetailRow label="Sellos" value={`${Math.min(customer.currentStamps, card.totalSlots)}/${card.totalSlots}`} />
+          <DetailRow label="Sellos acumulados" value={String(totalStamps)} />
+          <DetailRow label="Recompensas canjeadas" value={String(customer.rewardsRedeemed || 0)} />
+          <DetailRow label="Casero desde" value={fmtDate(customer.createdAt)} />
+          <DetailRow label="Última visita" value={fmtDate(customer.lastStampDate)} />
+        </div>
+
+        <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
+          Contacto
+        </h4>
+        {canSeeContact ? (
+          <div className="detail-list">
+            <DetailRow label="Correo" value={customer.customerEmail || "—"} />
+            <DetailRow label="Teléfono" value={customer.customerPhone || "No proporcionado"} />
+          </div>
+        ) : (
+          <div
+            style={{
+              background: "var(--bg-soft)",
+              border: "1px solid var(--border)",
+              borderRadius: 12,
+              padding: "12px 14px",
+              fontSize: 13,
+              color: "var(--text-secondary)",
+              lineHeight: 1.5,
+            }}
+          >
+            {!paid
+              ? "🔒 Mejora a un plan Café o Negocio para ver el correo y teléfono de tus clientes."
+              : "Este cliente no autorizó compartir su contacto para fines de marketing."}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -134,7 +134,9 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
   });
   pass.secondaryFields.push({ key: "lastVisit", label: "ÚLTIMA VISITA", value: formatVisit(customer.lastStampDate) });
   pass.auxiliaryFields.push({ key: "code", label: "TU CÓDIGO", value: customer.cardCode });
-  // Pass details (the back of the pass).
+  // Pass details (the back of the pass). "Sellos acumulados" is the lifetime
+  // total across completed cards (each redemption clears a full card of totalSlots).
+  const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   pass.backFields.push({ key: "reward", label: "Recompensa", value: card.rewardDescription });
   pass.backFields.push({ key: "status", label: "Estado", value: card.isActive === false ? "Inactivo" : "Activo" });
   if (card.isActive === false) {
@@ -142,9 +144,10 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
     // reword, so we show the Spanish message here where we control it.
     pass.backFields.push({ key: "ended", label: "Aviso", value: "Esta promoción ha terminado." });
   }
+  pass.backFields.push({ key: "totalStamps", label: "Sellos acumulados", value: String(totalStamps) });
   pass.backFields.push({ key: "redeemed", label: "Recompensas canjeadas", value: String(customer.rewardsRedeemed || 0) });
   pass.backFields.push({ key: "lastStamp", label: "Último sello", value: formatVisit(customer.lastStampDate) });
-  pass.backFields.push({ key: "created", label: "Fecha de creación", value: formatVisit(customer.createdAt) });
+  pass.backFields.push({ key: "created", label: "Casero desde", value: formatVisit(customer.createdAt) });
   pass.backFields.push({ key: "business", label: "Negocio", value: card.businessName });
   pass.backFields.push({ key: "passId", label: "Identificador", value: customer.id });
   pass.backFields.push({ key: "cardId", label: "ID de tarjeta", value: card.id });

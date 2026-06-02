@@ -37,6 +37,7 @@ export default function JoinPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [formErr, setFormErr] = useState("");
   const [result, setResult] = useState<EnrollResult | null>(null);
   const [isIOS, setIsIOS] = useState(false);
@@ -76,7 +77,7 @@ export default function JoinPage() {
     const res = await fetch("/api/enroll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loyaltyCardId: cardId, name: name.trim(), email: email.trim(), phone: phone.trim() }),
+      body: JSON.stringify({ loyaltyCardId: cardId, name: name.trim(), email: email.trim(), phone: phone.trim(), marketingConsent: consent }),
     });
     const json = await res.json();
     setSubmitting(false);
@@ -201,6 +202,17 @@ export default function JoinPage() {
           <label>Teléfono (opcional)</label>
           <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
+        <label style={{ display: "flex", gap: 9, alignItems: "flex-start", cursor: "pointer", margin: "4px 0" }}>
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            style={{ marginTop: 3, width: 18, height: 18, flex: "0 0 auto" }}
+          />
+          <span style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.45 }}>
+            Acepto recibir promociones y novedades de {card.businessName} por correo o WhatsApp.
+          </span>
+        </label>
         <button className="btn btn-primary mt" type="submit" disabled={submitting}>
           {submitting ? "Creando tu tarjeta…" : "Crear mi tarjeta"}
         </button>

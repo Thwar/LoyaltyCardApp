@@ -18,6 +18,9 @@ export interface Business {
   ownerId: string;
   ownerEmail?: string;
   logoUrl?: string;
+  // Subscription tier. Absent/"gratis" = free; "cafe"/"negocio" unlock paid
+  // features (e.g. seeing customer contact info). Set manually for now (no billing).
+  plan?: "gratis" | "cafe" | "negocio";
   createdAt?: number;
 }
 
@@ -38,7 +41,7 @@ export interface CustomerCard {
   id: string;
   loyaltyCardId: string;
   businessId: string;
-  customerId: string; // generated id (no auth account for customers)
+  customerId: string; // shared client id per (business, email): links one person's multiple cards. Not an auth account.
   customerName: string;
   customerEmail?: string;
   customerPhone?: string;
@@ -52,4 +55,5 @@ export interface CustomerCard {
   passRemovedAt?: number | null; // set when the customer removes the pass from Wallet
   createdAt?: number;
   lastStampDate?: number;
+  marketingConsent?: boolean; // opted in (join-form checkbox) to share contact info for marketing
 }

@@ -34,15 +34,48 @@ function businessLogoUri(card: LoyaltyCard): string | null {
   return `${base}/api/card/${card.id}/logo?v=${v}`;
 }
 
+// Square version of the business logo (centered on the card color) for Google's
+// circular program logo, where a wide/white wordmark would crop or vanish.
+function businessLogoSquareUri(card: LoyaltyCard): string | null {
+  if (!card.logoPng) return null;
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com";
+  const v = crypto.createHash("sha1").update(card.logoPng).digest("hex").slice(0, 10);
+  return `${base}/api/card/${card.id}/logo?shape=square&v=${v}`;
+}
+
 export function balanceText(currentStamps: number, slots: number): string {
   return `${Math.min(currentStamps, slots)} / ${slots} sellos`;
 }
 
-// Detail rows shown on the Google pass (mirror the Apple back fields we surface).
-function loyaltyTextModules(card: LoyaltyCard) {
+function formatDate(ts?: number): string {
+  if (!ts) return "—";
+  try {
+    return new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+  } catch {
+    return new Date(ts).toISOString().slice(0, 10);
+  }
+}
+
+// Detail rows shown on the Google pass — mirror the Apple back fields so both
+// wallets show the same info. "Negocio" is intentionally omitted: the business
+// name is already the program name at the top of the Google card. "Sellos
+// acumulados" is the lifetime total across completed cards (each redemption
+// clears a full card of totalSlots). Kept at ≤10 modules in every state.
+function loyaltyTextModules(card: LoyaltyCard, customer: CustomerCard) {
+  const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   return [
     { id: "reward", header: "Recompensa", body: card.rewardDescription },
+    { id: "status", header: "Estado", body: card.isActive === false ? "Inactivo" : "Activo" },
+    ...(card.isActive === false
+      ? [{ id: "ended", header: "Aviso", body: "Esta promoción ha terminado." }]
+      : []),
+    { id: "totalStamps", header: "Sellos acumulados", body: String(totalStamps) },
+    { id: "redeemed", header: "Recompensas canjeadas", body: String(customer.rewardsRedeemed || 0) },
+    { id: "lastStamp", header: "Último sello", body: formatDate(customer.lastStampDate) },
+    { id: "memberSince", header: "Casero desde", body: formatDate(customer.createdAt) },
+    { id: "passId", header: "Identificador", body: customer.id },
     { id: "cardId", header: "ID de tarjeta", body: card.id },
+    { id: "poweredBy", header: "Acerca de", body: "Desarrollado por SoyCasero.com" },
   ];
 }
 
@@ -74,7 +107,10 @@ async function ensureLoyaltyClass(card: LoyaltyCard): Promise<string> {
   const existing = await api("GET", `/loyaltyClass/${id}`);
   if (existing.status === 200) return id;
 
-  const logoUri = `${process.env.NEXT_PUBLIC_BASE_URL || ""}/logo.png`;
+  // Business logo (square, on the card color) for the circular program logo;
+  // falls back to the square SoyCasero red mark when the business has no logo.
+  const logoUri =
+    businessLogoSquareUri(card) || `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/icon.png`;
   const heroUri = businessLogoUri(card);
   const loyaltyClass = {
     id,
@@ -105,7 +141,7 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard): Prom
     accountName: customer.customerName || "Cliente",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
     barcode: { type: "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
-    textModulesData: loyaltyTextModules(card),
+    textModulesData: loyaltyTextModules(card, customer),
   };
   const res = await api("POST", `/loyaltyObject`, loyaltyObject);
   if (res.status !== 200 && res.status !== 409) {
@@ -114,24 +150,21 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard): Prom
   return { objectId: id, saveUrl: buildSaveUrl(id) };
 }
 
-export async function updatePassBalance(objectId: string, currentStamps: number, slots: number): Promise<void> {
-  const res = await api("PATCH", `/loyaltyObject/${objectId}`, {
-    loyaltyPoints: { label: "Sellos", balance: { string: balanceText(currentStamps, slots) } },
-  });
-  if (res.status !== 200) {
-    throw new Error(`Error actualizando pase de Wallet (${res.status}): ${await res.text()}`);
-  }
-}
-
 // Push a card edit (color / name) onto the shared loyalty class. 404 = no class
 // exists yet (no Google passes issued for this card), which is fine to ignore.
 export async function syncLoyaltyClass(card: LoyaltyCard): Promise<void> {
   const id = classIdFor(card.id);
   const heroUri = businessLogoUri(card);
+  const logoUri =
+    businessLogoSquareUri(card) || `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/icon.png`;
   const res = await api("PATCH", `/loyaltyClass/${id}`, {
+    // Required when modifying an already-APPROVED class (Google rejects the PATCH
+    // otherwise); re-submits the class for review.
+    reviewStatus: "UNDER_REVIEW",
     issuerName: card.businessName || "SoyCasero",
     programName: card.businessName || "Programa de Lealtad",
     hexBackgroundColor: card.cardColor || "#E53935",
+    programLogo: { sourceUri: { uri: logoUri } },
     ...(heroUri ? { heroImage: { sourceUri: { uri: heroUri } } } : {}),
   });
   if (res.status !== 200 && res.status !== 404) {
@@ -146,7 +179,7 @@ export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCar
   const res = await api("PATCH", `/loyaltyObject/${id}`, {
     state: card.isActive === false ? "INACTIVE" : "ACTIVE",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
-    textModulesData: loyaltyTextModules(card),
+    textModulesData: loyaltyTextModules(card, customer),
   });
   if (res.status !== 200 && res.status !== 404) {
     throw new Error(`Error actualizando objeto de Wallet (${res.status}): ${await res.text()}`);

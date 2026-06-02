@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { COLLECTIONS } from "@/lib/types";
+import { COLLECTIONS, type CustomerCard } from "@/lib/types";
 import { getBusinessByOwner, getLoyaltyCard } from "@/lib/serverData";
-import { walletConfigured, updatePassBalance } from "@/lib/googleWallet";
+import { walletConfigured, syncLoyaltyObject } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { sendApplePassPush } from "@/lib/apns";
 
@@ -73,10 +73,18 @@ export async function POST(req: Request) {
       });
     }
 
-    // Best-effort: reflect the new balance on the customer's Google Wallet pass.
+    // Best-effort: sync the whole Google Wallet object (balance, "Sellos
+    // acumulados", and ACTIVE/INACTIVE) so the lifetime total stays current —
+    // not just the balance.
     if (walletConfigured() && data.googleObjectId) {
       try {
-        await updatePassBalance(data.googleObjectId, newStamps, totalSlots);
+        const updated: CustomerCard = {
+          ...(data as Omit<CustomerCard, "id">),
+          id: docRef.id,
+          currentStamps: newStamps,
+          rewardsRedeemed: redeemed ? Number(data.rewardsRedeemed || 0) + 1 : Number(data.rewardsRedeemed || 0),
+        };
+        await syncLoyaltyObject(updated, loyalty);
       } catch (we) {
         console.error("Wallet update error:", we);
       }

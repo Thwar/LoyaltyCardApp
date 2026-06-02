@@ -16,6 +16,15 @@ export async function getLoyaltyCardByBusiness(businessId: string): Promise<Loya
   return { id: d.id, ...(d.data() as Omit<LoyaltyCard, "id">) };
 }
 
+// All of a business's loyalty cards (oldest first = primary). One today, but the
+// data layer is ready for multi-card (negocio plan).
+export async function getLoyaltyCardsByBusiness(businessId: string): Promise<LoyaltyCard[]> {
+  const snap = await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).where("businessId", "==", businessId).get();
+  return snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as Omit<LoyaltyCard, "id">) }))
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+}
+
 export async function getLoyaltyCard(id: string): Promise<LoyaltyCard | null> {
   const d = await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).doc(id).get();
   if (!d.exists) return null;

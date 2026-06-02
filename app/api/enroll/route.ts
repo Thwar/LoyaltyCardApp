@@ -60,6 +60,7 @@ export async function POST(req: Request) {
     const name = String(body.name || "").trim();
     const email = String(body.email || "").trim().toLowerCase();
     const phone = String(body.phone || "").trim();
+    const marketingConsent = body.marketingConsent === true;
 
     if (!loyaltyCardId) return NextResponse.json({ error: "Falta la tarjeta." }, { status: 400 });
     if (!name) return NextResponse.json({ error: "Tu nombre es obligatorio." }, { status: 400 });
@@ -71,19 +72,38 @@ export async function POST(req: Request) {
 
     const cardsCol = adminDb().collection(COLLECTIONS.CUSTOMER_CARDS);
 
-    // One card per email per business: if this email already has a card, return it.
-    const existingSnap = await cardsCol
+    // All of this email's cards at this business belong to ONE client (the same
+    // person can hold multiple cards), linked by a shared customerId + identity —
+    // re-enrolling never creates a duplicate client.
+    const clientSnap = await cardsCol
       .where("businessId", "==", card.businessId)
       .where("customerEmail", "==", email)
-      .limit(1)
       .get();
-    if (!existingSnap.empty) {
-      const doc = existingSnap.docs[0];
-      const customer: CustomerCard = { id: doc.id, ...(doc.data() as Omit<CustomerCard, "id">) };
-      return cardResponse(doc.ref, customer, card, true);
+
+    // Resolve the client: reuse their existing id/identity, or mint a new one.
+    let customerId: string = randomUUID();
+    let clientName = name;
+    let clientPhone = phone;
+    let clientConsent = marketingConsent;
+    if (!clientSnap.empty) {
+      const first = clientSnap.docs[0].data() as CustomerCard;
+      customerId = first.customerId || customerId;
+      clientName = first.customerName || name;
+      clientPhone = first.customerPhone || phone;
+      clientConsent = first.marketingConsent === true || marketingConsent; // consent is sticky per client
+
+      // Already enrolled in THIS card? Return it (honoring a re-opt-in).
+      const sameCard = clientSnap.docs.find((d) => (d.data() as CustomerCard).loyaltyCardId === loyaltyCardId);
+      if (sameCard) {
+        if (clientConsent && sameCard.data().marketingConsent !== true) {
+          await sameCard.ref.update({ marketingConsent: true });
+        }
+        const customer: CustomerCard = { id: sameCard.id, ...(sameCard.data() as Omit<CustomerCard, "id">) };
+        return cardResponse(sameCard.ref, customer, card, true);
+      }
     }
 
-    // Otherwise create a new card with the welcome stamp.
+    // New membership (= this card) for the client, with the welcome stamp.
     const cardCode = await generateUniqueCardCode(async (code) => {
       const s = await cardsCol.where("businessId", "==", card.businessId).where("cardCode", "==", code).limit(1).get();
       return !s.empty;
@@ -92,12 +112,13 @@ export async function POST(req: Request) {
     const data = {
       loyaltyCardId,
       businessId: card.businessId,
-      customerId: randomUUID(),
-      customerName: name,
+      customerId,
+      customerName: clientName,
       customerEmail: email,
-      customerPhone: phone,
+      customerPhone: clientPhone,
       currentStamps: 1, // welcome stamp
       isRewardClaimed: false,
+      marketingConsent: clientConsent,
       cardCode,
       createdAt: Date.now(),
       lastStampDate: Date.now(),
