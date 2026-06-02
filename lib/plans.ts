@@ -15,7 +15,7 @@ export interface PlanInfo {
 
 export const PLANS: Record<PlanId, PlanInfo> = {
   gratis: { id: "gratis", label: "Gratis", maxClients: 50, maxCards: 1, paid: false },
-  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 3, paid: true },
+  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 1, paid: true },
   negocio: { id: "negocio", label: "Negocio", maxClients: null, maxCards: 10, paid: true },
 };
 

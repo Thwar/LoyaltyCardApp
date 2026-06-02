@@ -46,7 +46,7 @@ export async function GET(req: Request) {
       card,
       cards,
       customers,
-      count: customers.length,
+      count: new Set(customers.map((c) => c.customerId || c.id)).size, // distinct clients, not memberships
       walletConfigured: walletConfigured(),
     });
   } catch (e: unknown) {

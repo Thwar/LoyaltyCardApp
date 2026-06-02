@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, signInWithCustomToken } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authedFetch } from "@/lib/clientApi";
 import { PageLoader } from "@/components/PageLoader";
@@ -64,6 +64,22 @@ export default function AdminPage() {
     setData(json);
     setLoading(false);
   }, []);
+
+  async function impersonate(b: BizRow) {
+    if (!confirm(`Vas a entrar como "${b.name}". Tu sesión de admin se cerrará; para volver, inicia sesión de nuevo. ¿Continuar?`)) {
+      return;
+    }
+    const res = await authedFetch("/api/admin/impersonate", { method: "POST", body: JSON.stringify({ businessId: b.id }) });
+    const json = await res.json();
+    if (!res.ok) return setErr(json.error || "No se pudo impersonar.");
+    try {
+      await signInWithCustomToken(getClientAuth(), json.token);
+      localStorage.setItem("impersonating", json.businessName || b.name);
+      router.replace("/dashboard");
+    } catch {
+      setErr("No se pudo iniciar sesión como el negocio.");
+    }
+  }
 
   useEffect(() => {
     const unsub = onAuthStateChanged(getClientAuth(), (u) => {
@@ -159,6 +175,14 @@ export default function AdminPage() {
                   <div className="row" style={{ width: "auto", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
                     <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setDetailFor(b)}>
                       Ver
+                    </button>
+                    <button
+                      className="btn btn-sm btn-outline"
+                      style={{ width: "auto" }}
+                      onClick={() => impersonate(b)}
+                      title="Entrar al panel de este negocio (impersonar)"
+                    >
+                      Entrar
                     </button>
                     <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={() => setPlanFor(b)}>
                       Plan

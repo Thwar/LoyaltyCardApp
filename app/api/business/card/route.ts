@@ -4,7 +4,8 @@ import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS } from "@/lib/types";
 import { CARD_DEFAULTS } from "@/lib/theme";
-import { getBusinessByOwner, getLoyaltyCardByBusiness } from "@/lib/serverData";
+import { getBusinessByOwner, getLoyaltyCard, getLoyaltyCardsByBusiness } from "@/lib/serverData";
+import { effectivePlan } from "@/lib/plans";
 import { notifyAllCustomerPasses } from "@/lib/appleNotify";
 import { syncAllGooglePasses } from "@/lib/googleNotify";
 
@@ -21,6 +22,7 @@ export async function POST(req: Request) {
     if (!business) return NextResponse.json({ error: "Primero crea tu negocio." }, { status: 400 });
 
     const body = await req.json().catch(() => ({}));
+    const cardId = typeof body.cardId === "string" ? body.cardId : ""; // present = edit that card; absent = create
     const totalSlots = Math.round(Number(body.totalSlots));
     const rewardDescription = String(body.rewardDescription || "").trim();
     const hexOk = (s: string) => /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(s);
@@ -62,18 +64,33 @@ export async function POST(req: Request) {
       cardColor,
       textColor,
       logoPng,
-      isActive: true,
     };
 
-    const existing = await getLoyaltyCardByBusiness(business.id);
-    if (existing) {
-      await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).doc(existing.id).update(fields);
-      await notifyAllCustomerPasses(business.id); // Apple: push the change to all current customers' passes
+    if (cardId) {
+      // Edit a specific card. Don't touch isActive here — that's the deactivate flow.
+      const existing = await getLoyaltyCard(cardId);
+      if (!existing || existing.businessId !== business.id) {
+        return NextResponse.json({ error: "Tarjeta no encontrada." }, { status: 404 });
+      }
+      await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).doc(cardId).update(fields);
+      await notifyAllCustomerPasses(business.id); // Apple: push the change to current customers' passes
       await syncAllGooglePasses(business.id); // Google: PATCH the class + each customer object
       return NextResponse.json({ card: { ...existing, ...fields } });
     }
-    const ref = await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).add({ ...fields, createdAt: Date.now() });
-    return NextResponse.json({ card: { id: ref.id, ...fields } });
+
+    // Create a new card — enforce the plan's card limit.
+    const cards = await getLoyaltyCardsByBusiness(business.id);
+    const max = effectivePlan(business).maxCards;
+    if (cards.length >= max) {
+      return NextResponse.json(
+        { error: `Tu plan permite ${max} tarjeta(s). Mejora tu plan para crear más.` },
+        { status: 403 }
+      );
+    }
+    const ref = await adminDb()
+      .collection(COLLECTIONS.LOYALTY_CARDS)
+      .add({ ...fields, isActive: true, createdAt: Date.now() });
+    return NextResponse.json({ card: { id: ref.id, ...fields, isActive: true } });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }

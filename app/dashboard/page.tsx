@@ -6,16 +6,18 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authedFetch } from "@/lib/clientApi";
 import { CARD_COLOR_CHOICES, CARD_DEFAULTS } from "@/lib/theme";
-import { getPlan, effectivePlan, type PlanInfo } from "@/lib/plans";
+import { effectivePlan, type PlanInfo } from "@/lib/plans";
 import { CardPreview } from "@/components/CardPreview";
 import { QrCode } from "@/components/QrCode";
 import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { Lock, Pencil } from "lucide-react";
 import type { Business, CustomerCard, LoyaltyCard } from "@/lib/types";
 
 interface MeResponse {
   business: Business | null;
   card?: LoyaltyCard | null;
+  cards?: LoyaltyCard[];
   customers?: CustomerCard[];
   count?: number;
   walletConfigured?: boolean;
@@ -27,6 +29,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [impersonating, setImpersonating] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError("");
@@ -53,12 +56,45 @@ export default function DashboardPage() {
     return () => unsub();
   }, [router, load]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") setImpersonating(localStorage.getItem("impersonating"));
+  }, []);
+
+  async function exitImpersonation() {
+    await signOut(getClientAuth());
+    localStorage.removeItem("impersonating");
+    router.replace("/login");
+  }
+
   if (!authReady || loading) {
     return <PageLoader />;
   }
 
   return (
     <div className="container container-wide">
+      {impersonating && (
+        <div
+          style={{
+            background: "#fff3cd",
+            border: "1px solid #ffe69c",
+            borderRadius: 12,
+            padding: "10px 14px",
+            marginBottom: 14,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#664d03" }}>
+            👁 Estás viendo como <strong>{impersonating}</strong>. Los cambios afectan su cuenta real.
+          </span>
+          <button className="btn btn-sm" style={{ width: "auto", background: "#664d03", color: "#fff" }} onClick={exitImpersonation}>
+            Salir de la vista
+          </button>
+        </div>
+      )}
       <div className="row spread" style={{ marginBottom: 20 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" />
@@ -71,6 +107,7 @@ export default function DashboardPage() {
             style={{ width: "auto" }}
             onClick={async () => {
               await signOut(getClientAuth());
+              localStorage.removeItem("impersonating");
               router.replace("/login");
             }}
           >
@@ -90,10 +127,16 @@ export default function DashboardPage() {
 
       {!data?.business ? (
         <BusinessSetupForm onSaved={load} />
-      ) : !data?.card ? (
-        <CardForm onSaved={load} />
+      ) : !data?.cards?.length ? (
+        <CardForm businessName={data.business.name} onSaved={load} />
       ) : (
-        <CardManager card={data.card} customers={data.customers || []} count={data.count || 0} plan={effectivePlan(data.business).id} onChanged={load} />
+        <CardManager
+          business={data.business}
+          cards={data.cards}
+          customers={data.customers || []}
+          count={data.count || 0}
+          onChanged={load}
+        />
       )}
 
       <SiteFooter />
@@ -177,7 +220,7 @@ function fileToResizedPng(file: File, maxW = 480, maxH = 150): Promise<string> {
 }
 
 /* ---------- Create / edit the stamp card ---------- */
-function CardForm({ existing, onSaved }: { existing?: LoyaltyCard; onSaved: () => void }) {
+function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard; businessName?: string; onSaved: () => void }) {
   const [totalSlots, setTotalSlots] = useState(existing?.totalSlots ?? CARD_DEFAULTS.DEFAULT_SLOTS);
   const [rewardDescription, setRewardDescription] = useState(existing?.rewardDescription ?? CARD_DEFAULTS.DEFAULT_REWARD);
   const [cardColor, setCardColor] = useState(existing?.cardColor ?? CARD_COLOR_CHOICES[0]);
@@ -191,7 +234,7 @@ function CardForm({ existing, onSaved }: { existing?: LoyaltyCard; onSaved: () =
     setSaving(true);
     const res = await authedFetch("/api/business/card", {
       method: "POST",
-      body: JSON.stringify({ totalSlots, rewardDescription: rewardDescription.trim(), cardColor, textColor, logo }),
+      body: JSON.stringify({ cardId: existing?.id, totalSlots, rewardDescription: rewardDescription.trim(), cardColor, textColor, logo }),
     });
     const json = await res.json();
     setSaving(false);
@@ -220,7 +263,7 @@ function CardForm({ existing, onSaved }: { existing?: LoyaltyCard; onSaved: () =
 
       <div style={{ marginBottom: 18 }}>
         <CardPreview
-          businessName={existing?.businessName || "Tu negocio"}
+          businessName={existing?.businessName || businessName || "Tu negocio"}
           totalSlots={totalSlots}
           currentStamps={Math.min(2, totalSlots)}
           rewardDescription={rewardDescription || "Tu recompensa"}
@@ -343,35 +386,37 @@ function CardForm({ existing, onSaved }: { existing?: LoyaltyCard; onSaved: () =
   );
 }
 
-/* ---------- Manage an existing card: tabbed Resumen / Tarjetas ---------- */
+/* ---------- Manage a business's card(s): tabbed Resumen / Tarjetas ---------- */
 function CardManager({
-  card,
+  business,
+  cards,
   customers,
   count,
-  plan,
   onChanged,
 }: {
-  card: LoyaltyCard;
+  business: Business;
+  cards: LoyaltyCard[];
   customers: CustomerCard[];
   count: number;
-  plan?: Business["plan"];
   onChanged: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [selected, setSelected] = useState<CustomerCard | null>(null);
+  const [selected, setSelected] = useState<Client | null>(null);
   const [tab, setTab] = useState<"resumen" | "tarjetas">("resumen");
-  const planInfo = getPlan(plan);
+  const [editing, setEditing] = useState<LoyaltyCard | "new" | null>(null);
+  const planInfo = effectivePlan(business);
+  const cardsById = new Map(cards.map((c) => [c.id, c]));
 
   if (editing) {
     return (
       <div>
-        <button className="btn btn-sm btn-ghost" onClick={() => setEditing(false)} style={{ marginBottom: 14 }}>
+        <button className="btn btn-sm btn-ghost" onClick={() => setEditing(null)} style={{ marginBottom: 14 }}>
           ← Volver
         </button>
         <CardForm
-          existing={card}
+          existing={editing === "new" ? undefined : editing}
+          businessName={business.name}
           onSaved={() => {
-            setEditing(false);
+            setEditing(null);
             onChanged();
           }}
         />
@@ -382,11 +427,8 @@ function CardManager({
   return (
     <div>
       <h1 style={{ fontSize: 24, margin: 0, display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {card.businessName}
+        {business.name}
         <span className={`plan-badge plan-${planInfo.id}`}>{planInfo.label}</span>
-        {card.isActive === false ? (
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#c62828" }}>● Desactivado</span>
-        ) : null}
       </h1>
 
       <div className="tabs mt">
@@ -400,7 +442,7 @@ function CardManager({
 
       {tab === "resumen" ? (
         <ResumenTab
-          card={card}
+          cards={cards}
           customers={customers}
           count={count}
           planInfo={planInfo}
@@ -408,36 +450,55 @@ function CardManager({
           onSelect={setSelected}
         />
       ) : (
-        <TarjetasTab card={card} planInfo={planInfo} onEdit={() => setEditing(true)} onChanged={onChanged} />
+        <TarjetasTab
+          cards={cards}
+          planInfo={planInfo}
+          onEdit={(c) => setEditing(c)}
+          onNew={() => setEditing("new")}
+          onChanged={onChanged}
+        />
       )}
 
-      {selected && <CustomerModal customer={selected} card={card} plan={plan} onClose={() => setSelected(null)} />}
+      {selected && (
+        <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onClose={() => setSelected(null)} />
+      )}
     </div>
   );
 }
 
 /* ---------- Resumen tab: analytics, client limit, stamping, recent clients ---------- */
 function ResumenTab({
-  card,
+  cards,
   customers,
   count,
   planInfo,
   onChanged,
   onSelect,
 }: {
-  card: LoyaltyCard;
+  cards: LoyaltyCard[];
   customers: CustomerCard[];
   count: number;
   planInfo: PlanInfo;
   onChanged: () => void;
-  onSelect: (c: CustomerCard) => void;
+  onSelect: (c: Client) => void;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [filterCardId, setFilterCardId] = useState<string>("all");
 
-  const completed = customers.filter((c) => c.currentStamps >= card.totalSlots).length;
-  const rewards = customers.reduce((s, c) => s + (c.rewardsRedeemed || 0), 0);
-  const stampsGiven = customers.reduce((s, c) => s + (c.rewardsRedeemed || 0) * card.totalSlots + c.currentStamps, 0);
+  const cardsById = new Map(cards.map((c) => [c.id, c]));
+  const slotsOf = (m: CustomerCard) => cardsById.get(m.loyaltyCardId)?.totalSlots ?? 0;
 
+  // Filter memberships to one card (or all), then group into people for the list.
+  const filtered = filterCardId === "all" ? customers : customers.filter((c) => c.loyaltyCardId === filterCardId);
+  const clients = groupClients(filtered).sort(
+    (a, b) => (b.lastStampDate || b.createdAt || 0) - (a.lastStampDate || a.createdAt || 0)
+  );
+
+  const completed = filtered.filter((c) => slotsOf(c) > 0 && c.currentStamps >= slotsOf(c)).length;
+  const rewards = filtered.reduce((s, c) => s + (c.rewardsRedeemed || 0), 0);
+  const stampsGiven = filtered.reduce((s, c) => s + (c.rewardsRedeemed || 0) * slotsOf(c) + c.currentStamps, 0);
+
+  // The client limit is business-wide (uses the distinct count), only on the free tier.
   const limit = planInfo.maxClients; // null = unlimited (paid plans)
   const pct = limit != null ? Math.min(100, Math.round((count / limit) * 100)) : 0;
   const nearLimit = limit != null && count >= limit * 0.8;
@@ -448,18 +509,34 @@ function ResumenTab({
       : count >= limit
         ? "Alcanzaste el límite de tu plan. Mejora tu plan para inscribir más clientes."
         : `Te quedan ${limit - count} clientes en tu plan ${planInfo.label}.`;
-  const shown = showAll ? customers : customers.slice(0, 12);
+  const shown = showAll ? clients : clients.slice(0, 12);
 
   return (
     <div>
+      <StampBox onChanged={onChanged} />
+
+      {cards.length > 1 && (
+        <div className="field mt">
+          <label>Tarjeta</label>
+          <select className="input" value={filterCardId} onChange={(e) => setFilterCardId(e.target.value)}>
+            <option value="all">Todas las tarjetas</option>
+            {cards.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.rewardDescription || "Tarjeta"}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="stat-grid mt">
-        <StatCard label="Clientes" value={count} />
+        <StatCard label="Clientes" value={clients.length} />
         <StatCard label="Tarjetas completas" value={completed} />
         <StatCard label="Recompensas canjeadas" value={rewards} />
         <StatCard label="Sellos otorgados" value={stampsGiven} />
       </div>
 
-      {limit != null && (
+      {limit != null && filterCardId === "all" && (
         <div className="card mt">
           <div className="row spread" style={{ marginBottom: 8 }}>
             <h3 style={{ fontSize: 16, margin: 0 }}>Clientes activos</h3>
@@ -474,47 +551,43 @@ function ResumenTab({
         </div>
       )}
 
-      <StampBox onChanged={onChanged} />
-
       <div className="card mt">
         <div className="row spread">
           <h3 style={{ fontSize: 18, margin: 0 }}>Clientes recientes</h3>
-          <span className="muted">{count} en total</span>
+          <span className="muted">{clients.length} en total</span>
         </div>
-        {customers.length === 0 ? (
+        {clients.length === 0 ? (
           <p className="muted mt">Aún no tienes clientes inscritos.</p>
         ) : (
           <div className="mt">
-            {shown.map((c) => (
-              <div
-                key={c.id}
-                className="cust-row clickable"
-                style={c.passRemovedAt ? { opacity: 0.55 } : undefined}
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelect(c)}
-                onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect(c)}
-              >
-                <div>
-                  <div style={{ fontWeight: 600 }}>
-                    {c.customerName || "Cliente"}
-                    {c.passRemovedAt ? (
-                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#c62828" }}>· pase eliminado</span>
-                    ) : null}
+            {shown.map((cl) => {
+              const single = cl.memberships.length === 1 ? cl.memberships[0] : null;
+              return (
+                <div
+                  key={cl.customerId}
+                  className="cust-row clickable"
+                  style={single?.passRemovedAt ? { opacity: 0.55 } : undefined}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelect(cl)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect(cl)}
+                >
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{cl.name}</div>
+                    <div className="muted">
+                      {single ? `${single.currentStamps}/${slotsOf(single)} sellos` : `${cl.memberships.length} tarjetas`}
+                    </div>
                   </div>
-                  <div className="muted">
-                    {c.currentStamps}/{card.totalSlots} sellos
+                  <div className="row" style={{ width: "auto", gap: 10, alignItems: "center" }}>
+                    {single && <span className="code-pill">{single.cardCode}</span>}
+                    <span aria-hidden style={{ color: "var(--text-secondary)", fontSize: 20, lineHeight: 1 }}>›</span>
                   </div>
                 </div>
-                <div className="row" style={{ width: "auto", gap: 10, alignItems: "center" }}>
-                  <span className="code-pill">{c.cardCode}</span>
-                  <span aria-hidden style={{ color: "var(--text-secondary)", fontSize: 20, lineHeight: 1 }}>›</span>
-                </div>
-              </div>
-            ))}
-            {customers.length > 12 && (
+              );
+            })}
+            {clients.length > 12 && (
               <button className="btn btn-sm btn-ghost mt" onClick={() => setShowAll((v) => !v)}>
-                {showAll ? "Ver menos" : `Ver todos (${customers.length})`}
+                {showAll ? "Ver menos" : `Ver todos (${clients.length})`}
               </button>
             )}
           </div>
@@ -533,18 +606,58 @@ function StatCard({ label, value }: { label: string; value: number }) {
   );
 }
 
-/* ---------- Tarjetas tab: card management, QR, program state ---------- */
+/* ---------- Tarjetas tab: one panel per card + add-card tile ---------- */
 function TarjetasTab({
-  card,
+  cards,
   planInfo,
   onEdit,
+  onNew,
   onChanged,
 }: {
-  card: LoyaltyCard;
+  cards: LoyaltyCard[];
   planInfo: PlanInfo;
-  onEdit: () => void;
+  onEdit: (c: LoyaltyCard) => void;
+  onNew: () => void;
   onChanged: () => void;
 }) {
+  const canAdd = cards.length < planInfo.maxCards;
+  return (
+    <div>
+      {cards.map((card) => (
+        <CardPanel key={card.id} card={card} onEdit={() => onEdit(card)} onChanged={onChanged} />
+      ))}
+      <NewCardTile canAdd={canAdd} planInfo={planInfo} onNew={onNew} />
+    </div>
+  );
+}
+
+function NewCardTile({ canAdd, planInfo, onNew }: { canAdd: boolean; planInfo: PlanInfo; onNew: () => void }) {
+  return (
+    <button
+      className="add-card-tile mt"
+      onClick={canAdd ? onNew : undefined}
+      disabled={!canAdd}
+      title={canAdd ? "Crear otra tarjeta" : "Mejora tu plan para crear más tarjetas"}
+    >
+      <span className="add-card-plus" aria-hidden style={{ display: "inline-flex", alignItems: "center" }}>
+        {canAdd ? "＋" : <Lock size={24} />}
+      </span>
+      <span>
+        Nueva tarjeta
+        <span className="add-card-hint">
+          {canAdd
+            ? "Crea otra tarjeta de sellos"
+            : planInfo.id === "negocio"
+              ? `Alcanzaste el máximo de ${planInfo.maxCards} tarjetas`
+              : "Mejora al plan Negocio para crear más de una tarjeta"}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/* One card: preview, edit, its own enrollment QR, and activate/deactivate. */
+function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () => void; onChanged: () => void }) {
   const [joinUrl, setJoinUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [busyActive, setBusyActive] = useState(false);
@@ -561,7 +674,7 @@ function TarjetasTab({
     try {
       const res = await authedFetch("/api/business/deactivate", {
         method: "POST",
-        body: JSON.stringify({ active }),
+        body: JSON.stringify({ cardId: card.id, active }),
       });
       if (res.ok) onChanged();
     } finally {
@@ -569,14 +682,24 @@ function TarjetasTab({
     }
   }
 
+  const inactive = card.isActive === false;
+
   return (
-    <div>
-      <div className="row spread mt" style={{ alignItems: "center" }}>
-        <h3 style={{ fontSize: 18, margin: 0 }}>Tu tarjeta</h3>
-        <button className="btn btn-sm btn-ghost" onClick={onEdit}>
-          Editar
+    <div className="card mt">
+      <div className="row spread" style={{ alignItems: "center" }}>
+        <h3 style={{ fontSize: 17, margin: 0, display: "flex", alignItems: "center", gap: 8 }}>
+          {card.rewardDescription || "Tarjeta"}
+          {inactive && <span style={{ fontSize: 11, fontWeight: 700, color: "#c62828" }}>● Desactivada</span>}
+        </h3>
+        <button
+          className="btn btn-sm btn-ghost"
+          style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
+          onClick={onEdit}
+        >
+          <Pencil size={15} aria-hidden /> Editar
         </button>
       </div>
+
       <div className="mt">
         <CardPreview
           businessName={card.businessName}
@@ -589,79 +712,44 @@ function TarjetasTab({
         />
       </div>
 
-      {/* Add another card — disabled to encourage an upgrade */}
-      <button
-        className="add-card-tile mt"
-        disabled
-        title={planInfo.paid ? "Pronto podrás crear más tarjetas" : "Disponible en planes pagos"}
-      >
-        <span className="add-card-plus">＋</span>
-        <span>
-          Nueva tarjeta
-          <span className="add-card-hint">
-            {planInfo.paid ? "Próximamente" : "Mejora a un plan pago para crear más tarjetas"}
-          </span>
-        </span>
-      </button>
-
-      {/* Enrollment QR */}
-      <div className="card mt">
-        <h3 style={{ fontSize: 18 }}>Inscribe clientes</h3>
-        <p className="muted">Imprime este QR y ponlo en tu mostrador. El cliente lo escanea y guarda su tarjeta.</p>
-        <div className="center mt">{joinUrl && <QrCode value={joinUrl} size={210} />}</div>
-        <div className="row mt" style={{ gap: 8 }}>
-          <input className="input" readOnly value={joinUrl} onFocus={(e) => e.currentTarget.select()} />
-          <button
-            className="btn btn-sm btn-outline"
-            style={{ flex: "0 0 auto" }}
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(joinUrl);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              } catch {}
-            }}
-          >
-            {copied ? "¡Copiado!" : "Copiar"}
-          </button>
-        </div>
+      <p style={{ fontSize: 15, fontWeight: 600, textAlign: "center", margin: "22px 0 12px" }}>
+        Inscribe clientes — imprime este QR para tu mostrador
+      </p>
+      <div className="center">{joinUrl && <QrCode value={joinUrl} size={200} />}</div>
+      <div className="row mt" style={{ gap: 8 }}>
+        <input className="input" readOnly value={joinUrl} onFocus={(e) => e.currentTarget.select()} />
+        <button
+          className="btn btn-sm btn-outline"
+          style={{ flex: "0 0 auto" }}
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(joinUrl);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            } catch {}
+          }}
+        >
+          {copied ? "¡Copiado!" : "Copiar"}
+        </button>
       </div>
 
-      {/* Activate / deactivate the program */}
-      <div className="card mt">
-        <h3 style={{ fontSize: 18, margin: 0 }}>Estado del programa</h3>
-        {card.isActive === false ? (
-          <>
-            <p className="muted mt" style={{ marginBottom: 12 }}>
-              Tu programa está <strong>desactivado</strong>. Las tarjetas de tus clientes aparecen en gris
-              (finalizadas) en su wallet. Reactívalo para volver a usarlas.
-            </p>
-            <button className="btn btn-primary" onClick={() => setActive(true)} disabled={busyActive}>
-              {busyActive ? "Reactivando…" : "Reactivar programa"}
-            </button>
-          </>
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 14 }}>
+        {inactive ? (
+          <button className="btn btn-primary" onClick={() => setActive(true)} disabled={busyActive}>
+            {busyActive ? "Reactivando…" : "Reactivar tarjeta"}
+          </button>
         ) : (
-          <>
-            <p className="muted mt" style={{ marginBottom: 12 }}>
-              Desactivar marca todas las tarjetas de tus clientes como finalizadas (se ven en gris en su wallet).
-              Puedes reactivarlas cuando quieras.
-            </p>
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                if (
-                  confirm(
-                    "¿Desactivar el programa? Las tarjetas de tus clientes se marcarán como finalizadas (en gris)."
-                  )
-                ) {
-                  setActive(false);
-                }
-              }}
-              disabled={busyActive}
-            >
-              {busyActive ? "Desactivando…" : "Desactivar programa"}
-            </button>
-          </>
+          <button
+            className="btn btn-outline"
+            onClick={() => {
+              if (confirm("¿Desactivar esta tarjeta? Las tarjetas de tus clientes se verán en gris (finalizadas).")) {
+                setActive(false);
+              }
+            }}
+            disabled={busyActive}
+          >
+            {busyActive ? "Desactivando…" : "Desactivar tarjeta"}
+          </button>
         )}
       </div>
     </div>
@@ -743,20 +831,53 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
-function CustomerModal({
-  customer,
-  card,
+interface Client {
+  customerId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  consent: boolean;
+  createdAt?: number;
+  lastStampDate?: number;
+  memberships: CustomerCard[];
+}
+
+// Group memberships into one entry per person (shared customerId). Identity is
+// taken from the memberships; consent is client-level (any opt-in counts), which
+// also smooths over the per-card consent-snapshot drift.
+function groupClients(memberships: CustomerCard[]): Client[] {
+  const map = new Map<string, Client>();
+  for (const m of memberships) {
+    const key = m.customerId || m.id;
+    let cl = map.get(key);
+    if (!cl) {
+      cl = { customerId: key, name: m.customerName || "Cliente", consent: false, memberships: [] };
+      map.set(key, cl);
+    }
+    cl.memberships.push(m);
+    if (m.customerName && cl.name === "Cliente") cl.name = m.customerName;
+    if (!cl.email && m.customerEmail) cl.email = m.customerEmail;
+    if (!cl.phone && m.customerPhone) cl.phone = m.customerPhone;
+    if (m.marketingConsent === true) cl.consent = true;
+    if (m.createdAt && (cl.createdAt == null || m.createdAt < cl.createdAt)) cl.createdAt = m.createdAt;
+    if (m.lastStampDate && (cl.lastStampDate == null || m.lastStampDate > cl.lastStampDate)) cl.lastStampDate = m.lastStampDate;
+  }
+  return [...map.values()];
+}
+
+function ClientModal({
+  client,
+  cardsById,
   plan,
   onClose,
 }: {
-  customer: CustomerCard;
-  card: LoyaltyCard;
+  client: Client;
+  cardsById: Map<string, LoyaltyCard>;
   plan?: Business["plan"];
   onClose: () => void;
 }) {
   const paid = plan === "cafe" || plan === "negocio";
-  const canSeeContact = paid && customer.marketingConsent === true;
-  const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
+  const canSeeContact = paid && client.consent;
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -768,23 +889,16 @@ function CustomerModal({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ alignItems: "flex-start", marginBottom: 6 }}>
-          <h3 style={{ margin: 0, fontSize: 20 }}>{customer.customerName || "Cliente"}</h3>
+          <h3 style={{ margin: 0, fontSize: 20 }}>{client.name}</h3>
           <button className="modal-close" onClick={onClose} aria-label="Cerrar">
             ✕
           </button>
         </div>
 
-        {customer.passRemovedAt ? (
-          <div className="warn-box" style={{ marginBottom: 8 }}>Este cliente eliminó su pase del wallet.</div>
-        ) : null}
-
         <div className="detail-list">
-          <DetailRow label="Código" value={<span className="code-pill">{customer.cardCode}</span>} />
-          <DetailRow label="Sellos" value={`${Math.min(customer.currentStamps, card.totalSlots)}/${card.totalSlots}`} />
-          <DetailRow label="Sellos acumulados" value={String(totalStamps)} />
-          <DetailRow label="Recompensas canjeadas" value={String(customer.rewardsRedeemed || 0)} />
-          <DetailRow label="Casero desde" value={fmtDate(customer.createdAt)} />
-          <DetailRow label="Última visita" value={fmtDate(customer.lastStampDate)} />
+          <DetailRow label="Casero desde" value={fmtDate(client.createdAt)} />
+          <DetailRow label="Última visita" value={fmtDate(client.lastStampDate)} />
+          <DetailRow label="Tarjetas" value={String(client.memberships.length)} />
         </div>
 
         <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
@@ -792,8 +906,8 @@ function CustomerModal({
         </h4>
         {canSeeContact ? (
           <div className="detail-list">
-            <DetailRow label="Correo" value={customer.customerEmail || "—"} />
-            <DetailRow label="Teléfono" value={customer.customerPhone || "No proporcionado"} />
+            <DetailRow label="Correo" value={client.email || "—"} />
+            <DetailRow label="Teléfono" value={client.phone || "No proporcionado"} />
           </div>
         ) : (
           <div
@@ -812,6 +926,33 @@ function CustomerModal({
               : "Este cliente no autorizó compartir su contacto para fines de marketing."}
           </div>
         )}
+
+        <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
+          Tarjetas ({client.memberships.length})
+        </h4>
+        <div className="detail-list">
+          {client.memberships.map((m) => {
+            const card = cardsById.get(m.loyaltyCardId);
+            const slots = card?.totalSlots ?? 0;
+            const total = (m.rewardsRedeemed || 0) * slots + m.currentStamps;
+            return (
+              <div key={m.id} className="cust-row">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600 }}>
+                    {card?.rewardDescription || "Tarjeta"}
+                    {m.passRemovedAt ? (
+                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#c62828" }}>· pase eliminado</span>
+                    ) : null}
+                  </div>
+                  <div className="muted" style={{ fontSize: 13 }}>
+                    {m.currentStamps}/{slots} sellos · {m.rewardsRedeemed || 0} canjes · {total} acumulados
+                  </div>
+                </div>
+                <span className="code-pill">{m.cardCode}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
