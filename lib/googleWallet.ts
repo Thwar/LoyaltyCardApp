@@ -104,7 +104,7 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard): Prom
     accountId: customer.cardCode,
     accountName: customer.customerName || "Cliente",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
-    barcode: { type: "QR_CODE", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
+    barcode: { type: "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
     textModulesData: loyaltyTextModules(card),
   };
   const res = await api("POST", `/loyaltyObject`, loyaltyObject);
