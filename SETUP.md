@@ -150,3 +150,17 @@ components/                CardPreview, QrCode
   mobile `/stamp` page + QR scanning is a natural next refinement.
 - `/api/enroll` is public (customers aren't logged in). Add basic rate-limiting before launch.
 - Apple Wallet (.pkpass + APNs) is a later phase — see `BUSINESS_PLAN_Wallet_Loyalty_Pivot.md`.
+
+## God mode (founder admin) — `/admin`
+
+A founder-only console at **`/admin`**: all businesses + system stats, per-business
+drill-in (cards/clients), set plan + expiration (e.g. cash paid for 3 months of Café),
+hard-delete a business and all its data, and a DB/schema viewer.
+
+- **Access is by email allowlist**, checked server-side on every `/api/admin/*` call
+  (fail-closed). Set yours in **`lib/admin.ts` → `ADMIN_EMAILS`** to the email you log
+  into SoyCasero with. Anyone else gets 403.
+- Plans never auto-bill: set `plan` + `planExpiresAt` here by hand. An expired paid plan
+  reverts to free automatically (`effectivePlan` in `lib/plans.ts`).
+- Delete is a **hard** cascade (Firestore data only — the owner's login is left intact)
+  and requires typing the business name to confirm.

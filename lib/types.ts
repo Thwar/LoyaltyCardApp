@@ -19,8 +19,11 @@ export interface Business {
   ownerEmail?: string;
   logoUrl?: string;
   // Subscription tier. Absent/"gratis" = free; "cafe"/"negocio" unlock paid
-  // features (e.g. seeing customer contact info). Set manually for now (no billing).
+  // features (e.g. seeing customer contact info). Set in god mode (no billing yet).
   plan?: "gratis" | "cafe" | "negocio";
+  // Paid-plan expiry (ms epoch). Once past, the plan reverts to free (see
+  // effectivePlan). null/absent = no expiry. Set in god mode (e.g. cash for 3 months).
+  planExpiresAt?: number | null;
   createdAt?: number;
 }
 

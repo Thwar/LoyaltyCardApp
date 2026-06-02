@@ -487,6 +487,20 @@ select.input {
   font-size: 13px;
 }
 
+/* Admin (god mode) business rows */
+.biz-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.biz-row:last-child {
+  border-bottom: none;
+}
+
 /* ===== Landing page ===== */
 .landing-section {
   max-width: 1080px;

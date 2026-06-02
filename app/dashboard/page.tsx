@@ -6,7 +6,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authedFetch } from "@/lib/clientApi";
 import { CARD_COLOR_CHOICES, CARD_DEFAULTS } from "@/lib/theme";
-import { getPlan, type PlanInfo } from "@/lib/plans";
+import { getPlan, effectivePlan, type PlanInfo } from "@/lib/plans";
 import { CardPreview } from "@/components/CardPreview";
 import { QrCode } from "@/components/QrCode";
 import { PageLoader } from "@/components/PageLoader";
@@ -93,7 +93,7 @@ export default function DashboardPage() {
       ) : !data?.card ? (
         <CardForm onSaved={load} />
       ) : (
-        <CardManager card={data.card} customers={data.customers || []} count={data.count || 0} plan={data.business.plan} onChanged={load} />
+        <CardManager card={data.card} customers={data.customers || []} count={data.count || 0} plan={effectivePlan(data.business).id} onChanged={load} />
       )}
 
       <SiteFooter />

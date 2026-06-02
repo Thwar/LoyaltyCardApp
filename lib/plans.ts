@@ -22,3 +22,13 @@ export const PLANS: Record<PlanId, PlanInfo> = {
 export function getPlan(plan?: Business["plan"]): PlanInfo {
   return (plan && PLANS[plan]) || PLANS.gratis;
 }
+
+// The plan actually in effect right now: a paid plan past its expiry reverts to
+// free. Use this (not raw business.plan) wherever a paid feature is gated.
+export function effectivePlan(business: { plan?: Business["plan"]; planExpiresAt?: number | null }): PlanInfo {
+  const base = getPlan(business.plan);
+  if (base.paid && business.planExpiresAt && business.planExpiresAt < Date.now()) {
+    return PLANS.gratis;
+  }
+  return base;
+}

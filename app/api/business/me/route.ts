@@ -4,6 +4,7 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
 import { getBusinessByOwner, getLoyaltyCardsByBusiness } from "@/lib/serverData";
 import { walletConfigured } from "@/lib/googleWallet";
+import { effectivePlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -29,7 +30,7 @@ export async function GET(req: Request) {
     // opted in to marketing may have their email/phone surfaced. Strip them
     // server-side so hidden contact never reaches the dashboard. We keep
     // marketingConsent so the UI can explain *why* contact is hidden.
-    const paid = business.plan === "cafe" || business.plan === "negocio";
+    const paid = effectivePlan(business).paid;
     const customers: CustomerCard[] = snap.docs.map((d) => {
       const c: CustomerCard = { id: d.id, ...(d.data() as Omit<CustomerCard, "id">) };
       if (!(paid && c.marketingConsent === true)) {
