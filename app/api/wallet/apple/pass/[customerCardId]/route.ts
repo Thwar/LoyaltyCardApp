@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
-import { getLoyaltyCard } from "@/lib/serverData";
+import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
 import { appleConfigured, buildPkpass } from "@/lib/appleWallet";
 
 export const runtime = "nodejs";
@@ -23,7 +23,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ customerCardId
     const card = await getLoyaltyCard(customer.loyaltyCardId);
     if (!card) return NextResponse.json({ error: "Programa no encontrado." }, { status: 404 });
 
-    const buffer = await buildPkpass(customer, card);
+    const business = await getBusinessById(card.businessId);
+    const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
+    const buffer = await buildPkpass(customer, cardForPass, business?.description);
     const safeName = (card.businessName || "tarjeta").replace(/[^a-z0-9]/gi, "_");
     return new Response(new Uint8Array(buffer), {
       status: 200,

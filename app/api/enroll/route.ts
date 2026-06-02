@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard, type LoyaltyCard } from "@/lib/types";
-import { getLoyaltyCard } from "@/lib/serverData";
+import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
 import { generateUniqueCardCode } from "@/lib/cardCode";
 import { walletConfigured, issuePass } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
@@ -19,7 +19,9 @@ async function cardResponse(ref: DocumentReference, customer: CustomerCard, card
   let saveUrl: string | null = null;
   if (walletConfigured()) {
     try {
-      const issued = await issuePass(customer, card);
+      const business = await getBusinessById(card.businessId);
+      const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
+      const issued = await issuePass(customer, cardForPass, business?.description);
       saveUrl = issued.saveUrl;
       if (!customer.googleObjectId) await ref.update({ googleObjectId: issued.objectId });
     } catch (we) {

@@ -5,6 +5,7 @@ import crypto from "node:crypto";
 import { PKPass } from "passkit-generator";
 import type { CustomerCard, LoyaltyCard } from "./types";
 import { renderStampStrip } from "./stampStrip";
+import { squareLogo } from "./logo";
 
 // Apple Wallet pass generation. Phase A: issuance only (a static .pkpass the
 // customer adds to their iPhone). Live updates (PassKit web service + APNs) come
@@ -52,7 +53,7 @@ function hexToRgb(hex: string): string {
   return `rgb(${r},${g},${b})`;
 }
 
-let iconBuf: Buffer | null = null;
+let defaultIcon: Buffer | null = null;
 function img(name: string): Buffer {
   return fs.readFileSync(path.join(process.cwd(), "public", name));
 }
@@ -66,9 +67,7 @@ function formatVisit(ts?: number): string {
   }
 }
 
-export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Promise<Buffer> {
-  if (!iconBuf) iconBuf = img("icon.png");
-
+export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, description?: string): Promise<Buffer> {
   // Render the stamp grid as a strip image (big circles, up to 2 rows).
   const filled = Math.min(customer.currentStamps, card.totalSlots);
   const textColor = card.textColor || "#FFFFFF";
@@ -78,8 +77,12 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
     renderStampStrip(filled, card.totalSlots, textColor, 3),
   ]);
 
-  // Optional business logo (shown top-left instead of the business name).
+  // Logo (the card's own, already resolved to the business logo upstream if unset),
+  // shown top-left instead of the business name. The pass + notification icon is a
+  // square version of it on the card color; falls back to the default SoyCasero mark.
   const logoBuf = card.logoPng ? Buffer.from(card.logoPng, "base64") : null;
+  if (!defaultIcon) defaultIcon = img("icon.png");
+  const iconBuf = logoBuf ? await squareLogo(logoBuf, card.cardColor || "#E53935", 256) : defaultIcon;
 
   // Only wire up live updates when we have an HTTPS base URL + an auth secret.
   // (Apple requires an https webServiceURL; localhost passes stay static.)
@@ -145,6 +148,9 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
   // pass fires a one-time welcome notification — see the registration endpoint.
   if (card.welcomeMessage && customer.welcomeNotified) {
     pass.backFields.push({ key: "welcome", label: "Bienvenida", value: card.welcomeMessage, changeMessage: "%@" });
+  }
+  if (description) {
+    pass.backFields.push({ key: "about", label: "Sobre el negocio", value: description });
   }
   pass.backFields.push({ key: "status", label: "Estado", value: card.isActive === false ? "Inactivo" : "Activo" });
   if (card.isActive === false) {

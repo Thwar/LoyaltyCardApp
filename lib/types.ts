@@ -18,6 +18,8 @@ export interface Business {
   ownerId: string;
   ownerEmail?: string;
   logoUrl?: string;
+  logoPng?: string; // business brand logo (base64 PNG) — default for passes when a card has none
+  description?: string; // short business description, shown on the wallet pass
   // Subscription tier. Absent/"gratis" = free; "cafe"/"negocio" unlock paid
   // features (e.g. seeing customer contact info). Set in god mode (no billing yet).
   plan?: "gratis" | "cafe" | "negocio";

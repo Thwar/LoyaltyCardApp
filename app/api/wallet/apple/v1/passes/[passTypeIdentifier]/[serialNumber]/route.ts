@@ -1,6 +1,6 @@
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
-import { getLoyaltyCard } from "@/lib/serverData";
+import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
 import { buildPkpass, verifyApplePassAuth } from "@/lib/appleWallet";
 
 export const runtime = "nodejs";
@@ -22,7 +22,9 @@ export async function GET(req: Request, ctx: { params: Promise<Params> }) {
   const card = await getLoyaltyCard(customer.loyaltyCardId);
   if (!card) return new Response("Not Found", { status: 404 });
 
-  const buffer = await buildPkpass(customer, card);
+  const business = await getBusinessById(card.businessId);
+  const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
+  const buffer = await buildPkpass(customer, cardForPass, business?.description);
   return new Response(new Uint8Array(buffer), {
     status: 200,
     headers: {

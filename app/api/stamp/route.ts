@@ -89,7 +89,8 @@ export async function POST(req: Request) {
           currentStamps: newStamps,
           rewardsRedeemed: redeemed ? Number(data.rewardsRedeemed || 0) + 1 : Number(data.rewardsRedeemed || 0),
         };
-        await syncLoyaltyObject(updated, loyalty, eventMessage);
+        const cardForPass = { ...loyalty, logoPng: loyalty.logoPng || business.logoPng };
+        await syncLoyaltyObject(updated, cardForPass, eventMessage, business.description);
       } catch (we) {
         console.error("Wallet update error:", we);
       }
