@@ -25,7 +25,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ customerCardId
 
     const business = await getBusinessById(card.businessId);
     const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
-    const buffer = await buildPkpass(customer, cardForPass, business?.description);
+    const buffer = await buildPkpass(customer, cardForPass, business?.description, business?.broadcastMessage);
     const safeName = (card.businessName || "tarjeta").replace(/[^a-z0-9]/gi, "_");
     return new Response(new Uint8Array(buffer), {
       status: 200,

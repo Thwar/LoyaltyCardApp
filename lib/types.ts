@@ -26,6 +26,8 @@ export interface Business {
   // Paid-plan expiry (ms epoch). Once past, the plan reverts to free (see
   // effectivePlan). null/absent = no expiry. Set in god mode (e.g. cash for 3 months).
   planExpiresAt?: number | null;
+  broadcastMessage?: string; // latest broadcast, rendered on the pass to drive the notification
+  broadcastHistory?: { message: string; at: number }[]; // recent broadcasts, for rate limiting + history
   createdAt?: number;
 }
 

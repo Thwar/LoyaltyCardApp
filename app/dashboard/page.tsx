@@ -418,7 +418,7 @@ function CardManager({
   onChanged: () => void;
 }) {
   const [selected, setSelected] = useState<Client | null>(null);
-  const [tab, setTab] = useState<"resumen" | "tarjetas">("resumen");
+  const [tab, setTab] = useState<"resumen" | "tarjetas" | "comunicacion">("resumen");
   // No cards yet → open straight into the create form.
   const [editing, setEditing] = useState<LoyaltyCard | "new" | null>(cards.length === 0 ? "new" : null);
   const planInfo = effectivePlan(business);
@@ -459,6 +459,9 @@ function CardManager({
         <button className={`tab${tab === "tarjetas" ? " active" : ""}`} onClick={() => setTab("tarjetas")}>
           Tarjetas
         </button>
+        <button className={`tab${tab === "comunicacion" ? " active" : ""}`} onClick={() => setTab("comunicacion")}>
+          Comunicación
+        </button>
       </div>
 
       {tab === "resumen" ? (
@@ -470,7 +473,7 @@ function CardManager({
           onChanged={onChanged}
           onSelect={setSelected}
         />
-      ) : (
+      ) : tab === "tarjetas" ? (
         <TarjetasTab
           cards={cards}
           planInfo={planInfo}
@@ -478,6 +481,8 @@ function CardManager({
           onNew={() => setEditing("new")}
           onChanged={onChanged}
         />
+      ) : (
+        <ComunicacionTab business={business} planInfo={planInfo} onChanged={onChanged} />
       )}
 
       {selected && (
@@ -773,6 +778,164 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ---------- Comunicación tab: broadcast a message to all customers ---------- */
+// "2h y 13m 20s" / "13m 20s" / "20s"
+function fmtCountdown(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h) return `${h}h y ${m}m ${s}s`;
+  if (m) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function ComunicacionTab({ business, planInfo, onChanged }: { business: Business; planInfo: PlanInfo; onChanged: () => void }) {
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  // Live clock so the countdown + progress bar tick every second.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!planInfo.paid || planInfo.broadcastsPerDay <= 0) {
+    return (
+      <div className="card mt">
+        <h3 style={{ fontSize: 18, marginTop: 0 }}>Mensajes a tus clientes</h3>
+        <p className="muted" style={{ marginTop: 0 }}>Envía promociones, recordatorios o avisos directo al wallet de tus clientes.</p>
+        <div
+          style={{
+            background: "var(--bg-soft)",
+            border: "2px dashed var(--border)",
+            borderRadius: 12,
+            padding: "16px 18px",
+            color: "var(--text-secondary)",
+            fontWeight: 700,
+            textAlign: "center",
+          }}
+        >
+          🔒 Mejora al plan Café o Negocio para enviar mensajes a tus clientes.
+        </div>
+      </div>
+    );
+  }
+
+  const day = 24 * 60 * 60 * 1000;
+  const history = business.broadcastHistory || [];
+  const recent = history.filter((h) => now - h.at < day);
+  const perDay = planInfo.broadcastsPerDay;
+  const usedToday = recent.length;
+  const dayLimitHit = usedToday >= perDay;
+  const gapMs = planInfo.broadcastGapHours * 60 * 60 * 1000;
+  const lastAt = recent.length ? Math.max(...recent.map((h) => h.at)) : 0;
+  const gapHit = gapMs > 0 && lastAt > 0 && now - lastAt < gapMs;
+  const blocked = dayLimitHit || gapHit;
+
+  // When can they send again, and over what window (for the progress bar fill).
+  const dayUnlockAt = dayLimitHit ? Math.min(...recent.map((h) => h.at)) + day : 0;
+  const gapUnlockAt = gapHit ? lastAt + gapMs : 0;
+  const nextAt = Math.max(dayUnlockAt, gapUnlockAt);
+  const windowMs = nextAt === dayUnlockAt && dayLimitHit ? day : gapMs;
+  const remainingMs = nextAt ? Math.max(0, nextAt - now) : 0;
+  // 0% right after a send → 100% (ready) when the cooldown elapses.
+  const pct = blocked && windowMs > 0 ? Math.min(100, Math.round(((windowMs - remainingMs) / windowMs) * 100)) : 100;
+
+  async function send() {
+    setErr("");
+    setMsg("");
+    setBusy(true);
+    const res = await authedFetch("/api/business/broadcast", { method: "POST", body: JSON.stringify({ message: message.trim() }) });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) return setErr(json.error || "No se pudo enviar.");
+    setMsg(`Enviado a ${json.recipients} cliente(s).`);
+    setMessage("");
+    onChanged();
+  }
+
+  return (
+    <div className="card mt">
+      <h3 style={{ fontSize: 18, marginTop: 0 }}>Mensajes a tus clientes</h3>
+      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+        Envía una promoción, recordatorio o aviso al wallet de todos tus clientes. Tu plan {planInfo.label} permite{" "}
+        {perDay} mensaje(s) al día
+        {planInfo.broadcastGapHours ? `, con ${planInfo.broadcastGapHours}h entre cada uno` : ""}.
+      </p>
+
+      {/* Send status: progress bar + "usados/permitidos" + countdown */}
+      <div style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: blocked ? "var(--text-secondary)" : "#16a34a" }}>
+            {blocked ? "Próximo envío disponible" : "✓ Listo para enviar"}
+          </span>
+          <strong style={{ fontSize: 15 }}>
+            {usedToday}/{perDay}
+            <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> hoy</span>
+          </strong>
+        </div>
+        <div style={{ height: 8, borderRadius: 999, background: "var(--border)", overflow: "hidden" }}>
+          <div
+            style={{
+              height: "100%",
+              width: `${pct}%`,
+              background: blocked ? "#E53935" : "#16a34a",
+              transition: "width 1s linear",
+            }}
+          />
+        </div>
+        {blocked && (
+          <p style={{ fontSize: 13, marginTop: 8, marginBottom: 0 }}>
+            Podrás enviar otro mensaje en <strong>{fmtCountdown(remainingMs)}</strong>
+          </p>
+        )}
+      </div>
+
+      {err && <div className="error-box">{err}</div>}
+      {msg && <div className="success-box">{msg}</div>}
+
+      <div className="field">
+        <label>Mensaje</label>
+        <textarea
+          className="input"
+          rows={3}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Ej: ¡Hoy 2x1 en cafés! ☕ Ven y suma sellos."
+          maxLength={160}
+        />
+        <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{message.length}/160</p>
+      </div>
+
+      <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim()}>
+        {busy ? "Enviando…" : "Enviar a mis clientes"}
+      </button>
+
+      {history.length > 0 && (
+        <div style={{ marginTop: 24 }}>
+          <h4 style={{ fontSize: 14, margin: "0 0 8px" }}>Historial de mensajes</h4>
+          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            {history
+              .slice()
+              .reverse()
+              .map((h) => (
+                <li key={h.at} style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px" }}>
+                  <div style={{ fontSize: 14 }}>{h.message}</div>
+                  <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                    {new Date(h.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
+                  </div>
+                </li>
+              ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

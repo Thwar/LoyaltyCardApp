@@ -24,7 +24,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> }) {
 
   const business = await getBusinessById(card.businessId);
   const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
-  const buffer = await buildPkpass(customer, cardForPass, business?.description);
+  const buffer = await buildPkpass(customer, cardForPass, business?.description, business?.broadcastMessage);
   return new Response(new Uint8Array(buffer), {
     status: 200,
     headers: {

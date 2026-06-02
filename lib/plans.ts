@@ -11,12 +11,14 @@ export interface PlanInfo {
   maxClients: number | null; // enrolled customer cards allowed; null = unlimited (paid plans)
   maxCards: number; // loyalty programs (stamp cards) allowed
   paid: boolean;
+  broadcastsPerDay: number; // marketing notifications allowed per day (0 = not allowed)
+  broadcastGapHours: number; // minimum hours between broadcasts
 }
 
 export const PLANS: Record<PlanId, PlanInfo> = {
-  gratis: { id: "gratis", label: "Gratis", maxClients: 50, maxCards: 1, paid: false },
-  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 1, paid: true },
-  negocio: { id: "negocio", label: "Negocio", maxClients: null, maxCards: 10, paid: true },
+  gratis: { id: "gratis", label: "Gratis", maxClients: 50, maxCards: 1, paid: false, broadcastsPerDay: 0, broadcastGapHours: 0 },
+  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 1, paid: true, broadcastsPerDay: 1, broadcastGapHours: 0 },
+  negocio: { id: "negocio", label: "Negocio", maxClients: null, maxCards: 3, paid: true, broadcastsPerDay: 3, broadcastGapHours: 4 },
 };
 
 export function getPlan(plan?: Business["plan"]): PlanInfo {

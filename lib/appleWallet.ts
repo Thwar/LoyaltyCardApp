@@ -67,7 +67,7 @@ function formatVisit(ts?: number): string {
   }
 }
 
-export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, description?: string): Promise<Buffer> {
+export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, description?: string, broadcastMessage?: string): Promise<Buffer> {
   // Render the stamp grid as a strip image (big circles, up to 2 rows).
   const filled = Math.min(customer.currentStamps, card.totalSlots);
   const textColor = card.textColor || "#FFFFFF";
@@ -151,6 +151,11 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
   }
   if (description) {
     pass.backFields.push({ key: "about", label: "Sobre el negocio", value: description });
+  }
+  // Latest broadcast — its changeMessage turns a new message into a lock-screen
+  // notification when the pass refreshes (see /api/business/broadcast).
+  if (broadcastMessage) {
+    pass.backFields.push({ key: "news", label: "Novedades", value: broadcastMessage, changeMessage: "%@" });
   }
   pass.backFields.push({ key: "status", label: "Estado", value: card.isActive === false ? "Inactivo" : "Activo" });
   if (card.isActive === false) {
