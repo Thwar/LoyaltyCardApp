@@ -510,6 +510,26 @@ function ResumenTab({
 }) {
   const [showAll, setShowAll] = useState(false);
   const [filterCardId, setFilterCardId] = useState<string>("all");
+  const [exporting, setExporting] = useState(false);
+
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const res = await authedFetch("/api/business/customers/export");
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "clientes.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const cardsById = new Map(cards.map((c) => [c.id, c]));
   const slotsOf = (m: CustomerCard) => cardsById.get(m.loyaltyCardId)?.totalSlots ?? 0;
@@ -523,6 +543,19 @@ function ResumenTab({
   const completed = filtered.filter((c) => slotsOf(c) > 0 && c.currentStamps >= slotsOf(c)).length;
   const rewards = filtered.reduce((s, c) => s + (c.rewardsRedeemed || 0), 0);
   const stampsGiven = filtered.reduce((s, c) => s + (c.rewardsRedeemed || 0) * slotsOf(c) + c.currentStamps, 0);
+
+  // Advanced analytics (paid). Derived from the in-memory client list — no backend.
+  const since30 = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const nuevos = clients.filter((c) => (c.createdAt || 0) >= since30).length;
+  const activos = clients.filter((c) => (c.lastStampDate || 0) >= since30).length;
+  const inactivos = clients.length - activos;
+  // A client "returned" if their lifetime stamps exceed the single welcome stamp.
+  const returned = clients.filter(
+    (c) => c.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0) * slotsOf(m) + m.currentStamps, 0) > 1
+  ).length;
+  const retencion = clients.length ? Math.round((returned / clients.length) * 100) : 0;
+  const aboutToWin = filtered.filter((m) => slotsOf(m) > 0 && m.currentStamps === slotsOf(m) - 1).length;
+  const avgStamps = clients.length ? Math.round((stampsGiven / clients.length) * 10) / 10 : 0;
 
   // The client limit is business-wide (uses the distinct count), only on the free tier.
   const limit = planInfo.maxClients; // null = unlimited (paid plans)
@@ -562,6 +595,44 @@ function ResumenTab({
         <StatCard label="Sellos otorgados" value={stampsGiven} />
       </div>
 
+      <div className="card mt" style={{ position: "relative", overflow: "hidden" }}>
+        <h3 style={{ fontSize: 18, margin: "0 0 12px" }}>Analíticas avanzadas</h3>
+        <div
+          className="stat-grid"
+          style={planInfo.paid ? undefined : { filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}
+          aria-hidden={!planInfo.paid}
+        >
+          <StatCard label="Nuevos (30 días)" value={nuevos} />
+          <StatCard label="Activos (30 días)" value={activos} />
+          <StatCard label="Inactivos" value={inactivos} />
+          <StatCard label="Tasa de retorno" value={`${retencion}%`} />
+          <StatCard label="A 1 sello del premio" value={aboutToWin} />
+          <StatCard label="Sellos por cliente" value={avgStamps} />
+        </div>
+        {!planInfo.paid && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              background: "rgba(255,255,255,0.55)",
+              textAlign: "center",
+              padding: 16,
+            }}
+          >
+            <Lock size={22} aria-hidden />
+            <strong>Analíticas avanzadas</strong>
+            <span className="muted" style={{ fontSize: 13, maxWidth: 300 }}>
+              Mejora al plan Café o Negocio para ver retención, clientes en riesgo y más.
+            </span>
+          </div>
+        )}
+      </div>
+
       {limit != null && filterCardId === "all" && (
         <div className="card mt">
           <div className="row spread" style={{ marginBottom: 8 }}>
@@ -578,9 +649,27 @@ function ResumenTab({
       )}
 
       <div className="card mt">
-        <div className="row spread">
+        <div className="row spread" style={{ alignItems: "center" }}>
           <h3 style={{ fontSize: 18, margin: 0 }}>Clientes recientes</h3>
-          <span className="muted">{clients.length} en total</span>
+          <div className="row" style={{ width: "auto", gap: 10, alignItems: "center" }}>
+            <span className="muted">{clients.length} en total</span>
+            {clients.length > 0 &&
+              (planInfo.paid ? (
+                <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={exportCsv} disabled={exporting}>
+                  {exporting ? "Exportando…" : "Exportar CSV"}
+                </button>
+              ) : (
+                <span title="Mejora a un plan de pago para exportar tus clientes" style={{ display: "inline-flex" }}>
+                  <button
+                    className="btn btn-sm btn-outline"
+                    style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6, opacity: 0.6, cursor: "not-allowed" }}
+                    disabled
+                  >
+                    <Lock size={14} aria-hidden /> Exportar CSV
+                  </button>
+                </span>
+              ))}
+          </div>
         </div>
         {clients.length === 0 ? (
           <p className="muted mt">Aún no tienes clientes inscritos.</p>
@@ -623,7 +712,7 @@ function ResumenTab({
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="stat-card">
       <div className="stat-value">{value}</div>
@@ -830,7 +919,8 @@ function ComunicacionTab({ business, planInfo, onChanged }: { business: Business
 
   const day = 24 * 60 * 60 * 1000;
   const history = business.broadcastHistory || [];
-  const recent = history.filter((h) => now - h.at < day);
+  const resetAt = business.broadcastRateResetAt || 0;
+  const recent = history.filter((h) => now - h.at < day && h.at > resetAt);
   const perDay = planInfo.broadcastsPerDay;
   const usedToday = recent.length;
   const dayLimitHit = usedToday >= perDay;
@@ -1000,7 +1090,14 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
 function fmtDate(ts?: number): string {
   if (!ts) return "—";
   try {
-    return new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+    return new Date(ts).toLocaleString("es-ES", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/La_Paz",
+    });
   } catch {
     return "—";
   }

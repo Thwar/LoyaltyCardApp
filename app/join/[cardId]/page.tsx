@@ -113,7 +113,7 @@ export default function JoinPage() {
         <TiltCard
           businessName={card.businessName}
           totalSlots={card.totalSlots}
-          currentStamps={0}
+          currentStamps={1}
           rewardDescription={card.rewardDescription}
           cardColor={card.cardColor}
           textColor={card.textColor}
@@ -174,7 +174,7 @@ export default function JoinPage() {
       <TiltCard
         businessName={card.businessName}
         totalSlots={card.totalSlots}
-        currentStamps={0}
+        currentStamps={1}
         rewardDescription={card.rewardDescription}
         cardColor={card.cardColor}
         textColor={card.textColor}

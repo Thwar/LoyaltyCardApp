@@ -27,7 +27,8 @@ export interface Business {
   // effectivePlan). null/absent = no expiry. Set in god mode (e.g. cash for 3 months).
   planExpiresAt?: number | null;
   broadcastMessage?: string; // latest broadcast, rendered on the pass to drive the notification
-  broadcastHistory?: { message: string; at: number }[]; // recent broadcasts, for rate limiting + history
+  broadcastHistory?: { message: string; at: number }[]; // sent broadcasts (log + rate-limit source)
+  broadcastRateResetAt?: number; // god-mode timer reset: ignore broadcasts at/before this for rate limiting
   createdAt?: number;
 }
 

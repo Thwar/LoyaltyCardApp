@@ -32,9 +32,9 @@ const PLANS = [
       { t: "1 tarjeta de sellos", ok: true },
       { t: "Hasta 50 clientes activos", ok: true },
       { t: "Apple & Google Wallet", ok: true },
-      { t: "Sellos y recompensas", ok: true },
-      { t: "Logo personalizado", ok: false },
-      { t: "Colores personalizados", ok: false },
+      { t: "Logo y colores personalizados", ok: true },
+      { t: "Notificaciones de sellos y bienvenida", ok: true },
+      { t: "Mensajes promocionales", ok: false },
     ],
   },
   {
@@ -48,11 +48,11 @@ const PLANS = [
     badge: "Más popular",
     cta: "Probar gratis",
     features: [
-      { t: "1 tarjeta de sellos", ok: true },
+      { t: "Todo lo del plan Gratis", ok: true },
       { t: "Clientes ilimitados", ok: true },
-      { t: "Logo y colores personalizados", ok: true },
-      { t: "Notificaciones de sellos", ok: true },
-      { t: "Analíticas básicas", ok: true },
+      { t: "Mensajes promocionales (1/día)", ok: true },
+      { t: "Ver y exportar datos de clientes", ok: true },
+      { t: "Analíticas avanzadas", ok: true },
       { t: "Soporte por WhatsApp", ok: true },
     ],
   },
@@ -68,9 +68,9 @@ const PLANS = [
     features: [
       { t: "Todo lo del plan Café", ok: true },
       { t: "3 tarjetas / programas", ok: true },
-      { t: "Hasta 3 sucursales", ok: true },
+      { t: "Mensajes promocionales (3/día)", ok: true },
+      { t: 'Sin marca "SoyCasero"', ok: true },
       { t: "Programa de referidos", ok: true },
-      { t: "Segmentación de clientes", ok: true },
       { t: "Hasta 10 cajeros", ok: true },
     ],
   },
@@ -281,7 +281,7 @@ export default function Home() {
             ))}
           </div>
           <p className="center" style={{ marginTop: 18, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-            El plan Gratis incluye 1 tarjeta y hasta 50 clientes activos, con colores y logo por defecto.
+            El plan Gratis incluye 1 tarjeta y hasta 50 clientes activos, con logo y colores personalizados y notificaciones de sellos.
           </p>
         </div>
       </section>

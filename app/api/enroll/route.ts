@@ -7,6 +7,7 @@ import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
 import { generateUniqueCardCode } from "@/lib/cardCode";
 import { walletConfigured, issuePass } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
+import { effectivePlan } from "@/lib/plans";
 import { allowRequest, clientIp } from "@/lib/rateLimit";
 
 export const runtime = "nodejs";
@@ -21,7 +22,7 @@ async function cardResponse(ref: DocumentReference, customer: CustomerCard, card
     try {
       const business = await getBusinessById(card.businessId);
       const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
-      const issued = await issuePass(customer, cardForPass, business?.description);
+      const issued = await issuePass(customer, cardForPass, business?.description, business ? effectivePlan(business).removeBranding : false);
       saveUrl = issued.saveUrl;
       if (!customer.googleObjectId) await ref.update({ googleObjectId: issued.objectId });
     } catch (we) {

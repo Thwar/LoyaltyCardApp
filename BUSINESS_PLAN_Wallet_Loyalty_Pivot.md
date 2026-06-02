@@ -187,6 +187,21 @@ The pivot is **mostly reuse**. Your codebase already targets web (react-native-w
 
 **Margin protection:** at Bs 99 (~$14) with near-zero marginal cost on Google Wallet, you keep nearly all of it. If you *buy* PassKit for the iOS minority, watch per-pass fees on long-lived loyalty cards — the one line item that could erode the Café tier. Bring Apple in-house once you scale to protect this.
 
+### Future tiers & feature dimensions (roadmap — not yet built)
+
+Three new dimensions are planned to differentiate the upper tiers beyond raw card/client counts: **locations** (sucursales), **VIP / membership cards** (a premium pass type, distinct from the stamp-card mechanic), and **notifications per location** (a per-branch broadcast allowance, scoping today's per-business broadcast limit down to each branch).
+
+| Tier | Stamp cards | Locations | VIP / membership cards | Notifications per location |
+|---|---|---|---|---|
+| **Negocio** (current top paid) | 3 | 3 | 1 | 3 |
+| **Franquicia** (future) | 10 | 10 | 3 | up to 5 |
+
+- **Franquicia** is the planned franchise / multi-location tier above Negocio (the productized evolution of the "Cadena" concept in the table above — reconcile the two names before launch). Target it at chains and franchises that need per-branch programs, branch-scoped messaging, and premium membership cards.
+- **VIP / membership cards (membresías)** are a new pass *type*, distinct from the stamp-card mechanic. A membership is a digital card that grants access to **exclusive benefits for a defined period or under set conditions** — the vehicle for **recurring / subscription revenue and VIP-club loyalty**. Typical use cases: gyms (monthly/annual access), salons/estética (treatment plans), cafés/restaurants (VIP club, member freebies/discounts), recurring services like car washes (monthly plan with N uses). Attributes to model: **expiry date, limited vs unlimited access, visit/usage control, member levels/tiers, automatic notifications, full customer registry**. Contrast with the other card types — stamps = "complete visits → earn a prize"; cashback = accrue balance/points; gift card = prepaid balance; discount = fixed/variable benefit; **membership = access to exclusive benefits/services**. Building this means a second pass template alongside the stamp card (different fields: estado de socio, vence, usos), not just a plan flag.
+- **Notifications per location** moves the broadcast rate limit from per-business to per-branch (Negocio: 3/location; Franquicia: up to 5/location).
+
+*None of this is implemented yet — `lib/plans.ts` currently ships Gratis / Café / Negocio with no location, VIP-card, or per-location notification concept. This subsection records the intended direction.*
+
 ### Bolivia payment-collection reality (the operational crux)
 
 - **Stripe is out** for a Bolivia-registered business (confirmed: LatAm = Brazil + Mexico only). Mercado Pago is **doubtful** for a Bolivia-based merchant (its merchant eligibility list excludes Bolivia — treat as unavailable for collection).

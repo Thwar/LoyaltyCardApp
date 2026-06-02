@@ -36,7 +36,8 @@ export async function POST(req: Request) {
     // Rate limit: rolling 24h count + minimum gap between sends.
     const now = Date.now();
     const history = business.broadcastHistory || [];
-    const recent = history.filter((h) => now - h.at < DAY);
+    const resetAt = business.broadcastRateResetAt || 0;
+    const recent = history.filter((h) => now - h.at < DAY && h.at > resetAt);
     if (recent.length >= plan.broadcastsPerDay) {
       return NextResponse.json(
         { error: `Alcanzaste el límite de tu plan (${plan.broadcastsPerDay}/día). Inténtalo más tarde.`, nextAt: Math.min(...recent.map((h) => h.at)) + DAY },
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
           targets.slice(i, i + CHUNK).map((c) => {
             const card = cardMap.get(c.loyaltyCardId) || cards[0];
             if (!card) return Promise.resolve();
-            return syncLoyaltyObject(c, card, message, business.description).catch((e) =>
+            return syncLoyaltyObject(c, card, message, business.description, plan.removeBranding).catch((e) =>
               console.error("[broadcast] google:", c.id, e)
             );
           })

@@ -50,9 +50,17 @@ export function balanceText(currentStamps: number, slots: number): string {
 function formatDate(ts?: number): string {
   if (!ts) return "—";
   try {
-    return new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+    // Pinned to Bolivia time so the logged hour is correct (built on a UTC server).
+    return new Date(ts).toLocaleString("es-ES", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/La_Paz",
+    });
   } catch {
-    return new Date(ts).toISOString().slice(0, 10);
+    return new Date(ts).toISOString().slice(0, 16).replace("T", " ");
   }
 }
 
@@ -61,7 +69,7 @@ function formatDate(ts?: number): string {
 // name is already the program name at the top of the Google card. "Sellos
 // acumulados" is the lifetime total across completed cards (each redemption
 // clears a full card of totalSlots). Kept at ≤10 modules in every state.
-function loyaltyTextModules(card: LoyaltyCard, customer: CustomerCard, description?: string) {
+function loyaltyTextModules(card: LoyaltyCard, customer: CustomerCard, description?: string, hideBranding?: boolean) {
   const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   return [
     { id: "reward", header: "Recompensa", body: card.rewardDescription },
@@ -76,8 +84,9 @@ function loyaltyTextModules(card: LoyaltyCard, customer: CustomerCard, descripti
     { id: "memberSince", header: "Casero desde", body: formatDate(customer.createdAt) },
     { id: "passId", header: "Identificador", body: customer.id },
     { id: "cardId", header: "ID de tarjeta", body: card.id },
-    // Drop the SoyCasero credit when a business description is present (keeps ≤10 modules).
-    ...(description ? [] : [{ id: "poweredBy", header: "Acerca de", body: "Desarrollado por SoyCasero.com" }]),
+    // Drop the SoyCasero credit when a description is present (keeps ≤10 modules) or
+    // when the plan is white-labeled (Negocio).
+    ...(description || hideBranding ? [] : [{ id: "poweredBy", header: "Acerca de", body: "Desarrollado por SoyCasero.com" }]),
   ];
 }
 
@@ -131,7 +140,7 @@ async function ensureLoyaltyClass(card: LoyaltyCard): Promise<string> {
 }
 
 // Creates the per-customer pass object and returns a "Save to Google Wallet" URL.
-export async function issuePass(customer: CustomerCard, card: LoyaltyCard, description?: string): Promise<{ objectId: string; saveUrl: string }> {
+export async function issuePass(customer: CustomerCard, card: LoyaltyCard, description?: string, hideBranding?: boolean): Promise<{ objectId: string; saveUrl: string }> {
   const classId = await ensureLoyaltyClass(card);
   const id = objectIdFor(customer.id);
 
@@ -143,7 +152,7 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard, descr
     accountName: customer.customerName || "Cliente",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
     barcode: { type: "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
-    textModulesData: loyaltyTextModules(card, customer, description),
+    textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
     // Welcome message — Google surfaces this as a notification when the pass is saved.
     messages: [
       {
@@ -184,12 +193,12 @@ export async function syncLoyaltyClass(card: LoyaltyCard): Promise<void> {
 
 // Push a customer's current state onto their Google pass: balance, reward text,
 // and ACTIVE/INACTIVE (INACTIVE greys it out when the program is deactivated).
-export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCard, message?: string, description?: string): Promise<void> {
+export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCard, message?: string, description?: string, hideBranding?: boolean): Promise<void> {
   const id = objectIdFor(customer.id);
   const res = await api("PATCH", `/loyaltyObject/${id}`, {
     state: card.isActive === false ? "INACTIVE" : "ACTIVE",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
-    textModulesData: loyaltyTextModules(card, customer, description),
+    textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
     // A new message id triggers a Google Wallet notification; replacing the array
     // (rather than appending) keeps only the latest event on the pass.
     ...(message

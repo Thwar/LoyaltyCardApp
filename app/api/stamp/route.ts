@@ -7,6 +7,7 @@ import { getBusinessByOwner, getLoyaltyCard } from "@/lib/serverData";
 import { walletConfigured, syncLoyaltyObject } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { sendApplePassPush } from "@/lib/apns";
+import { effectivePlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,7 +91,7 @@ export async function POST(req: Request) {
           rewardsRedeemed: redeemed ? Number(data.rewardsRedeemed || 0) + 1 : Number(data.rewardsRedeemed || 0),
         };
         const cardForPass = { ...loyalty, logoPng: loyalty.logoPng || business.logoPng };
-        await syncLoyaltyObject(updated, cardForPass, eventMessage, business.description);
+        await syncLoyaltyObject(updated, cardForPass, eventMessage, business.description, effectivePlan(business).removeBranding);
       } catch (we) {
         console.error("Wallet update error:", we);
       }

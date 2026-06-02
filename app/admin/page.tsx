@@ -142,6 +142,15 @@ export default function AdminPage() {
       </div>
 
       {tab === "negocios" ? (
+        detailFor ? (
+          <DetailPanel
+            biz={detailFor}
+            onBack={() => setDetailFor(null)}
+            onImpersonate={() => impersonate(detailFor)}
+            onPlan={() => setPlanFor(detailFor)}
+            onDelete={() => setDeleteFor(detailFor)}
+          />
+        ) : (
         <>
           {t && (
             <div className="stat-grid mt">
@@ -173,26 +182,8 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div className="row" style={{ width: "auto", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                    <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setDetailFor(b)}>
+                    <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={() => setDetailFor(b)}>
                       Ver
-                    </button>
-                    <button
-                      className="btn btn-sm btn-outline"
-                      style={{ width: "auto" }}
-                      onClick={() => impersonate(b)}
-                      title="Entrar al panel de este negocio (impersonar)"
-                    >
-                      Entrar
-                    </button>
-                    <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={() => setPlanFor(b)}>
-                      Plan
-                    </button>
-                    <button
-                      className="btn btn-sm"
-                      style={{ width: "auto", background: "#fdecea", color: "#c62828" }}
-                      onClick={() => setDeleteFor(b)}
-                    >
-                      Eliminar
                     </button>
                   </div>
                 </div>
@@ -200,15 +191,15 @@ export default function AdminPage() {
             )}
           </div>
         </>
+        )
       ) : (
         <DataView />
       )}
 
-      {planFor && <PlanModal biz={planFor} onClose={() => setPlanFor(null)} onSaved={() => { setPlanFor(null); load(); }} />}
+      {planFor && <PlanModal biz={planFor} onClose={() => setPlanFor(null)} onSaved={() => { setPlanFor(null); setDetailFor(null); load(); }} />}
       {deleteFor && (
-        <DeleteModal biz={deleteFor} onClose={() => setDeleteFor(null)} onDeleted={() => { setDeleteFor(null); load(); }} />
+        <DeleteModal biz={deleteFor} onClose={() => setDeleteFor(null)} onDeleted={() => { setDeleteFor(null); setDetailFor(null); load(); }} />
       )}
-      {detailFor && <DetailModal biz={detailFor} onClose={() => setDetailFor(null)} />}
     </div>
   );
 }
@@ -370,84 +361,204 @@ interface Detail {
   customers: { id: string; customerName?: string; customerEmail?: string; customerPhone?: string; currentStamps?: number; cardCode?: string; rewardsRedeemed?: number; createdAt?: number }[];
 }
 
-function DetailModal({ biz, onClose }: { biz: BizRow; onClose: () => void }) {
+function DetailPanel({
+  biz,
+  onBack,
+  onImpersonate,
+  onPlan,
+  onDelete,
+}: {
+  biz: BizRow;
+  onBack: () => void;
+  onImpersonate: () => void;
+  onPlan: () => void;
+  onDelete: () => void;
+}) {
   const [detail, setDetail] = useState<Detail | null>(null);
   const [err, setErr] = useState("");
+  const [bizTab, setBizTab] = useState<"general" | "mensajeria">("general");
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetMsg, setResetMsg] = useState("");
 
-  useEffect(() => {
+  const loadDetail = useCallback(() => {
     authedFetch(`/api/admin/business/${biz.id}`)
       .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
       .then(({ ok, j }) => (ok ? setDetail(j) : setErr(j.error || "Error")))
       .catch(() => setErr("No se pudo cargar."));
   }, [biz.id]);
 
+  useEffect(() => {
+    loadDetail();
+  }, [loadDetail]);
+
+  // A paid plan that hasn't expired can send marketing broadcasts (and thus needs the resets).
+  const paidActive = biz.plan !== "gratis" && !biz.expired;
+  const broadcasts = ((detail?.business.broadcastHistory as { message: string; at: number }[] | undefined) || []);
+
+  async function resetBroadcast(kind: "timer" | "history") {
+    if (kind === "history" && !confirm("¿Borrar el historial de mensajes de este negocio?")) return;
+    setResetBusy(true);
+    setResetMsg("");
+    const res = await authedFetch(`/api/admin/business/${biz.id}`, {
+      method: "PATCH",
+      body: JSON.stringify(kind === "timer" ? { resetBroadcastTimer: true } : { resetBroadcastHistory: true }),
+    });
+    setResetBusy(false);
+    if (!res.ok) return setResetMsg("No se pudo completar.");
+    setResetMsg(kind === "timer" ? "Temporizador reiniciado (historial intacto)." : "Historial borrado.");
+    loadDetail();
+  }
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
-        <div className="row spread" style={{ alignItems: "flex-start", marginBottom: 10 }}>
-          <h3 style={{ margin: 0, fontSize: 18 }}>{biz.name}</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
-            ✕
+    <div className="card mt">
+      <div className="row spread" style={{ alignItems: "center", marginBottom: 12 }}>
+        <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={onBack}>
+          ← Volver
+        </button>
+        <div className="row" style={{ width: "auto", gap: 6, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={onImpersonate} title="Entrar al panel de este negocio (impersonar)">
+            Entrar
+          </button>
+          <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={onPlan}>
+            Plan
+          </button>
+          <button className="btn btn-sm" style={{ width: "auto", background: "#fdecea", color: "#c62828" }} onClick={onDelete}>
+            Eliminar
           </button>
         </div>
-        {err && <div className="error-box">{err}</div>}
-        {!detail ? (
-          <p className="muted">Cargando…</p>
-        ) : (
-          <>
-            <div className="detail-list">
-              <div className="detail-row">
-                <span className="muted">Dueño</span>
-                <span style={{ fontWeight: 600 }}>{detail.business.ownerEmail || "—"}</span>
-              </div>
-              <div className="detail-row">
-                <span className="muted">Clientes</span>
-                <span style={{ fontWeight: 600 }}>{biz.stats.clients}</span>
-              </div>
-              <div className="detail-row">
-                <span className="muted">Sellos otorgados</span>
-                <span style={{ fontWeight: 600 }}>{biz.stats.stampsGiven}</span>
-              </div>
-              <div className="detail-row">
-                <span className="muted">Recompensas canjeadas</span>
-                <span style={{ fontWeight: 600 }}>{biz.stats.redemptions}</span>
-              </div>
-            </div>
-
-            <h4 style={{ margin: "16px 0 6px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
-              Tarjetas ({detail.cards.length})
-            </h4>
-            {detail.cards.map((c) => (
-              <div key={c.id} className="cust-row">
-                <div>
-                  <div style={{ fontWeight: 600 }}>{c.rewardDescription || "—"}</div>
-                  <div className="muted">
-                    {c.totalSlots} sellos · {c.isActive === false ? "desactivada" : "activa"}
-                  </div>
-                </div>
-                <span aria-hidden style={{ width: 18, height: 18, borderRadius: 4, background: c.cardColor || "#ccc" }} />
-              </div>
-            ))}
-
-            <h4 style={{ margin: "16px 0 6px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
-              Clientes ({detail.customers.length})
-            </h4>
-            {detail.customers.slice(0, 50).map((c) => (
-              <div key={c.id} className="cust-row">
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 600 }}>{c.customerName || "Cliente"}</div>
-                  <div className="muted" style={{ fontSize: 13 }}>
-                    {c.customerEmail || "—"}
-                    {c.customerPhone ? ` · ${c.customerPhone}` : ""} · {c.currentStamps ?? 0} sellos
-                  </div>
-                </div>
-                <span className="code-pill">{c.cardCode}</span>
-              </div>
-            ))}
-            {detail.customers.length > 50 && <p className="muted mt">…y {detail.customers.length - 50} más</p>}
-          </>
-        )}
       </div>
+
+      <h3 style={{ fontSize: 20, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {biz.name || "—"}
+        <span className={`plan-badge plan-${biz.plan}`}>{biz.planLabel}</span>
+        {biz.expired && <span style={{ fontSize: 11, fontWeight: 700, color: "#c62828" }}>· vencido</span>}
+      </h3>
+
+      {err && <div className="error-box">{err}</div>}
+
+      <div className="tabs mt">
+        <button className={`tab${bizTab === "general" ? " active" : ""}`} onClick={() => setBizTab("general")}>
+          General
+        </button>
+        <button className={`tab${bizTab === "mensajeria" ? " active" : ""}`} onClick={() => setBizTab("mensajeria")}>
+          Mensajería
+        </button>
+      </div>
+
+      {bizTab === "general" ? (
+        <>
+          <div className="detail-list mt">
+            <div className="detail-row">
+              <span className="muted">Dueño</span>
+              <span style={{ fontWeight: 600 }}>{detail?.business.ownerEmail || biz.ownerEmail || "—"}</span>
+            </div>
+            <div className="detail-row">
+              <span className="muted">Se unió</span>
+              <span style={{ fontWeight: 600 }}>{fmtDate(biz.createdAt)}</span>
+            </div>
+            <div className="detail-row">
+              <span className="muted">Plan vence</span>
+              <span style={{ fontWeight: 600 }}>{biz.planExpiresAt ? fmtDate(biz.planExpiresAt) : "—"}</span>
+            </div>
+            <div className="detail-row">
+              <span className="muted">Clientes</span>
+              <span style={{ fontWeight: 600 }}>{biz.stats.clients}</span>
+            </div>
+            <div className="detail-row">
+              <span className="muted">Sellos otorgados</span>
+              <span style={{ fontWeight: 600 }}>{biz.stats.stampsGiven}</span>
+            </div>
+            <div className="detail-row">
+              <span className="muted">Recompensas canjeadas</span>
+              <span style={{ fontWeight: 600 }}>{biz.stats.redemptions}</span>
+            </div>
+          </div>
+
+          {!detail ? (
+            <p className="muted mt">Cargando…</p>
+          ) : (
+            <>
+              <h4 style={{ margin: "16px 0 6px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
+                Tarjetas ({detail.cards.length})
+              </h4>
+              {detail.cards.map((c) => (
+                <div key={c.id} className="cust-row">
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{c.rewardDescription || "—"}</div>
+                    <div className="muted">
+                      {c.totalSlots} sellos · {c.isActive === false ? "desactivada" : "activa"}
+                    </div>
+                  </div>
+                  <span aria-hidden style={{ width: 18, height: 18, borderRadius: 4, background: c.cardColor || "#ccc" }} />
+                </div>
+              ))}
+
+              <h4 style={{ margin: "16px 0 6px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
+                Clientes ({detail.customers.length})
+              </h4>
+              {detail.customers.slice(0, 50).map((c) => (
+                <div key={c.id} className="cust-row">
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600 }}>{c.customerName || "Cliente"}</div>
+                    <div className="muted" style={{ fontSize: 13 }}>
+                      {c.customerEmail || "—"}
+                      {c.customerPhone ? ` · ${c.customerPhone}` : ""} · {c.currentStamps ?? 0} sellos
+                    </div>
+                  </div>
+                  <span className="code-pill">{c.cardCode}</span>
+                </div>
+              ))}
+              {detail.customers.length > 50 && <p className="muted mt">…y {detail.customers.length - 50} más</p>}
+            </>
+          )}
+        </>
+      ) : (
+        <>
+          {paidActive ? (
+            <div className="mt" style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px" }}>
+              <div style={{ fontWeight: 600, fontSize: 14 }}>Controles</div>
+              <p className="muted" style={{ fontSize: 13, margin: "4px 0 10px" }}>
+                <strong>Reiniciar temporizador</strong> permite enviar de nuevo sin tocar el historial.{" "}
+                <strong>Borrar historial</strong> elimina los mensajes mostrados abajo.
+              </p>
+              <div className="row" style={{ width: "auto", gap: 8, flexWrap: "wrap" }}>
+                <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={() => resetBroadcast("timer")} disabled={resetBusy}>
+                  Reiniciar temporizador
+                </button>
+                <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={() => resetBroadcast("history")} disabled={resetBusy}>
+                  Borrar historial
+                </button>
+              </div>
+              {resetMsg && <p className="muted" style={{ fontSize: 13, marginTop: 8, marginBottom: 0 }}>{resetMsg}</p>}
+            </div>
+          ) : (
+            <p className="muted mt">Este negocio no tiene un plan pagado, no puede enviar mensajes.</p>
+          )}
+
+          <h4 style={{ margin: "16px 0 6px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
+            Mensajes enviados ({broadcasts.length})
+          </h4>
+          {!detail ? (
+            <p className="muted">Cargando…</p>
+          ) : broadcasts.length === 0 ? (
+            <p className="muted">Aún no ha enviado mensajes.</p>
+          ) : (
+            broadcasts
+              .slice()
+              .reverse()
+              .map((m) => (
+                <div key={m.at} className="cust-row">
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600 }}>{m.message}</div>
+                    <div className="muted" style={{ fontSize: 13 }}>
+                      {new Date(m.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
+                    </div>
+                  </div>
+                </div>
+              ))
+          )}
+        </>
+      )}
     </div>
   );
 }

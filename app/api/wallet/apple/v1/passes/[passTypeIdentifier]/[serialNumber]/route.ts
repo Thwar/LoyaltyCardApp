@@ -2,6 +2,7 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
 import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
 import { buildPkpass, verifyApplePassAuth } from "@/lib/appleWallet";
+import { effectivePlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ export async function GET(req: Request, ctx: { params: Promise<Params> }) {
 
   const business = await getBusinessById(card.businessId);
   const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
-  const buffer = await buildPkpass(customer, cardForPass, business?.description, business?.broadcastMessage);
+  const buffer = await buildPkpass(customer, cardForPass, business?.description, business?.broadcastMessage, business ? effectivePlan(business).removeBranding : false);
   return new Response(new Uint8Array(buffer), {
     status: 200,
     headers: {

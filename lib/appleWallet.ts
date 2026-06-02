@@ -61,13 +61,21 @@ function img(name: string): Buffer {
 function formatVisit(ts?: number): string {
   if (!ts) return "—";
   try {
-    return new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+    // Pinned to Bolivia time so the logged hour is correct (pass is built on a UTC server).
+    return new Date(ts).toLocaleString("es-ES", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/La_Paz",
+    });
   } catch {
-    return new Date(ts).toISOString().slice(0, 10);
+    return new Date(ts).toISOString().slice(0, 16).replace("T", " ");
   }
 }
 
-export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, description?: string, broadcastMessage?: string): Promise<Buffer> {
+export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, description?: string, broadcastMessage?: string, hideBranding?: boolean): Promise<Buffer> {
   // Render the stamp grid as a strip image (big circles, up to 2 rows).
   const filled = Math.min(customer.currentStamps, card.totalSlots);
   const textColor = card.textColor || "#FFFFFF";
@@ -170,11 +178,14 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
   pass.backFields.push({ key: "business", label: "Negocio", value: card.businessName });
   pass.backFields.push({ key: "passId", label: "Identificador", value: customer.id });
   pass.backFields.push({ key: "cardId", label: "ID de tarjeta", value: card.id });
-  pass.backFields.push({ key: "poweredBy", label: "Acerca de", value: "Desarrollado por SoyCasero.com" });
+  // White-label plans (Negocio) drop the SoyCasero credit + barcode caption.
+  if (!hideBranding) {
+    pass.backFields.push({ key: "poweredBy", label: "Acerca de", value: "Desarrollado por SoyCasero.com" });
+  }
   pass.setBarcodes({
     format: "PKBarcodeFormatPDF417",
     message: customer.cardCode,
-    altText: "Desarrollado por soycasero.com",
+    altText: hideBranding ? `Código ${customer.cardCode}` : "Desarrollado por soycasero.com",
     messageEncoding: "iso-8859-1",
   });
 

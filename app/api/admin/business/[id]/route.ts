@@ -68,6 +68,23 @@ export async function PATCH(req: Request, ctx: Ctx) {
   const { id } = await ctx.params;
 
   const body = await req.json().catch(() => ({}));
+
+  // Reset ONLY the rate-limit timer (keep the message history): mark "now" so
+  // broadcasts at/before it no longer count toward the daily limit.
+  if (body?.resetBroadcastTimer === true) {
+    const ref = adminDb().collection(COLLECTIONS.BUSINESSES).doc(id);
+    if (!(await ref.get()).exists) return NextResponse.json({ error: "Negocio no encontrado." }, { status: 404 });
+    await ref.update({ broadcastRateResetAt: Date.now() });
+    return NextResponse.json({ ok: true, reset: "timer" });
+  }
+  // Clear the broadcast message history (the displayed log).
+  if (body?.resetBroadcastHistory === true) {
+    const ref = adminDb().collection(COLLECTIONS.BUSINESSES).doc(id);
+    if (!(await ref.get()).exists) return NextResponse.json({ error: "Negocio no encontrado." }, { status: 404 });
+    await ref.update({ broadcastHistory: [] });
+    return NextResponse.json({ ok: true, reset: "history" });
+  }
+
   const plan = String(body?.plan || "") as PlanId;
   if (!getPlan(plan) || !["gratis", "cafe", "negocio"].includes(plan)) {
     return NextResponse.json({ error: "Plan inválido." }, { status: 400 });
