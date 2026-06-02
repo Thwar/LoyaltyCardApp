@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Smartphone, Wallet, QrCode, Stamp, Bell, Palette, UserPlus, Hand, Check, X } from "lucide-react";
+import { Fragment } from "react";
+import { Smartphone, Wallet, QrCode, Stamp, Bell, Palette, UserPlus, Hand, Check, X, ArrowRight } from "lucide-react";
 import { CardPreview } from "@/components/CardPreview";
 
 const FEATURES = [
@@ -20,6 +21,9 @@ const STEPS = [
 const PLANS = [
   {
     name: "Gratis",
+    emoji: "⭐",
+    acc: "acc-blue",
+    tier: "tier-gratis",
     price: "Bs 0",
     period: "para siempre",
     highlight: false,
@@ -35,6 +39,9 @@ const PLANS = [
   },
   {
     name: "Café",
+    emoji: "☕",
+    acc: "acc-amber",
+    tier: "tier-cafe",
     price: "Bs 99",
     period: "/mes",
     highlight: true,
@@ -51,6 +58,9 @@ const PLANS = [
   },
   {
     name: "Negocio",
+    emoji: "🏪",
+    acc: "acc-violet",
+    tier: "tier-negocio",
     price: "Bs 249",
     period: "/mes",
     highlight: false,
@@ -82,9 +92,15 @@ export default function Home() {
       <section style={{ background: "linear-gradient(135deg, #e53935, #c62828)", color: "#fff", padding: "22px 20px 64px" }}>
         <nav className="nav">
           <div className="nav-links">
-            <a className="nav-anchor" href="#features">Funciones</a>
-            <a className="nav-anchor" href="#pricing">Precios</a>
-            <a className="nav-anchor" href="#faq">Preguntas</a>
+            <a className="nav-anchor" href="#features">
+              Funciones
+            </a>
+            <a className="nav-anchor" href="#pricing">
+              Precios
+            </a>
+            <a className="nav-anchor" href="#faq">
+              Preguntas
+            </a>
           </div>
         </nav>
 
@@ -92,25 +108,29 @@ export default function Home() {
           <div className="hero-left">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="SoyCasero" style={{ height: 80, marginBottom: 22, filter: "brightness(0) invert(1)" }} />
-            <div>
-              <span className="soon-pill">🚀 Próximamente · 2026</span>
-            </div>
-            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>
-              La tarjeta de sellos de tu negocio, en el celular de tus clientes.
-            </h1>
+            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>La tarjeta de sellos de tu negocio, en el celular de tus clientes.</h1>
             <p style={{ fontSize: 18, opacity: 0.95, margin: "0 0 24px", maxWidth: 520, lineHeight: 1.55 }}>
-              <strong>No es otra app que descargar.</strong> Tus clientes escanean un QR y guardan su tarjeta en
-              Apple&nbsp;Wallet o Google&nbsp;Wallet. Tú sumas sellos con un toque.
+              <strong style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>No es otra app que descargar.</strong> Tus clientes escanean un QR y guardan su tarjeta en Apple&nbsp;Wallet o
+              Google&nbsp;Wallet. Tú sumas sellos con un toque.
             </p>
             <div className="cta-row">
-              <span className="btn-hero-disabled" aria-disabled="true">Crear mi tarjeta gratis</span>
-              <Link href="/login" className="btn-hero-outline">Ya tengo cuenta</Link>
+              <span className="btn-hero-disabled" aria-disabled="true">
+                Crear mi tarjeta gratis
+              </span>
+              <Link href="/login" className="btn-hero-outline">
+                Ya tengo cuenta
+              </Link>
             </div>
             <div className="wallet-badges">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/apple-wallet.png" alt="Añadir a Apple Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
+              <img src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}/apple-wallet.png`} alt="Añadir a Apple Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/goole-wallet.svg" alt="Añadir a Google Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
+              <img src={`${process.env.NEXT_PUBLIC_BASE_URL || ""}/goole-wallet.svg`} alt="Añadir a Google Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
+            </div>
+            <div style={{ marginTop: 22 }}>
+              <span className="soon-pill" style={{ marginBottom: 0 }}>
+                🚀 Próximamente · 2026
+              </span>
             </div>
           </div>
 
@@ -126,17 +146,27 @@ export default function Home() {
                 </div>
                 <div className="wallet-stack">
                   <div className="peek" style={{ background: "#e53935" }}>
-                    <span className="peek-name">Pizzería Don Luis</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className="peek-logo" src="/homepage/pizza.png" alt="Pizzería Don Luis" />
                     <span className="peek-meta">
                       <span className="peek-label">SELLOS</span>
                       <span className="peek-count">7/10</span>
                     </span>
                   </div>
                   <div className="peek" style={{ background: "#7c3aed" }}>
-                    <span className="peek-name">Barbería Cuts</span>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className="peek-logo" src="/homepage/barber.png" alt="Barbería Cuts" />
                     <span className="peek-meta">
                       <span className="peek-label">SELLOS</span>
                       <span className="peek-count">3/8</span>
+                    </span>
+                  </div>
+                  <div className="peek" style={{ background: "#0ea5e9" }}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className="peek-logo" src="/homepage/pacu.png" alt="Don Pacú" />
+                    <span className="peek-meta">
+                      <span className="peek-label">SELLOS</span>
+                      <span className="peek-count">5/9</span>
                     </span>
                   </div>
                   <div className="wallet-front">
@@ -149,6 +179,8 @@ export default function Home() {
                       textColor="#FFFFFF"
                       code="248"
                       lastVisit="Hoy"
+                      logoUrl="/homepage/cafe.png"
+                      showBarcode
                     />
                   </div>
                 </div>
@@ -167,7 +199,7 @@ export default function Home() {
           {FEATURES.map((f) => {
             const Icon = f.Icon;
             return (
-              <div key={f.title} className={`card lift ${f.acc}`}>
+              <div key={f.title} className={`card lift feature-card ${f.acc}`}>
                 <span className="icon-badge">
                   <Icon size={24} strokeWidth={2.2} />
                 </span>
@@ -184,20 +216,27 @@ export default function Home() {
         <div className="landing-section">
           <h2 className="section-title">Listo en 3 pasos</h2>
           <p className="section-sub">Del registro al primer sello en minutos.</p>
-          <div className="grid-3" style={{ marginTop: 34 }}>
-            {STEPS.map((s) => {
+          <div className="steps-flow">
+            {STEPS.map((s, i) => {
               const Icon = s.Icon;
               return (
-                <div key={s.n} className={`card lift ${s.acc}`}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <span className="step-num">{s.n}</span>
-                    <span className="icon-badge">
-                      <Icon size={22} strokeWidth={2.2} />
-                    </span>
+                <Fragment key={s.n}>
+                  <div className={`card lift step-card ${s.acc}`}>
+                    <div className="step-head">
+                      <span className="step-num">{s.n}</span>
+                      <span className="icon-badge">
+                        <Icon size={22} strokeWidth={2.2} />
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>{s.title}</h3>
+                    <p className="feat-text">{s.desc}</p>
                   </div>
-                  <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>{s.title}</h3>
-                  <p className="feat-text">{s.desc}</p>
-                </div>
+                  {i < STEPS.length - 1 && (
+                    <span className="step-arrow" aria-hidden="true">
+                      <ArrowRight size={26} strokeWidth={2.5} />
+                    </span>
+                  )}
+                </Fragment>
               );
             })}
           </div>
@@ -207,15 +246,22 @@ export default function Home() {
       {/* PRICING */}
       <section style={{ background: "#1f2937" }} id="pricing">
         <div className="landing-section">
-          <h2 className="section-title" style={{ color: "#fff" }}>Precios simples, en bolivianos</h2>
+          <h2 className="section-title" style={{ color: "#fff" }}>
+            Precios simples, en bolivianos
+          </h2>
           <p className="section-sub" style={{ color: "rgba(255,255,255,0.72)" }}>
             Empieza gratis y mejora cuando crezcas. Precios tentativos, sin contratos.
           </p>
           <div className="grid-pricing" style={{ marginTop: 40 }}>
             {PLANS.map((p) => (
-              <div key={p.name} className={`card lift pricing-card${p.highlight ? " pricing-pop" : ""}`}>
+              <div key={p.name} className={`card lift pricing-card ${p.acc} ${p.tier}${p.highlight ? " pricing-pop" : ""}`}>
                 {p.badge && <span className="pricing-badge">{p.badge}</span>}
-                <h3 style={{ fontSize: 20, margin: "0 0 4px" }}>{p.name}</h3>
+                <h3 style={{ fontSize: 20, margin: "0 0 4px", display: "flex", alignItems: "center", gap: 8 }}>
+                  <span aria-hidden="true" style={{ fontSize: 24, lineHeight: 1 }}>
+                    {p.emoji}
+                  </span>
+                  {p.name}
+                </h3>
                 <div style={{ margin: "0 0 4px" }}>
                   <span style={{ fontSize: 34, fontWeight: 800 }}>{p.price}</span>
                   <span className="muted"> {p.period}</span>
@@ -259,13 +305,24 @@ export default function Home() {
         <h2 style={{ fontSize: 28, fontWeight: 800, margin: "10px 0 10px" }}>Estamos por lanzar</h2>
         <p style={{ opacity: 0.95, margin: "0 0 22px" }}>Pronto vas a poder crear la tarjeta de tu negocio en minutos.</p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
-          <span className="btn-hero-disabled" aria-disabled="true">Crear mi tarjeta gratis</span>
-          <Link href="/login" className="btn-hero-outline">Ya tengo cuenta</Link>
+          <span className="btn-hero-disabled" aria-disabled="true">
+            Crear mi tarjeta gratis
+          </span>
+          <Link href="/login" className="btn-hero-outline">
+            Ya tengo cuenta
+          </Link>
         </div>
       </section>
 
       <footer style={{ background: "var(--bg-soft)", padding: "26px 20px", textAlign: "center" }}>
-        <p className="muted" style={{ margin: 0 }}>SoyCasero · Fidelización digital para negocios de Bolivia</p>
+        <p className="muted" style={{ margin: 0 }}>
+          © 2026 SoyCasero · Recompensa tu fidelidad
+        </p>
+        <p className="muted" style={{ margin: "8px 0 0" }}>
+          <a href="mailto:admin@soycasero.com" style={{ color: "var(--text-secondary)" }}>
+            admin@soycasero.com
+          </a>
+        </p>
       </footer>
     </main>
   );

@@ -35,6 +35,9 @@ gcp-key*.json
 # vercel
 .vercel
 
+# playwright-cli snapshot/screenshot artifacts
+.playwright-cli/
+
 # editors
 .vscode/
 .idea/

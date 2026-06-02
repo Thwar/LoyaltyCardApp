@@ -602,6 +602,13 @@ select.input {
   font-weight: 700;
   font-size: 14px;
 }
+.peek-logo {
+  height: 26px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+  display: block;
+}
 .peek-meta {
   display: flex;
   flex-direction: column;
@@ -769,4 +776,55 @@ select.input {
 }
 .tilt-intro {
   animation: tiltIntro 2.6s ease-in-out 0.4s 1 both;
+}
+
+/* centered feature + step cards (icon, title, text) */
+.feature-card,
+.step-card {
+  text-align: center;
+}
+.step-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+/* steps connected with flow arrows (→ on desktop, ↓ on mobile) */
+.steps-flow {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 34px;
+}
+.steps-flow .step-card {
+  flex: 1 1 0;
+}
+.step-arrow {
+  flex: 0 0 auto;
+  align-self: center;
+  display: inline-flex;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+@media (max-width: 880px) {
+  .steps-flow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .step-arrow {
+    transform: rotate(90deg);
+  }
+}
+
+/* pricing: per-tier card backgrounds */
+.tier-gratis {
+  background: #eff5ff;
+}
+.tier-cafe {
+  background: #fff7ed;
+}
+.tier-negocio {
+  background: #f7f1ff;
 }
