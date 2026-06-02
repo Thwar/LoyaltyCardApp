@@ -141,8 +141,10 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard): Pr
   // total across completed cards (each redemption clears a full card of totalSlots).
   const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   pass.backFields.push({ key: "reward", label: "Recompensa", value: card.rewardDescription });
-  if (card.welcomeMessage) {
-    pass.backFields.push({ key: "welcome", label: "Bienvenida", value: card.welcomeMessage });
+  // Rendered (with a changeMessage) only after the device registers, so adding the
+  // pass fires a one-time welcome notification — see the registration endpoint.
+  if (card.welcomeMessage && customer.welcomeNotified) {
+    pass.backFields.push({ key: "welcome", label: "Bienvenida", value: card.welcomeMessage, changeMessage: "%@" });
   }
   pass.backFields.push({ key: "status", label: "Estado", value: card.isActive === false ? "Inactivo" : "Activo" });
   if (card.isActive === false) {

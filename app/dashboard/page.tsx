@@ -311,7 +311,7 @@ function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard;
             maxLength={240}
           />
           <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
-            Se le envía al cliente cuando guarda tu tarjeta — notificación en Android, y visible en la tarjeta en iPhone.
+            Se le envía al cliente como notificación cuando guarda tu tarjeta (Android y iPhone).
           </p>
         </div>
 

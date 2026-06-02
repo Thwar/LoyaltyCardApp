@@ -57,6 +57,7 @@ export interface CustomerCard {
   appleUpdatedTag?: number; // bumped on each change so Apple Wallet knows to refresh
   passActive?: boolean; // true while the pass is on at least one device
   passRemovedAt?: number | null; // set when the customer removes the pass from Wallet
+  welcomeNotified?: boolean; // Apple: welcome notification sent on first device registration
   createdAt?: number;
   lastStampDate?: number;
   marketingConsent?: boolean; // opted in (join-form checkbox) to share contact info for marketing
