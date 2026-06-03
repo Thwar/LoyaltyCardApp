@@ -543,7 +543,8 @@ function ResumenTab({
   onChanged: () => void;
   onSelect: (c: Client) => void;
 }) {
-  const [showAll, setShowAll] = useState(false);
+  const [sortBy, setSortBy] = useState<"recent" | "stamps" | "rewards" | "closest">("recent");
+  const [page, setPage] = useState(0);
   const [filterCardId, setFilterCardId] = useState<string>("all");
   const [exporting, setExporting] = useState(false);
   const [chartRange, setChartRange] = useState<string>("6m");
@@ -574,9 +575,22 @@ function ResumenTab({
 
   // Filter memberships to one card (or all), then group into people for the list.
   const filtered = filterCardId === "all" ? customers : customers.filter((c) => c.loyaltyCardId === filterCardId);
-  const clients = groupClients(filtered).sort(
-    (a, b) => (b.lastStampDate || b.createdAt || 0) - (a.lastStampDate || a.createdAt || 0)
-  );
+  const lifetimeStamps = (cl: Client) => cl.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0) * slotsOf(m) + m.currentStamps, 0);
+  const totalRedeemed = (cl: Client) => cl.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0), 0);
+  const remainingToComplete = (cl: Client) => {
+    let best = 9999; // clients with no in-progress card sort last
+    for (const m of cl.memberships) {
+      const s = slotsOf(m);
+      if (s > 0 && m.currentStamps < s) best = Math.min(best, s - m.currentStamps);
+    }
+    return best;
+  };
+  const clients = groupClients(filtered).sort((a, b) => {
+    if (sortBy === "stamps") return lifetimeStamps(b) - lifetimeStamps(a);
+    if (sortBy === "rewards") return totalRedeemed(b) - totalRedeemed(a);
+    if (sortBy === "closest") return remainingToComplete(a) - remainingToComplete(b);
+    return (b.lastStampDate || b.createdAt || 0) - (a.lastStampDate || a.createdAt || 0);
+  });
 
   const completed = filtered.filter((c) => slotsOf(c) > 0 && c.currentStamps >= slotsOf(c)).length;
   const rewards = filtered.reduce((s, c) => s + (c.rewardsRedeemed || 0), 0);
@@ -644,7 +658,10 @@ function ResumenTab({
       : count >= limit
         ? "Alcanzaste el límite de tu plan. Mejora tu plan para inscribir más clientes."
         : `Te quedan ${limit - count} clientes en tu plan ${planInfo.label}.`;
-  const shown = showAll ? clients : clients.slice(0, 12);
+  const PAGE_SIZE = 10;
+  const pageCount = Math.max(1, Math.ceil(clients.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const shown = clients.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <div>
@@ -674,7 +691,7 @@ function ResumenTab({
       {cards.length > 1 && (
         <div className="field mt">
           <label>Tarjeta</label>
-          <select className="input" value={filterCardId} onChange={(e) => setFilterCardId(e.target.value)}>
+          <select className="input" value={filterCardId} onChange={(e) => { setFilterCardId(e.target.value); setPage(0); }}>
             <option value="all">Todas las tarjetas</option>
             {cards.map((c) => (
               <option key={c.id} value={c.id}>
@@ -850,10 +867,25 @@ function ResumenTab({
       </div>
 
       <div className="card mt">
-        <div className="row spread" style={{ alignItems: "center" }}>
-          <h3 style={{ fontSize: 18, margin: 0 }}>Clientes recientes</h3>
-          <div className="row" style={{ width: "auto", gap: 10, alignItems: "center" }}>
-            <span className="muted">{clients.length} en total</span>
+        <div className="row spread" style={{ alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+          <h3 style={{ fontSize: 18, margin: 0 }}>Clientes</h3>
+          <div className="row" style={{ width: "auto", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            {clients.length > 0 && (
+              <select
+                className="input"
+                style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as "recent" | "stamps" | "rewards" | "closest");
+                  setPage(0);
+                }}
+              >
+                <option value="recent">Visita más reciente</option>
+                <option value="stamps">Más sellos</option>
+                <option value="rewards">Más recompensas</option>
+                <option value="closest">Cerca de completar</option>
+              </select>
+            )}
             {clients.length > 0 &&
               (planInfo.paid ? (
                 <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={exportCsv} disabled={exporting}>
@@ -901,10 +933,23 @@ function ResumenTab({
                 </div>
               );
             })}
-            {clients.length > 12 && (
-              <button className="btn btn-sm btn-ghost mt" onClick={() => setShowAll((v) => !v)}>
-                {showAll ? "Ver menos" : `Ver todos (${clients.length})`}
-              </button>
+            {clients.length > PAGE_SIZE && (
+              <div className="row spread" style={{ alignItems: "center", marginTop: 12 }}>
+                <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={safePage === 0}>
+                  ← Anterior
+                </button>
+                <span className="muted" style={{ fontSize: 13 }}>
+                  {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, clients.length)} de {clients.length}
+                </span>
+                <button
+                  className="btn btn-sm btn-ghost"
+                  style={{ width: "auto" }}
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                  disabled={safePage >= pageCount - 1}
+                >
+                  Siguiente →
+                </button>
+              </div>
             )}
           </div>
         )}
