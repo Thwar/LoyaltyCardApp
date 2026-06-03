@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authErrorMessage } from "@/lib/authErrors";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -47,10 +48,12 @@ export default function LoginPage() {
 
   return (
     <div className="container">
-      <Link href="/">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" style={{ marginBottom: 24 }} />
-      </Link>
+      <div className="center">
+        <Link href="/">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" style={{ marginBottom: 24 }} />
+        </Link>
+      </div>
       <h1 style={{ fontSize: 26 }}>Inicia sesión</h1>
       <p className="muted" style={{ marginBottom: 20 }}>
         Entra para gestionar tu tarjeta y sumar sellos.
@@ -85,6 +88,8 @@ export default function LoginPage() {
       <p className="muted center mt">
         ¿No tienes cuenta? <Link href="/signup">Crear cuenta</Link>
       </p>
+
+      <SiteFooter />
     </div>
   );
 }

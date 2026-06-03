@@ -6,6 +6,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authedFetch } from "@/lib/clientApi";
 import { authErrorMessage } from "@/lib/authErrors";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -38,10 +39,12 @@ export default function SignupPage() {
 
   return (
     <div className="container">
-      <Link href="/">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" style={{ marginBottom: 24 }} />
-      </Link>
+      <div className="center">
+        <Link href="/">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" style={{ marginBottom: 24 }} />
+        </Link>
+      </div>
       <h1 style={{ fontSize: 26 }}>Crea tu cuenta</h1>
       <p className="muted" style={{ marginBottom: 20 }}>
         Crea la tarjeta de sellos de tu negocio en minutos.
@@ -70,6 +73,8 @@ export default function SignupPage() {
       <p className="muted center mt">
         ¿Ya tienes cuenta? <Link href="/login">Inicia sesión</Link>
       </p>
+
+      <SiteFooter />
     </div>
   );
 }
