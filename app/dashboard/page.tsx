@@ -14,6 +14,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { Lock, Pencil } from "lucide-react";
 import type { Business, CustomerCard, LoyaltyCard, StampShape } from "@/lib/types";
 import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
+import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 
 interface MeResponse {
   business: Business | null;
@@ -517,7 +518,7 @@ function CardManager({
           onChanged={onChanged}
         />
       ) : (
-        <ComunicacionTab business={business} planInfo={planInfo} onChanged={onChanged} />
+        <ComunicacionTab business={business} planInfo={planInfo} customers={customers} cards={cards} onChanged={onChanged} />
       )}
 
       {selected && (
@@ -1160,8 +1161,21 @@ function fmtCountdown(ms: number): string {
   return `${s}s`;
 }
 
-function ComunicacionTab({ business, planInfo, onChanged }: { business: Business; planInfo: PlanInfo; onChanged: () => void }) {
+function ComunicacionTab({
+  business,
+  planInfo,
+  customers,
+  cards,
+  onChanged,
+}: {
+  business: Business;
+  planInfo: PlanInfo;
+  customers: CustomerCard[];
+  cards: LoyaltyCard[];
+  onChanged: () => void;
+}) {
   const [message, setMessage] = useState("");
+  const [segment, setSegment] = useState<Segment>("all");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -1195,11 +1209,15 @@ function ComunicacionTab({ business, planInfo, onChanged }: { business: Business
   // 0% right after a send → 100% (ready) when the cooldown elapses.
   const pct = blocked && windowMs > 0 ? Math.min(100, Math.round(((windowMs - remainingMs) / windowMs) * 100)) : 100;
 
+  // Recipients in the selected segment (computed from the dashboard's in-memory list).
+  const slotsById = new Map(cards.map((c) => [c.id, c.totalSlots]));
+  const segCount = customers.filter((c) => inSegment(c, segment, slotsById.get(c.loyaltyCardId) ?? 0, now)).length;
+
   async function send() {
     setErr("");
     setMsg("");
     setBusy(true);
-    const res = await authedFetch("/api/business/broadcast", { method: "POST", body: JSON.stringify({ message: message.trim() }) });
+    const res = await authedFetch("/api/business/broadcast", { method: "POST", body: JSON.stringify({ message: message.trim(), segment }) });
     const json = await res.json();
     setBusy(false);
     if (!res.ok) return setErr(json.error || "No se pudo enviar.");
@@ -1251,6 +1269,18 @@ function ComunicacionTab({ business, planInfo, onChanged }: { business: Business
         {msg && <div className="success-box">{msg}</div>}
 
         <div className="field">
+          <label>Enviar a</label>
+          <select className="input" value={segment} onChange={(e) => setSegment(e.target.value as Segment)}>
+            {SEGMENTS.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.label}
+              </option>
+            ))}
+          </select>
+          <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{segCount} cliente(s) en este grupo</p>
+        </div>
+
+        <div className="field">
           <label>Mensaje</label>
           <textarea
             className="input"
@@ -1263,8 +1293,8 @@ function ComunicacionTab({ business, planInfo, onChanged }: { business: Business
           <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{message.length}/160</p>
         </div>
 
-        <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim()}>
-          {busy ? "Enviando…" : "Enviar a mis clientes"}
+        <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim() || segCount === 0}>
+          {busy ? "Enviando…" : segCount === 0 ? "Sin clientes en este grupo" : `Enviar a ${segCount} cliente(s)`}
         </button>
 
         {history.length > 0 && (
@@ -1279,6 +1309,8 @@ function ComunicacionTab({ business, planInfo, onChanged }: { business: Business
                     <div style={{ fontSize: 14 }}>{h.message}</div>
                     <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
                       {new Date(h.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
+                      {h.segment ? ` · ${h.segment}` : ""}
+                      {h.count != null ? ` · ${h.count} cliente(s)` : ""}
                     </div>
                   </li>
                 ))}

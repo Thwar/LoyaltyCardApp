@@ -7,6 +7,7 @@ import { effectivePlan } from "@/lib/plans";
 import { walletConfigured, syncLoyaltyObject } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { notifyAllCustomerPasses } from "@/lib/appleNotify";
+import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const message = String(body.message || "").trim().slice(0, 160);
     if (!message) return NextResponse.json({ error: "Escribe un mensaje." }, { status: 400 });
+    const segment: Segment = SEGMENTS.find((s) => s.id === body.segment)?.id ?? "all";
 
     // Rate limit: rolling 24h count + minimum gap between sends.
     const now = Date.now();
@@ -55,23 +57,30 @@ export async function POST(req: Request) {
       }
     }
 
-    // Record the send + set the message the Apple passes render.
+    // Resolve each card's logo (business logo as the default) + slots for segmenting.
+    const cards = await getLoyaltyCardsByBusiness(business.id);
+    const cardMap = new Map(cards.map((c) => [c.id, { ...c, logoPng: c.logoPng || business.logoPng }]));
+    const slotsOf = (cid: string) => cardMap.get(cid)?.totalSlots ?? 0;
+
+    // Filter the audience to the chosen segment.
+    const snap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).where("businessId", "==", business.id).get();
+    const targets = snap.docs.filter((d) => {
+      const c = d.data() as CustomerCard;
+      return inSegment(c, segment, slotsOf(c.loyaltyCardId), now);
+    });
+
+    // Log the send (with audience + count) on the business; this is also the rate-limit source.
+    const segLabel = SEGMENTS.find((s) => s.id === segment)?.label ?? "Todos los clientes";
     await adminDb()
       .collection(COLLECTIONS.BUSINESSES)
       .doc(business.id)
-      .update({ broadcastMessage: message, broadcastHistory: [...history, { message, at: now }].slice(-20) });
+      .update({ broadcastHistory: [...history, { message, at: now, count: targets.length, segment: segLabel }].slice(-20) });
 
-    // Resolve each card's logo (business logo as the default) for the Google sync.
-    const cards = await getLoyaltyCardsByBusiness(business.id);
-    const cardMap = new Map(cards.map((c) => [c.id, { ...c, logoPng: c.logoPng || business.logoPng }]));
-
-    const snap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).where("businessId", "==", business.id).get();
-    const customers: CustomerCard[] = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<CustomerCard, "id">) }));
-
-    // Apple: bump every pass so devices refetch + see the new "Novedades" field, then push.
-    for (let i = 0; i < snap.docs.length; i += 400) {
+    // Apple: set the per-customer "Novedades" message + bump the tag on TARGETS only,
+    // then push (only changed passes show the banner — keeps segmented messages private).
+    for (let i = 0; i < targets.length; i += 400) {
       const batch = adminDb().batch();
-      snap.docs.slice(i, i + 400).forEach((d) => batch.update(d.ref, { appleUpdatedTag: now }));
+      targets.slice(i, i + 400).forEach((d) => batch.update(d.ref, { broadcastMessage: message, appleUpdatedTag: now }));
       await batch.commit();
     }
     if (appleConfigured()) {
@@ -82,13 +91,14 @@ export async function POST(req: Request) {
       }
     }
 
-    // Google: per-object message, chunked so the request stays well under the timeout.
+    // Google: per-object message, only to targets with a Google pass (chunked for timeout safety).
     if (walletConfigured()) {
-      const targets = customers.filter((c) => c.googleObjectId);
+      const gTargets = targets.filter((d) => (d.data() as CustomerCard).googleObjectId);
       const CHUNK = 15;
-      for (let i = 0; i < targets.length; i += CHUNK) {
+      for (let i = 0; i < gTargets.length; i += CHUNK) {
         await Promise.all(
-          targets.slice(i, i + CHUNK).map((c) => {
+          gTargets.slice(i, i + CHUNK).map((d) => {
+            const c: CustomerCard = { id: d.id, ...(d.data() as Omit<CustomerCard, "id">) };
             const card = cardMap.get(c.loyaltyCardId) || cards[0];
             if (!card) return Promise.resolve();
             return syncLoyaltyObject(c, card, message, business.description, plan.removeBranding).catch((e) =>
@@ -99,7 +109,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ ok: true, recipients: customers.length });
+    return NextResponse.json({ ok: true, recipients: targets.length });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }
