@@ -59,7 +59,7 @@ const PLANS = [
       { t: "Todo lo del plan Gratis", ok: true },
       { t: "Clientes ilimitados", ok: true },
       { t: "Formas e íconos de sello personalizados", ok: true },
-      { t: "Mensajes promocionales (1/día)", ok: true },
+      { t: "Mensajes promocionales (3/día)", ok: true },
       { t: "Ver y exportar datos de clientes", ok: true },
       { t: "Analíticas avanzadas", ok: true },
     ],
@@ -76,7 +76,7 @@ const PLANS = [
     features: [
       { t: "Todo lo del plan Café", ok: true },
       { t: "3 tarjetas / programas", ok: true },
-      { t: "Mensajes promocionales (3/día)", ok: true },
+      { t: "Mensajes promocionales (6/día)", ok: true },
       { t: 'Sin marca "SoyCasero"', ok: true },
       { t: "Programa de referidos", ok: true },
       { t: "Hasta 10 cajeros", ok: true },
