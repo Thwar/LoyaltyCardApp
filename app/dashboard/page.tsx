@@ -677,12 +677,16 @@ function ResumenTab({
   const pct = limit != null ? Math.min(100, Math.round((count / limit) * 100)) : 0;
   const nearLimit = limit != null && count >= limit * 0.8;
   const limitLabel = limit != null ? `${count} / ${limit}` : "";
+  const atLimit = limit != null && count >= limit;
   const remainingText =
     limit == null
       ? ""
-      : count >= limit
-        ? "Alcanzaste el límite de tu plan. Mejora tu plan para inscribir más caseros."
+      : atLimit
+        ? "Alcanzaste el límite de tu plan. Los nuevos caseros no pueden inscribirse hasta que mejores tu plan."
         : `Te quedan ${limit - count} caseros en tu plan ${planInfo.label}.`;
+  const upgradeHref = `https://wa.me/59175983004?text=${encodeURIComponent(
+    "Hola, quiero mejorar mi plan de SoyCasero para tener más caseros."
+  )}`;
   const PAGE_SIZE = 10;
   const pageCount = Math.max(1, Math.ceil(clients.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
@@ -707,7 +711,14 @@ function ResumenTab({
           <div className="progress" style={{ background: "#fff" }}>
             <div className="progress-fill" style={{ width: `${pct}%`, background: nearLimit ? "#c62828" : undefined }} />
           </div>
-          <p className="muted" style={{ fontSize: 14, marginTop: 10, marginBottom: 0 }}>{remainingText}</p>
+          <p style={{ fontSize: 14, marginTop: 10, marginBottom: 0, color: nearLimit ? "#c62828" : "var(--text-secondary)", fontWeight: nearLimit ? 600 : 400 }}>
+            {atLimit ? "⚠️ " : ""}{remainingText}
+          </p>
+          {nearLimit && !cajero && (
+            <a className="btn btn-primary mt" href={upgradeHref} target="_blank" rel="noreferrer" style={{ width: "auto" }}>
+              Mejorar mi plan
+            </a>
+          )}
         </div>
       )}
 

@@ -32,6 +32,7 @@ export default function JoinPage() {
   const cardId = params?.cardId;
 
   const [card, setCard] = useState<PublicCard | null>(null);
+  const [full, setFull] = useState(false);
   const [loadErr, setLoadErr] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -57,7 +58,10 @@ export default function JoinPage() {
       .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
       .then(({ ok, j }) => {
         if (!ok) setLoadErr(j.error || "Tarjeta no encontrada.");
-        else setCard(j.card);
+        else {
+          setCard(j.card);
+          setFull(!!j.full);
+        }
         setLoading(false);
       })
       .catch(() => {
@@ -223,9 +227,16 @@ export default function JoinPage() {
 
       <h1 style={{ fontSize: 22, marginTop: 22 }}>Únete al club de {card.businessName}</h1>
       <p style={{ fontSize: 15, fontWeight: 600, color: "var(--primary)", margin: "6px 0 10px" }}>🎁 {card.rewardDescription}</p>
-      <p className="muted" style={{ marginBottom: 16 }}>
-        Llena tus datos y guarda tu tarjeta en el wallet de tu celular. No necesitas instalar ninguna app.
-      </p>
+      {full ? (
+        <div className="warn-box" style={{ marginBottom: 16 }}>
+          <strong>Esta promoción está llena por ahora.</strong> {card.businessName} alcanzó su límite de caseros y no
+          puede aceptar nuevos por el momento. ¿Ya eres casero? Ingresa tu correo para abrir tu tarjeta.
+        </div>
+      ) : (
+        <p className="muted" style={{ marginBottom: 16 }}>
+          Llena tus datos y guarda tu tarjeta en el wallet de tu celular. No necesitas instalar ninguna app.
+        </p>
+      )}
 
       {formErr && <div className="error-box">{formErr}</div>}
 

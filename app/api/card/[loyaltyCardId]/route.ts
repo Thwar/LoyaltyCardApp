@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getLoyaltyCard } from "@/lib/serverData";
+import { getLoyaltyCard, getBusinessById, countClients } from "@/lib/serverData";
+import { effectivePlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,7 +11,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ loyaltyCardId:
     const { loyaltyCardId } = await ctx.params;
     const card = await getLoyaltyCard(loyaltyCardId);
     if (!card || !card.isActive) return NextResponse.json({ error: "Tarjeta no encontrada" }, { status: 404 });
+
+    // Surface "full" at scan time so new customers see it before filling the form.
+    // (Existing caseros can still enroll their email — enforced authoritatively in /api/enroll.)
+    let full = false;
+    const business = await getBusinessById(card.businessId);
+    const maxClients = business ? effectivePlan(business).maxClients : null;
+    if (maxClients != null) full = (await countClients(card.businessId)) >= maxClients;
+
     return NextResponse.json({
+      full,
       card: {
         id: card.id,
         businessName: card.businessName,

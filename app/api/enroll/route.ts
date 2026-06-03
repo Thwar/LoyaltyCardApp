@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard, type LoyaltyCard } from "@/lib/types";
-import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
+import { getLoyaltyCard, getBusinessById, countClients } from "@/lib/serverData";
 import { generateUniqueCardCode } from "@/lib/cardCode";
 import { walletConfigured, issuePass } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
@@ -104,6 +104,20 @@ export async function POST(req: Request) {
         }
         const customer: CustomerCard = { id: sameCard.id, ...(sameCard.data() as Omit<CustomerCard, "id">) };
         return cardResponse(sameCard.ref, customer, card, true);
+      }
+    }
+
+    // Enforce the plan's client cap, but ONLY for genuinely new clients — an existing
+    // casero re-opening or adding another card must never be turned away. Free plans
+    // cap at maxClients; paid plans have maxClients = null (unlimited).
+    if (clientSnap.empty) {
+      const business = await getBusinessById(card.businessId);
+      const maxClients = business ? effectivePlan(business).maxClients : null;
+      if (maxClients != null && (await countClients(card.businessId)) >= maxClients) {
+        return NextResponse.json(
+          { error: "Esta promoción alcanzó su límite de caseros por ahora. Vuelve a intentarlo más tarde.", full: true },
+          { status: 403 }
+        );
       }
     }
 

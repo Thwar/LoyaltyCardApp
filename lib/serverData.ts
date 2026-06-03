@@ -51,6 +51,14 @@ export async function getLoyaltyCardsByBusiness(businessId: string): Promise<Loy
     .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
 }
 
+// Distinct clients (caseros) of a business — one person can hold several cards but
+// counts once (shared customerId). Used to enforce the free plan's client cap.
+export async function countClients(businessId: string): Promise<number> {
+  const snap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).where("businessId", "==", businessId).get();
+  const ids = new Set(snap.docs.map((d) => (d.data().customerId as string) || d.id));
+  return ids.size;
+}
+
 export async function getLoyaltyCard(id: string): Promise<LoyaltyCard | null> {
   const d = await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).doc(id).get();
   if (!d.exists) return null;
