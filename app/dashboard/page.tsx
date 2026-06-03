@@ -546,7 +546,7 @@ function ResumenTab({
   const [showAll, setShowAll] = useState(false);
   const [filterCardId, setFilterCardId] = useState<string>("all");
   const [exporting, setExporting] = useState(false);
-  const [chartMonths, setChartMonths] = useState(6);
+  const [chartRange, setChartRange] = useState<string>("6m");
   const [chartMetric, setChartMetric] = useState<"nuevos" | "visitas">("nuevos");
 
   async function exportCsv() {
@@ -594,20 +594,36 @@ function ResumenTab({
   const aboutToWin = filtered.filter((m) => slotsOf(m) > 0 && m.currentStamps === slotsOf(m) - 1).length;
   const avgStamps = clients.length ? Math.round((stampsGiven / clients.length) * 10) / 10 : 0;
 
-  // Filterable time series for the analytics chart (metric + range).
+  // Filterable time series for the analytics chart (metric + range; day or month buckets).
+  const CHART_RANGES = [
+    { id: "3d", label: "Últimos 3 días", unit: "day", count: 3 },
+    { id: "7d", label: "Última semana", unit: "day", count: 7 },
+    { id: "30d", label: "Último mes", unit: "day", count: 30 },
+    { id: "6m", label: "Últimos 6 meses", unit: "month", count: 6 },
+    { id: "12m", label: "Últimos 12 meses", unit: "month", count: 12 },
+  ] as const;
+  const range = CHART_RANGES.find((r) => r.id === chartRange) ?? CHART_RANGES[3];
   const series = (() => {
-    const base = new Date();
-    const buckets = Array.from({ length: chartMonths }, (_, i) => {
-      const d = new Date(base.getFullYear(), base.getMonth() - (chartMonths - 1 - i), 1);
-      const m = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
-      return { key: `${d.getFullYear()}-${d.getMonth()}`, label: m.charAt(0).toUpperCase() + m.slice(1), count: 0 };
-    });
+    const now = new Date();
+    const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+    const monKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}`;
+    const buckets =
+      range.unit === "day"
+        ? Array.from({ length: range.count }, (_, i) => {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (range.count - 1 - i));
+            return { key: dayKey(d), label: String(d.getDate()), count: 0 };
+          })
+        : Array.from({ length: range.count }, (_, i) => {
+            const d = new Date(now.getFullYear(), now.getMonth() - (range.count - 1 - i), 1);
+            const m = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
+            return { key: monKey(d), label: m.charAt(0).toUpperCase() + m.slice(1), count: 0 };
+          });
     const idx = new Map(buckets.map((b, i) => [b.key, i]));
     for (const c of clients) {
       const ts = chartMetric === "nuevos" ? c.createdAt : c.lastStampDate;
       if (!ts) continue;
       const d = new Date(ts);
-      const i = idx.get(`${d.getFullYear()}-${d.getMonth()}`);
+      const i = idx.get(range.unit === "day" ? dayKey(d) : monKey(d));
       if (i != null) buckets[i].count++;
     }
     return buckets;
@@ -702,40 +718,59 @@ function ResumenTab({
               <select
                 className="input"
                 style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}
-                value={chartMonths}
-                onChange={(e) => setChartMonths(Number(e.target.value))}
+                value={chartRange}
+                onChange={(e) => setChartRange(e.target.value)}
               >
-                <option value={6}>6 meses</option>
-                <option value={12}>12 meses</option>
+                {CHART_RANGES.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
           {(() => {
             const W = 600,
-              H = 180,
-              padX = 26,
-              padTop = 26,
+              H = 190,
+              padL = 32,
+              padR = 14,
+              padTop = 22,
               padBottom = 28;
-            const innerW = W - padX * 2;
+            const innerW = W - padL - padR;
             const innerH = H - padTop - padBottom;
             const n = series.length;
-            const cx = (i: number) => padX + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+            const cx = (i: number) => padL + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
             const cy = (v: number) => padTop + innerH - (v / seriesMax) * innerH;
             const line = series.map((s, i) => `${cx(i)},${cy(s.count)}`).join(" ");
             const area = `M ${cx(0)},${padTop + innerH} ` + series.map((s, i) => `L ${cx(i)},${cy(s.count)}`).join(" ") + ` L ${cx(n - 1)},${padTop + innerH} Z`;
+            const gridVals = Array.from(new Set([0, 0.5, 1].map((f) => Math.round(seriesMax * f))));
+            const labelEvery = Math.max(1, Math.ceil(n / 8));
+            const showValues = n <= 12;
             return (
               <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+                {gridVals.map((v) => (
+                  <g key={v}>
+                    <line x1={padL} y1={cy(v)} x2={W - padR} y2={cy(v)} stroke="var(--border)" strokeWidth="1" />
+                    <text x={padL - 6} y={cy(v) + 3} textAnchor="end" fontSize="10" fill="#9ca3af">
+                      {v}
+                    </text>
+                  </g>
+                ))}
                 <path d={area} fill="var(--primary)" opacity="0.08" />
                 <polyline points={line} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                 {series.map((s, i) => (
                   <g key={s.key}>
-                    <circle cx={cx(i)} cy={cy(s.count)} r="3.5" fill="var(--primary)" />
-                    <text x={cx(i)} y={cy(s.count) - 9} textAnchor="middle" fontSize="12" fontWeight="700" fill="currentColor">
-                      {s.count}
-                    </text>
-                    <text x={cx(i)} y={H - 8} textAnchor="middle" fontSize="11" fill="#9ca3af">
-                      {s.label}
-                    </text>
+                    <circle cx={cx(i)} cy={cy(s.count)} r="3" fill="var(--primary)" />
+                    {showValues && (
+                      <text x={cx(i)} y={cy(s.count) - 9} textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor">
+                        {s.count}
+                      </text>
+                    )}
+                    {(i % labelEvery === 0 || i === n - 1) && (
+                      <text x={cx(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="#9ca3af">
+                        {s.label}
+                      </text>
+                    )}
                   </g>
                 ))}
               </svg>
