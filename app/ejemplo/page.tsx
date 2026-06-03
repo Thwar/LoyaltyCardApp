@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { TiltCard } from "@/components/TiltCard";
 import { QrCode } from "@/components/QrCode";
+import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "Ejemplo — SoyCasero",
@@ -23,9 +24,15 @@ export default function EjemploPage() {
 
   return (
     <main className="container" style={{ maxWidth: 920, padding: "26px 20px 64px" }}>
-      <Link href="/" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
-        ← Volver
-      </Link>
+      <div className="row spread" style={{ alignItems: "center", marginBottom: 6 }}>
+        <Link href="/" aria-label="Inicio">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="SoyCasero" className="brand-logo" style={{ height: 38 }} />
+        </Link>
+        <Link href="/" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
+          ← Volver
+        </Link>
+      </div>
 
       <div style={{ textAlign: "center", marginTop: 18 }}>
         <h1 style={{ fontSize: 28, margin: "0 0 8px" }}>Pruébalo tú mismo</h1>
@@ -98,6 +105,8 @@ export default function EjemploPage() {
           </Link>
         </div>
       </div>
+
+      <SiteFooter />
     </main>
   );
 }
