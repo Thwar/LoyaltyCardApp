@@ -546,6 +546,8 @@ function ResumenTab({
   const [showAll, setShowAll] = useState(false);
   const [filterCardId, setFilterCardId] = useState<string>("all");
   const [exporting, setExporting] = useState(false);
+  const [chartMonths, setChartMonths] = useState(6);
+  const [chartMetric, setChartMetric] = useState<"nuevos" | "visitas">("nuevos");
 
   async function exportCsv() {
     setExporting(true);
@@ -592,23 +594,25 @@ function ResumenTab({
   const aboutToWin = filtered.filter((m) => slotsOf(m) > 0 && m.currentStamps === slotsOf(m) - 1).length;
   const avgStamps = clients.length ? Math.round((stampsGiven / clients.length) * 10) / 10 : 0;
 
-  // New clients per month (last 6 months) for the analytics chart.
-  const monthly = (() => {
+  // Filterable time series for the analytics chart (metric + range).
+  const series = (() => {
     const base = new Date();
-    const buckets = Array.from({ length: 6 }, (_, i) => {
-      const d = new Date(base.getFullYear(), base.getMonth() - (5 - i), 1);
-      return { key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString("es-ES", { month: "short" }), count: 0 };
+    const buckets = Array.from({ length: chartMonths }, (_, i) => {
+      const d = new Date(base.getFullYear(), base.getMonth() - (chartMonths - 1 - i), 1);
+      const m = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
+      return { key: `${d.getFullYear()}-${d.getMonth()}`, label: m.charAt(0).toUpperCase() + m.slice(1), count: 0 };
     });
     const idx = new Map(buckets.map((b, i) => [b.key, i]));
     for (const c of clients) {
-      if (!c.createdAt) continue;
-      const d = new Date(c.createdAt);
+      const ts = chartMetric === "nuevos" ? c.createdAt : c.lastStampDate;
+      if (!ts) continue;
+      const d = new Date(ts);
       const i = idx.get(`${d.getFullYear()}-${d.getMonth()}`);
       if (i != null) buckets[i].count++;
     }
     return buckets;
   })();
-  const maxMonthly = Math.max(1, ...monthly.map((m) => m.count));
+  const seriesMax = Math.max(1, ...series.map((s) => s.count));
 
   // The client limit is business-wide (uses the distinct count), only on the free tier.
   const limit = planInfo.maxClients; // null = unlimited (paid plans)
@@ -680,29 +684,62 @@ function ResumenTab({
             <StatCard label="Sellos por cliente" value={avgStamps} />
           </div>
 
-          <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)", margin: "20px 0 12px" }}>
-            Nuevos clientes (últimos 6 meses)
-          </h4>
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-            {monthly.map((m) => (
-              <div key={m.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-                <div style={{ height: 110, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                  <div
-                    style={{
-                      width: "62%",
-                      maxWidth: 40,
-                      height: `${Math.round((m.count / maxMonthly) * 100)}%`,
-                      minHeight: m.count ? 6 : 2,
-                      background: m.count ? "var(--primary)" : "var(--border)",
-                      borderRadius: "6px 6px 0 0",
-                    }}
-                  />
-                </div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>{m.count}</div>
-                <div className="muted" style={{ fontSize: 11, textTransform: "capitalize" }}>{m.label}</div>
-              </div>
-            ))}
+          <div className="row spread" style={{ alignItems: "center", margin: "20px 0 6px", flexWrap: "wrap", gap: 8 }}>
+            <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)", margin: 0 }}>
+              {chartMetric === "nuevos" ? "Nuevos clientes" : "Visitas recientes"}
+            </h4>
+            <div className="row" style={{ width: "auto", gap: 8 }}>
+              <select
+                className="input"
+                style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}
+                value={chartMetric}
+                onChange={(e) => setChartMetric(e.target.value as "nuevos" | "visitas")}
+              >
+                <option value="nuevos">Nuevos clientes</option>
+                <option value="visitas">Visitas recientes</option>
+              </select>
+              <select
+                className="input"
+                style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}
+                value={chartMonths}
+                onChange={(e) => setChartMonths(Number(e.target.value))}
+              >
+                <option value={6}>6 meses</option>
+                <option value={12}>12 meses</option>
+              </select>
+            </div>
           </div>
+          {(() => {
+            const W = 600,
+              H = 180,
+              padX = 26,
+              padTop = 26,
+              padBottom = 28;
+            const innerW = W - padX * 2;
+            const innerH = H - padTop - padBottom;
+            const n = series.length;
+            const cx = (i: number) => padX + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+            const cy = (v: number) => padTop + innerH - (v / seriesMax) * innerH;
+            const line = series.map((s, i) => `${cx(i)},${cy(s.count)}`).join(" ");
+            const area = `M ${cx(0)},${padTop + innerH} ` + series.map((s, i) => `L ${cx(i)},${cy(s.count)}`).join(" ") + ` L ${cx(n - 1)},${padTop + innerH} Z`;
+            return (
+              <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+                <path d={area} fill="var(--primary)" opacity="0.08" />
+                <polyline points={line} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                {series.map((s, i) => (
+                  <g key={s.key}>
+                    <circle cx={cx(i)} cy={cy(s.count)} r="3.5" fill="var(--primary)" />
+                    <text x={cx(i)} y={cy(s.count) - 9} textAnchor="middle" fontSize="12" fontWeight="700" fill="currentColor">
+                      {s.count}
+                    </text>
+                    <text x={cx(i)} y={H - 8} textAnchor="middle" fontSize="11" fill="#9ca3af">
+                      {s.label}
+                    </text>
+                  </g>
+                ))}
+              </svg>
+            );
+          })()}
         </div>
         {!planInfo.paid && (
           <div
