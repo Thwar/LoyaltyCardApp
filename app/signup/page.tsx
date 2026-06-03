@@ -40,7 +40,7 @@ export default function SignupPage() {
     <div className="container">
       <Link href="/">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="SoyCasero" className="brand-logo" style={{ marginBottom: 24 }} />
+        <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" style={{ marginBottom: 24 }} />
       </Link>
       <h1 style={{ fontSize: 26 }}>Crea tu cuenta</h1>
       <p className="muted" style={{ marginBottom: 20 }}>

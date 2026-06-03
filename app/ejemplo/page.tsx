@@ -27,7 +27,7 @@ export default function EjemploPage() {
       <div className="row spread" style={{ alignItems: "center", marginBottom: 6 }}>
         <Link href="/" aria-label="Inicio">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.png" alt="SoyCasero" className="brand-logo" style={{ height: 38 }} />
+          <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" style={{ height: 38 }} />
         </Link>
         <Link href="/" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
           ← Volver
