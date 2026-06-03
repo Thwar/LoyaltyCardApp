@@ -9,6 +9,17 @@ const nextConfig = {
     "/api/wallet/apple/pass/[customerCardId]": ["./public/icon.png", "./public/logo.png"],
     "/api/wallet/apple/v1/passes/[passTypeIdentifier]/[serialNumber]": ["./public/icon.png", "./public/logo.png"],
   },
+  // Canonical domain: send caseroapp.com traffic to soycasero.com (don't split SEO/shares).
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "(www\\.)?caseroapp\\.com" }],
+        destination: "https://www.soycasero.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

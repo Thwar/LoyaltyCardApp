@@ -1,15 +1,23 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { Smartphone, Wallet, QrCode, Stamp, Bell, Palette, UserPlus, Hand, Check, X, ArrowRight } from "lucide-react";
+import { Smartphone, Wallet, QrCode, Stamp, Bell, Palette, Megaphone, Repeat, TrendingUp, Heart, UserPlus, Hand, Check, X, ArrowRight } from "lucide-react";
 import { CardPreview } from "@/components/CardPreview";
+import { WhatsAppButton } from "@/components/WhatsAppButton";
+
+// Why a business needs this (the persuasion: retention → sales).
+const WHY = [
+  { Icon: Repeat, acc: "acc-blue", title: "Vuelven más seguido", desc: "La tarjeta de sellos les da un motivo para volver a ti, no a la competencia de al lado." },
+  { Icon: TrendingUp, acc: "acc-green", title: "Más ventas por cliente", desc: "Retener cuesta mucho menos que conseguir clientes nuevos — y los clientes fieles gastan más." },
+  { Icon: Heart, acc: "acc-orange", title: "Una relación que dura", desc: "Cada visita suma. Conviertes una compra suelta en un cliente que vuelve y te recomienda." },
+];
 
 const FEATURES = [
   { Icon: Smartphone, acc: "acc-blue", title: "No es otra app", desc: "Tus clientes no descargan nada. La tarjeta vive en el wallet que ya usan todos los días." },
   { Icon: Wallet, acc: "acc-violet", title: "Apple & Google Wallet", desc: "Funciona en iPhone y Android. Un mismo QR sirve para los dos." },
-  { Icon: QrCode, acc: "acc-teal", title: "Se unen con un QR", desc: "Pon el QR en tu mostrador. El cliente escanea, llena sus datos y listo." },
-  { Icon: Stamp, acc: "acc-orange", title: "Sellos al instante", desc: "Sumas un sello con un toque y aparece en el celular del cliente al momento." },
-  { Icon: Bell, acc: "acc-amber", title: "Siempre actualizada", desc: "Cambias el premio, los colores o los sellos y la tarjeta de todos se actualiza sola." },
-  { Icon: Palette, acc: "acc-green", title: "Con tu marca", desc: "Tu logo, tus colores y tu recompensa. Se ve como tu negocio, no como una app genérica." },
+  { Icon: Stamp, acc: "acc-teal", title: "Sellos al instante", desc: "Sumas un sello con un toque y aparece en el celular del cliente al momento." },
+  { Icon: Bell, acc: "acc-amber", title: "Notificaciones que hacen volver", desc: "El cliente recibe un aviso con cada sello y al inscribirse. Le recuerdas tu negocio, sin costo." },
+  { Icon: Megaphone, acc: "acc-orange", title: "Promociones a tus clientes", desc: "Envía promos, recordatorios o avisos a todos desde tu panel (planes de pago). Llena tu local en días lentos." },
+  { Icon: Palette, acc: "acc-green", title: "Con tu marca y tus íconos", desc: "Tu logo, tus colores y hasta el ícono del sello (☕ 🍕 ✂️). Se ve como tu negocio, no como una app genérica." },
 ];
 
 const STEPS = [
@@ -27,7 +35,7 @@ const PLANS = [
     price: "Bs 0",
     period: "para siempre",
     highlight: false,
-    cta: "Empezar gratis",
+    cta: "Crear cuenta gratis",
     features: [
       { t: "1 tarjeta de sellos", ok: true },
       { t: "Hasta 50 clientes activos", ok: true },
@@ -46,14 +54,14 @@ const PLANS = [
     period: "/mes",
     highlight: true,
     badge: "Más popular",
-    cta: "Probar gratis",
+    cta: "Crear cuenta",
     features: [
       { t: "Todo lo del plan Gratis", ok: true },
       { t: "Clientes ilimitados", ok: true },
+      { t: "Formas e íconos de sello personalizados", ok: true },
       { t: "Mensajes promocionales (1/día)", ok: true },
       { t: "Ver y exportar datos de clientes", ok: true },
       { t: "Analíticas avanzadas", ok: true },
-      { t: "Soporte por WhatsApp", ok: true },
     ],
   },
   {
@@ -64,7 +72,7 @@ const PLANS = [
     price: "Bs 249",
     period: "/mes",
     highlight: false,
-    cta: "Probar gratis",
+    cta: "Crear cuenta",
     features: [
       { t: "Todo lo del plan Café", ok: true },
       { t: "3 tarjetas / programas", ok: true },
@@ -80,9 +88,10 @@ const FAQS = [
   { q: "¿Mis clientes necesitan descargar una app?", a: "No. La tarjeta se guarda directamente en Apple Wallet o Google Wallet, que ya tienen en su celular." },
   { q: "¿Funciona en iPhone y Android?", a: "Sí, en ambos. Un mismo QR sirve para los dos sistemas." },
   { q: "¿Cómo sumo un sello?", a: "Escribes el código del cliente en tu panel y el sello aparece al instante en su celular, sin que tengan que hacer nada." },
+  { q: "¿Puedo enviar promociones a mis clientes?", a: "Sí. Con los planes de pago envías notificaciones de promociones, recordatorios o avisos a todos tus clientes desde tu panel, con un límite diario para no saturar." },
+  { q: "¿Puedo personalizar la tarjeta?", a: "Sí. Eliges tu logo, tus colores y la forma o el ícono del sello (café, pizza, tijeras y más). Los íconos están disponibles en los planes de pago." },
   { q: "¿Necesito un lector o equipo especial?", a: "No. Solo tu celular o computadora con internet. Pones el QR en el mostrador y listo." },
-  { q: "¿Cuánto cuesta?", a: "Hay un plan gratis para empezar. Los planes pagos arrancan en Bs 99/mes (precios tentativos)." },
-  { q: "¿Cuándo estará disponible?", a: "Estamos puliendo los últimos detalles. Lanzamiento en 2026." },
+  { q: "¿Cuánto cuesta?", a: "Hay un plan gratis para siempre. Los planes de pago arrancan en Bs 99/mes, sin contratos." },
 ];
 
 export default function Home() {
@@ -92,6 +101,9 @@ export default function Home() {
       <section style={{ background: "linear-gradient(135deg, #e53935, #c62828)", color: "#fff", padding: "22px 20px 64px" }}>
         <nav className="nav">
           <div className="nav-links">
+            <a className="nav-anchor" href="#why">
+              Beneficios
+            </a>
             <a className="nav-anchor" href="#features">
               Funciones
             </a>
@@ -108,29 +120,25 @@ export default function Home() {
           <div className="hero-left">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="SoyCasero" style={{ height: 80, marginBottom: 22, filter: "brightness(0) invert(1)" }} />
-            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>La tarjeta de sellos de tu negocio, en el celular de tus clientes.</h1>
+            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>Tus clientes vuelven más. Tú vendes más.</h1>
             <p style={{ fontSize: 18, opacity: 0.95, margin: "0 0 24px", maxWidth: 520, lineHeight: 1.55 }}>
-              <strong style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>No es otra app que descargar.</strong> Tus clientes escanean un QR y guardan su tarjeta en Apple&nbsp;Wallet o
-              Google&nbsp;Wallet. Tú sumas sellos con un toque.
+              La tarjeta de sellos digital que premia a tus clientes y los hace volver. <strong style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>No es otra app que descargar</strong> — la guardan en
+              Apple&nbsp;Wallet o Google&nbsp;Wallet escaneando un QR. Tú sumas sellos con un toque.
             </p>
             <div className="cta-row">
-              <span className="btn-hero-disabled" aria-disabled="true">
-                Crear mi tarjeta gratis
-              </span>
+              <Link href="/signup" className="btn-hero-white">
+                Crear mi cuenta gratis
+              </Link>
               <Link href="/login" className="btn-hero-outline">
                 Ya tengo cuenta
               </Link>
             </div>
-            <div className="wallet-badges">
+            <p style={{ fontSize: 14, opacity: 0.9, margin: "14px 0 0" }}>Gratis para empezar · Sin tarjeta de crédito · Listo en 2 minutos</p>
+            <div className="wallet-badges" style={{ marginTop: 22 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/apple-wallet.png?v=2`} alt="Añadir a Apple Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/goole-wallet.svg?v=2`} alt="Añadir a Google Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
-            </div>
-            <div style={{ marginTop: 22 }}>
-              <span className="soon-pill" style={{ marginBottom: 0 }}>
-                🚀 Próximamente · 2026
-              </span>
             </div>
           </div>
 
@@ -177,6 +185,7 @@ export default function Home() {
                       rewardDescription="Tu 9.ª compra gratis"
                       cardColor="#0d9488"
                       textColor="#FFFFFF"
+                      stampShape="coffee"
                       code="248"
                       lastVisit="Hoy"
                       logoUrl="/homepage/cafe.png"
@@ -187,6 +196,28 @@ export default function Home() {
                 <div className="phone-home" />
               </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* WHY — the sales/retention pitch */}
+      <section style={{ background: "var(--bg-soft)" }} id="why">
+        <div className="landing-section">
+          <h2 className="section-title">Por qué tu negocio lo necesita</h2>
+          <p className="section-sub">Conseguir un cliente nuevo es caro. Hacer que el que ya tienes vuelva es lo que hace crecer tu negocio.</p>
+          <div className="grid-3" style={{ marginTop: 38 }}>
+            {WHY.map((w) => {
+              const Icon = w.Icon;
+              return (
+                <div key={w.title} className={`card lift feature-card ${w.acc}`}>
+                  <span className="icon-badge">
+                    <Icon size={24} strokeWidth={2.2} />
+                  </span>
+                  <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>{w.title}</h3>
+                  <p className="feat-text">{w.desc}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -250,7 +281,7 @@ export default function Home() {
             Precios simples, en bolivianos
           </h2>
           <p className="section-sub" style={{ color: "rgba(255,255,255,0.72)" }}>
-            Empieza gratis y mejora cuando crezcas. Precios tentativos, sin contratos.
+            Empieza gratis y mejora cuando crezcas. Sin contratos, cancela cuando quieras.
           </p>
           <div className="grid-pricing" style={{ marginTop: 40 }}>
             {PLANS.map((p) => (
@@ -274,9 +305,9 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <span className="btn btn-disabled" style={{ marginTop: "auto" }} aria-disabled="true">
+                <Link href="/signup" className="btn btn-primary" style={{ marginTop: "auto", textAlign: "center" }}>
                   {p.cta}
-                </span>
+                </Link>
               </div>
             ))}
           </div>
@@ -299,15 +330,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* COMING SOON CTA */}
+      {/* FINAL CTA */}
       <section style={{ background: "linear-gradient(135deg, #e53935, #c62828)", color: "#fff", padding: "56px 20px", textAlign: "center" }}>
-        <span className="soon-pill">🚀 Próximamente · 2026</span>
-        <h2 style={{ fontSize: 28, fontWeight: 800, margin: "10px 0 10px" }}>Estamos por lanzar</h2>
-        <p style={{ opacity: 0.95, margin: "0 0 22px" }}>Pronto vas a poder crear la tarjeta de tu negocio en minutos.</p>
+        <h2 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 10px" }}>Empieza hoy. Gratis.</h2>
+        <p style={{ opacity: 0.95, margin: "0 0 22px" }}>Crea la tarjeta de tu negocio en minutos y haz que tus clientes vuelvan.</p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
-          <span className="btn-hero-disabled" aria-disabled="true">
-            Crear mi tarjeta gratis
-          </span>
+          <Link href="/signup" className="btn-hero-white">
+            Crear mi cuenta gratis
+          </Link>
           <Link href="/login" className="btn-hero-outline">
             Ya tengo cuenta
           </Link>
@@ -328,6 +358,8 @@ export default function Home() {
           </a>
         </p>
       </footer>
+
+      <WhatsAppButton />
     </main>
   );
 }
