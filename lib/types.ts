@@ -32,7 +32,10 @@ export interface Business {
   createdAt?: number;
 }
 
-export type StampShape = "circle" | "square" | "star" | "diamond" | "heart";
+export type StampShape =
+  | "circle" | "square" | "star" | "diamond" | "heart" // geometric
+  | "coffee" | "beer" | "wine" | "pizza" | "burger" | "icecream" | "cookie" | "bread" // food & drink
+  | "scissors" | "paw" | "gift" | "bag" | "tag" | "leaf"; // services & retail
 
 export interface LoyaltyCard {
   id: string;

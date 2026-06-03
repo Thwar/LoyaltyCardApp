@@ -13,7 +13,7 @@ import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Lock, Pencil } from "lucide-react";
 import type { Business, CustomerCard, LoyaltyCard, StampShape } from "@/lib/types";
-import { STAMP_SHAPES } from "@/lib/stampShapes";
+import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 
 interface MeResponse {
   business: Business | null;
@@ -280,6 +280,37 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
 
       <div className="card">
         <div className="field">
+          <label>Forma del sello</label>
+          {planInfo.paid ? (
+            <select className="input" value={stampShape} onChange={(e) => setStampShape(e.target.value as StampShape)}>
+              <optgroup label="Formas">
+                {STAMP_SHAPES.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Íconos">
+                {STAMP_ICONS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          ) : (
+            <>
+              <select className="input" value="circle" disabled style={{ opacity: 0.6, cursor: "not-allowed" }}>
+                <option value="circle">Círculo</option>
+              </select>
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Lock size={13} aria-hidden /> Mejora al plan Café o Negocio para elegir estrella, diamante y más.
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="field">
           <label>¿Cuántos sellos para ganar la recompensa?</label>
           <select className="input" value={totalSlots} onChange={(e) => setTotalSlots(Number(e.target.value))}>
             {Array.from({ length: CARD_DEFAULTS.MAX_SLOTS - CARD_DEFAULTS.MIN_SLOTS + 1 }).map((_, i) => {
@@ -376,28 +407,6 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
             />
             <input className="input" style={{ maxWidth: 110 }} value={textColor} onChange={(e) => setTextColor(e.target.value)} placeholder="#FFFFFF" />
           </div>
-        </div>
-
-        <div className="field">
-          <label>Forma del sello</label>
-          {planInfo.paid ? (
-            <select className="input" value={stampShape} onChange={(e) => setStampShape(e.target.value as StampShape)}>
-              {STAMP_SHAPES.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <>
-              <select className="input" value="circle" disabled style={{ opacity: 0.6, cursor: "not-allowed" }}>
-                <option value="circle">Círculo</option>
-              </select>
-              <p className="muted" style={{ fontSize: 12, marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <Lock size={13} aria-hidden /> Mejora al plan Café o Negocio para elegir estrella, diamante y más.
-              </p>
-            </>
-          )}
         </div>
 
         <div className="field">

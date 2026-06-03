@@ -202,6 +202,23 @@ Three new dimensions are planned to differentiate the upper tiers beyond raw car
 
 *None of this is implemented yet — `lib/plans.ts` currently ships Gratis / Café / Negocio with no location, VIP-card, or per-location notification concept. This subsection records the intended direction.*
 
+### Card editor roadmap (competitor-inspired)
+
+Benchmarked against Loyalz's card designer. **Shipped:** stamp **shapes** (circle/square/star/diamond/heart) + a curated **icon library** (Phosphor solid glyphs: café, cerveza, vino, pizza, hamburguesa, helado, galleta, pan, tijeras, huella, regalo, bolsa, etiqueta, hoja) — rendered identically on Apple, Google (hero banner) and the web preview, paid-gated. Remaining ideas, in priority order:
+
+| Idea | Effort | Verdict |
+|---|---|---|
+| **Separate active / inactive stamp colors** | low | **next** — cheap; renderer already takes a color, just split it |
+| **"Background under stamps" image** (uploaded banner behind the grid) | medium | **next** — extends the hero we already generate; best visual feature they have |
+| **Custom uploaded stamp PNG** (bring-your-own glyph) | medium | later — escape hatch for brands that want their exact mark; paid extra |
+| **Per-platform preview toggle** (Apple vs Google look) | medium | nice-to-have |
+| **Dedicated notification Icon (512×512)** vs logo | low | minor — cleaner notifications |
+| Editable field labels; show-logo / show-bg join-form toggles | low | **skip** — config sprawl; bad for concierge-onboarded SMEs |
+| Multi-step wizard (Type→Settings→Design→Info) | medium | skip *until* the editor grows (more card types) |
+| Multiple card **types** (cashback, membership/VIP, gift, discount) | high | strategic — see membership note above |
+
+**Deliberate non-goals:** Loyalz exposes ~7 color pickers, field renaming, and form toggles. We intentionally keep fewer, well-chosen knobs — simplicity is a feature for low-digital-literacy merchants we hand-onboard. Icon set is curated (~15 solid glyphs by vertical), not a thousand-icon picker, because thin/complex icons don't read as a 1-bit stamp at pass size.
+
 ### Bolivia payment-collection reality (the operational crux)
 
 - **Stripe is out** for a Bolivia-registered business (confirmed: LatAm = Brazil + Mexico only). Mercado Pago is **doubtful** for a Bolivia-based merchant (its merchant eligibility list excludes Bolivia — treat as unavailable for collection).

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { COLLECTIONS } from "@/lib/types";
+import { COLLECTIONS, type StampShape } from "@/lib/types";
+import { STAMP_SHAPE_IDS } from "@/lib/stampShapes";
 import { CARD_DEFAULTS } from "@/lib/theme";
 import { getBusinessByOwner, getLoyaltyCard, getLoyaltyCardsByBusiness } from "@/lib/serverData";
 import { effectivePlan } from "@/lib/plans";
@@ -32,10 +33,9 @@ export async function POST(req: Request) {
     const cardColor = hexOk(cardColorRaw) ? cardColorRaw : "#E53935";
     const textColor = hexOk(textColorRaw) ? textColorRaw : "#FFFFFF";
 
-    // Custom stamp shapes are a paid feature; free plans are forced to circle.
-    const SHAPES = ["circle", "square", "star", "diamond", "heart"];
-    const shapeRaw = String(body.stampShape || "circle");
-    const stampShape = effectivePlan(business).paid && SHAPES.includes(shapeRaw) ? shapeRaw : "circle";
+    // Custom stamp shapes/icons are a paid feature; free plans are forced to circle.
+    const shapeRaw = String(body.stampShape || "circle") as StampShape;
+    const stampShape = effectivePlan(business).paid && STAMP_SHAPE_IDS.includes(shapeRaw) ? shapeRaw : "circle";
 
     if (!Number.isFinite(totalSlots) || totalSlots < CARD_DEFAULTS.MIN_SLOTS || totalSlots > CARD_DEFAULTS.MAX_SLOTS) {
       return NextResponse.json(
