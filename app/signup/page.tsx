@@ -9,17 +9,17 @@ import { authErrorMessage } from "@/lib/authErrors";
 import { SiteFooter } from "@/components/SiteFooter";
 
 const COUNTRY_CODES = [
-  { code: "+591", flag: "🇧🇴" },
-  { code: "+54", flag: "🇦🇷" },
-  { code: "+55", flag: "🇧🇷" },
-  { code: "+56", flag: "🇨🇱" },
-  { code: "+57", flag: "🇨🇴" },
-  { code: "+51", flag: "🇵🇪" },
-  { code: "+595", flag: "🇵🇾" },
-  { code: "+598", flag: "🇺🇾" },
-  { code: "+52", flag: "🇲🇽" },
-  { code: "+34", flag: "🇪🇸" },
-  { code: "+1", flag: "🇺🇸" },
+  { code: "+591", name: "Bolivia" },
+  { code: "+54", name: "Argentina" },
+  { code: "+55", name: "Brasil" },
+  { code: "+56", name: "Chile" },
+  { code: "+57", name: "Colombia" },
+  { code: "+51", name: "Perú" },
+  { code: "+595", name: "Paraguay" },
+  { code: "+598", name: "Uruguay" },
+  { code: "+52", name: "México" },
+  { code: "+34", name: "España" },
+  { code: "+1", name: "EE. UU." },
 ];
 
 export default function SignupPage() {
@@ -94,11 +94,19 @@ export default function SignupPage() {
             <select className="input" style={{ width: "auto", flex: "0 0 auto" }} value={countryCode} onChange={(e) => setCountryCode(e.target.value)}>
               {COUNTRY_CODES.map((c) => (
                 <option key={c.code} value={c.code}>
-                  {c.flag} {c.code}
+                  {c.name} {c.code}
                 </option>
               ))}
             </select>
-            <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="70123456" />
+            <input
+              className="input"
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+              placeholder="70123456"
+              maxLength={15}
+            />
           </div>
         </div>
         <div className="field">
