@@ -634,6 +634,7 @@ function ResumenTab({
           className="card"
           style={{
             border: `1px solid ${nearLimit ? "#e0796f" : "#f3c0bd"}`,
+            background: nearLimit ? "#fbdedb" : "#fbece9",
             marginTop: 14,
             marginBottom: 16,
           }}
@@ -642,7 +643,7 @@ function ResumenTab({
             <h3 style={{ fontSize: 17, margin: 0 }}>👥 Clientes activos</h3>
             <span style={{ fontWeight: 800, fontSize: 22, color: nearLimit ? "#c62828" : "var(--primary)" }}>{limitLabel}</span>
           </div>
-          <div className="progress">
+          <div className="progress" style={{ background: "#fff" }}>
             <div className="progress-fill" style={{ width: `${pct}%`, background: nearLimit ? "#c62828" : undefined }} />
           </div>
           <p className="muted" style={{ fontSize: 14, marginTop: 10, marginBottom: 0 }}>{remainingText}</p>
