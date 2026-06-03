@@ -43,9 +43,12 @@ export default function JoinPage() {
   const [formErr, setFormErr] = useState("");
   const [result, setResult] = useState<EnrollResult | null>(null);
   const [isIOS, setIsIOS] = useState(false);
+  const [refId, setRefId] = useState("");
+  const [refCopied, setRefCopied] = useState(false);
 
   useEffect(() => {
     if (typeof navigator !== "undefined") setIsIOS(/iphone|ipad|ipod/i.test(navigator.userAgent));
+    if (typeof window !== "undefined") setRefId(new URLSearchParams(window.location.search).get("ref") || "");
   }, []);
 
   useEffect(() => {
@@ -79,7 +82,7 @@ export default function JoinPage() {
     const res = await fetch("/api/enroll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loyaltyCardId: cardId, name: name.trim(), email: email.trim(), phone: phone.trim(), marketingConsent: consent }),
+      body: JSON.stringify({ loyaltyCardId: cardId, name: name.trim(), email: email.trim(), phone: phone.trim(), marketingConsent: consent, ref: refId }),
     });
     const json = await res.json();
     setSubmitting(false);
@@ -100,6 +103,8 @@ export default function JoinPage() {
 
   // Success screen
   if (result) {
+    const base = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+    const refLink = `${base}/join/${cardId}?ref=${result.customerCardId}`;
     return (
       <div className="container">
         <div className="center" style={{ marginBottom: 18 }}>
@@ -162,6 +167,37 @@ export default function JoinPage() {
             </div>
           );
         })()}
+
+        <div className="card mt center">
+          <p style={{ fontWeight: 700, margin: "0 0 4px" }}>🎁 Invita y gana un sello</p>
+          <p className="muted" style={{ fontSize: 13, margin: "0 0 12px" }}>
+            Comparte tu link. Cuando un amigo se una a {card.businessName}, ¡ganas un sello!
+          </p>
+          <div className="row" style={{ gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <a
+              className="btn btn-primary"
+              style={{ width: "auto", display: "inline-block" }}
+              href={`https://wa.me/?text=${encodeURIComponent(`¡Únete a la tarjeta de ${card.businessName} y juntemos sellos! ${refLink}`)}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Compartir por WhatsApp
+            </a>
+            <button
+              className="btn btn-outline"
+              style={{ width: "auto" }}
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(refLink);
+                  setRefCopied(true);
+                  setTimeout(() => setRefCopied(false), 1500);
+                } catch {}
+              }}
+            >
+              {refCopied ? "¡Copiado!" : "Copiar link"}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }

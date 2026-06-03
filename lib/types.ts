@@ -75,4 +75,6 @@ export interface CustomerCard {
   createdAt?: number;
   lastStampDate?: number;
   marketingConsent?: boolean; // opted in (join-form checkbox) to share contact info for marketing
+  referredBy?: string; // the customerCard id that referred this customer (referral program)
+  referralCount?: number; // how many new customers this customer has referred
 }
