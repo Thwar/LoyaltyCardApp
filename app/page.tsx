@@ -110,6 +110,9 @@ export default function Home() {
             <a className="nav-anchor" href="#pricing">
               Precios
             </a>
+            <Link className="nav-anchor" href="/ejemplo">
+              Ver ejemplo
+            </Link>
             <a className="nav-anchor" href="#faq">
               Preguntas
             </a>
@@ -133,7 +136,12 @@ export default function Home() {
                 Ya tengo cuenta
               </Link>
             </div>
-            <p style={{ fontSize: 14, opacity: 0.9, margin: "14px 0 0" }}>Gratis para empezar · Sin tarjeta de crédito · Listo en 2 minutos</p>
+            <p style={{ fontSize: 14, opacity: 0.9, margin: "14px 0 0" }}>
+              Gratis para empezar · Sin tarjeta de crédito ·{" "}
+              <Link href="/ejemplo" style={{ color: "#fff", textDecoration: "underline", textUnderlineOffset: "3px" }}>
+                Ver un ejemplo
+              </Link>
+            </p>
             <div className="wallet-badges" style={{ marginTop: 22 }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/apple-wallet.png?v=2`} alt="Añadir a Apple Wallet" style={{ height: 50, width: "auto", maxWidth: 200 }} />
