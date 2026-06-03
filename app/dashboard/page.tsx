@@ -1127,38 +1127,18 @@ function ComunicacionTab({ business, planInfo, onChanged }: { business: Business
     return () => clearInterval(id);
   }, []);
 
-  if (!planInfo.paid || planInfo.broadcastsPerDay <= 0) {
-    return (
-      <div className="card mt">
-        <h3 style={{ fontSize: 18, marginTop: 0 }}>Mensajes a tus clientes</h3>
-        <p className="muted" style={{ marginTop: 0 }}>Envía promociones, recordatorios o avisos directo al wallet de tus clientes.</p>
-        <div
-          style={{
-            background: "var(--bg-soft)",
-            border: "2px dashed var(--border)",
-            borderRadius: 12,
-            padding: "16px 18px",
-            color: "var(--text-secondary)",
-            fontWeight: 700,
-            textAlign: "center",
-          }}
-        >
-          🔒 Mejora al plan Café o Negocio para enviar mensajes a tus clientes.
-        </div>
-      </div>
-    );
-  }
+  const paid = planInfo.paid && planInfo.broadcastsPerDay > 0;
 
   const day = 24 * 60 * 60 * 1000;
-  const history = business.broadcastHistory || [];
+  const history = paid ? business.broadcastHistory || [] : [];
   const resetAt = business.broadcastRateResetAt || 0;
   const recent = history.filter((h) => now - h.at < day && h.at > resetAt);
-  const perDay = planInfo.broadcastsPerDay;
+  const perDay = planInfo.broadcastsPerDay || 1; // denominator for display (free → 1)
   const usedToday = recent.length;
-  const dayLimitHit = usedToday >= perDay;
   const gapMs = planInfo.broadcastGapHours * 60 * 60 * 1000;
   const lastAt = recent.length ? Math.max(...recent.map((h) => h.at)) : 0;
-  const gapHit = gapMs > 0 && lastAt > 0 && now - lastAt < gapMs;
+  const dayLimitHit = paid && usedToday >= perDay;
+  const gapHit = paid && gapMs > 0 && lastAt > 0 && now - lastAt < gapMs;
   const blocked = dayLimitHit || gapHit;
 
   // When can they send again, and over what window (for the progress bar fill).
@@ -1184,78 +1164,104 @@ function ComunicacionTab({ business, planInfo, onChanged }: { business: Business
   }
 
   return (
-    <div className="card mt">
+    <div className="card mt" style={{ position: "relative", overflow: "hidden" }}>
       <h3 style={{ fontSize: 18, marginTop: 0 }}>Mensajes a tus clientes</h3>
       <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
-        Envía una promoción, recordatorio o aviso al wallet de todos tus clientes. Tu plan {planInfo.label} permite{" "}
-        {perDay} mensaje(s) al día
-        {planInfo.broadcastGapHours ? `, con ${planInfo.broadcastGapHours}h entre cada uno` : ""}.
+        Envía una promoción, recordatorio o aviso al wallet de todos tus clientes.
+        {paid
+          ? ` Tu plan ${planInfo.label} permite ${planInfo.broadcastsPerDay} mensaje(s) al día${planInfo.broadcastGapHours ? `, con ${planInfo.broadcastGapHours}h entre cada uno` : ""}.`
+          : ""}
       </p>
 
-      {/* Send status: progress bar + "usados/permitidos" + countdown */}
-      <div style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: blocked ? "var(--text-secondary)" : "#16a34a" }}>
-            {blocked ? "Próximo envío disponible" : "✓ Listo para enviar"}
-          </span>
-          <strong style={{ fontSize: 15 }}>
-            {usedToday}/{perDay}
-            <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> hoy</span>
-          </strong>
+      <div style={paid ? undefined : { filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }} aria-hidden={!paid}>
+        {/* Send status: progress bar + "usados/permitidos" + countdown */}
+        <div style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: blocked ? "var(--text-secondary)" : "#16a34a" }}>
+              {blocked ? "Próximo envío disponible" : "✓ Listo para enviar"}
+            </span>
+            <strong style={{ fontSize: 15 }}>
+              {usedToday}/{perDay}
+              <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> hoy</span>
+            </strong>
+          </div>
+          <div style={{ height: 8, borderRadius: 999, background: "var(--border)", overflow: "hidden" }}>
+            <div
+              style={{
+                height: "100%",
+                width: `${pct}%`,
+                background: blocked ? "#E53935" : "#16a34a",
+                transition: "width 1s linear",
+              }}
+            />
+          </div>
+          {blocked && (
+            <p style={{ fontSize: 13, marginTop: 8, marginBottom: 0 }}>
+              Podrás enviar otro mensaje en <strong>{fmtCountdown(remainingMs)}</strong>
+            </p>
+          )}
         </div>
-        <div style={{ height: 8, borderRadius: 999, background: "var(--border)", overflow: "hidden" }}>
-          <div
-            style={{
-              height: "100%",
-              width: `${pct}%`,
-              background: blocked ? "#E53935" : "#16a34a",
-              transition: "width 1s linear",
-            }}
+
+        {err && <div className="error-box">{err}</div>}
+        {msg && <div className="success-box">{msg}</div>}
+
+        <div className="field">
+          <label>Mensaje</label>
+          <textarea
+            className="input"
+            rows={3}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Ej: ¡Hoy 2x1 en cafés! ☕ Ven y suma sellos."
+            maxLength={160}
           />
+          <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{message.length}/160</p>
         </div>
-        {blocked && (
-          <p style={{ fontSize: 13, marginTop: 8, marginBottom: 0 }}>
-            Podrás enviar otro mensaje en <strong>{fmtCountdown(remainingMs)}</strong>
-          </p>
+
+        <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim()}>
+          {busy ? "Enviando…" : "Enviar a mis clientes"}
+        </button>
+
+        {history.length > 0 && (
+          <div style={{ marginTop: 24 }}>
+            <h4 style={{ fontSize: 14, margin: "0 0 8px" }}>Historial de mensajes</h4>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+              {history
+                .slice()
+                .reverse()
+                .map((h) => (
+                  <li key={h.at} style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 14 }}>{h.message}</div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                      {new Date(h.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          </div>
         )}
       </div>
 
-      {err && <div className="error-box">{err}</div>}
-      {msg && <div className="success-box">{msg}</div>}
-
-      <div className="field">
-        <label>Mensaje</label>
-        <textarea
-          className="input"
-          rows={3}
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Ej: ¡Hoy 2x1 en cafés! ☕ Ven y suma sellos."
-          maxLength={160}
-        />
-        <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{message.length}/160</p>
-      </div>
-
-      <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim()}>
-        {busy ? "Enviando…" : "Enviar a mis clientes"}
-      </button>
-
-      {history.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <h4 style={{ fontSize: 14, margin: "0 0 8px" }}>Historial de mensajes</h4>
-          <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-            {history
-              .slice()
-              .reverse()
-              .map((h) => (
-                <li key={h.at} style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px" }}>
-                  <div style={{ fontSize: 14 }}>{h.message}</div>
-                  <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                    {new Date(h.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
-                  </div>
-                </li>
-              ))}
-          </ul>
+      {!paid && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+            background: "rgba(255,255,255,0.55)",
+            textAlign: "center",
+            padding: 16,
+          }}
+        >
+          <Lock size={22} aria-hidden />
+          <strong>Mensajes a tus clientes</strong>
+          <span className="muted" style={{ fontSize: 13, maxWidth: 320 }}>
+            Mejora al plan Café o Negocio para enviar promociones, recordatorios y avisos a todos tus clientes.
+          </span>
         </div>
       )}
     </div>
