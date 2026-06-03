@@ -592,6 +592,24 @@ function ResumenTab({
   const aboutToWin = filtered.filter((m) => slotsOf(m) > 0 && m.currentStamps === slotsOf(m) - 1).length;
   const avgStamps = clients.length ? Math.round((stampsGiven / clients.length) * 10) / 10 : 0;
 
+  // New clients per month (last 6 months) for the analytics chart.
+  const monthly = (() => {
+    const base = new Date();
+    const buckets = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(base.getFullYear(), base.getMonth() - (5 - i), 1);
+      return { key: `${d.getFullYear()}-${d.getMonth()}`, label: d.toLocaleDateString("es-ES", { month: "short" }), count: 0 };
+    });
+    const idx = new Map(buckets.map((b, i) => [b.key, i]));
+    for (const c of clients) {
+      if (!c.createdAt) continue;
+      const d = new Date(c.createdAt);
+      const i = idx.get(`${d.getFullYear()}-${d.getMonth()}`);
+      if (i != null) buckets[i].count++;
+    }
+    return buckets;
+  })();
+  const maxMonthly = Math.max(1, ...monthly.map((m) => m.count));
+
   // The client limit is business-wide (uses the distinct count), only on the free tier.
   const limit = planInfo.maxClients; // null = unlimited (paid plans)
   const pct = limit != null ? Math.min(100, Math.round((count / limit) * 100)) : 0;
@@ -607,6 +625,26 @@ function ResumenTab({
 
   return (
     <div>
+      {limit != null && (
+        <div
+          className="card"
+          style={{
+            border: `2px solid ${nearLimit ? "#c62828" : "var(--primary)"}`,
+            background: nearLimit ? "#fff5f5" : "var(--bg-soft)",
+            marginBottom: 16,
+          }}
+        >
+          <div className="row spread" style={{ alignItems: "center", marginBottom: 10 }}>
+            <h3 style={{ fontSize: 17, margin: 0 }}>👥 Clientes activos</h3>
+            <span style={{ fontWeight: 800, fontSize: 22, color: nearLimit ? "#c62828" : "var(--primary)" }}>{limitLabel}</span>
+          </div>
+          <div className="progress">
+            <div className="progress-fill" style={{ width: `${pct}%`, background: nearLimit ? "#c62828" : undefined }} />
+          </div>
+          <p className="muted" style={{ fontSize: 13, marginTop: 8, marginBottom: 0 }}>{remainingText}</p>
+        </div>
+      )}
+
       <StampBox onChanged={onChanged} />
 
       {cards.length > 1 && (
@@ -632,17 +670,39 @@ function ResumenTab({
 
       <div className="card mt" style={{ position: "relative", overflow: "hidden" }}>
         <h3 style={{ fontSize: 18, margin: "0 0 12px" }}>Analíticas avanzadas</h3>
-        <div
-          className="stat-grid"
-          style={planInfo.paid ? undefined : { filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}
-          aria-hidden={!planInfo.paid}
-        >
-          <StatCard label="Nuevos (30 días)" value={nuevos} />
-          <StatCard label="Activos (30 días)" value={activos} />
-          <StatCard label="Inactivos" value={inactivos} />
-          <StatCard label="Tasa de retorno" value={`${retencion}%`} />
-          <StatCard label="A 1 sello del premio" value={aboutToWin} />
-          <StatCard label="Sellos por cliente" value={avgStamps} />
+        <div style={planInfo.paid ? undefined : { filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }} aria-hidden={!planInfo.paid}>
+          <div className="stat-grid">
+            <StatCard label="Nuevos (30 días)" value={nuevos} />
+            <StatCard label="Activos (30 días)" value={activos} />
+            <StatCard label="Inactivos" value={inactivos} />
+            <StatCard label="Tasa de retorno" value={`${retencion}%`} />
+            <StatCard label="A 1 sello del premio" value={aboutToWin} />
+            <StatCard label="Sellos por cliente" value={avgStamps} />
+          </div>
+
+          <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)", margin: "20px 0 12px" }}>
+            Nuevos clientes (últimos 6 meses)
+          </h4>
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+            {monthly.map((m) => (
+              <div key={m.key} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div style={{ height: 110, width: "100%", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      width: "62%",
+                      maxWidth: 40,
+                      height: `${Math.round((m.count / maxMonthly) * 100)}%`,
+                      minHeight: m.count ? 6 : 2,
+                      background: m.count ? "var(--primary)" : "var(--border)",
+                      borderRadius: "6px 6px 0 0",
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{m.count}</div>
+                <div className="muted" style={{ fontSize: 11, textTransform: "capitalize" }}>{m.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
         {!planInfo.paid && (
           <div
@@ -667,21 +727,6 @@ function ResumenTab({
           </div>
         )}
       </div>
-
-      {limit != null && filterCardId === "all" && (
-        <div className="card mt">
-          <div className="row spread" style={{ marginBottom: 8 }}>
-            <h3 style={{ fontSize: 16, margin: 0 }}>Clientes activos</h3>
-            <span style={{ fontWeight: 800, color: nearLimit ? "#c62828" : "var(--text)" }}>{limitLabel}</span>
-          </div>
-          <div className="progress">
-            <div className="progress-fill" style={{ width: `${pct}%`, background: nearLimit ? "#c62828" : undefined }} />
-          </div>
-          <p className="muted" style={{ fontSize: 13, marginTop: 8, marginBottom: 0 }}>
-            {remainingText}
-          </p>
-        </div>
-      )}
 
       <div className="card mt">
         <div className="row spread" style={{ alignItems: "center" }}>
