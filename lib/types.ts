@@ -32,6 +32,8 @@ export interface Business {
   createdAt?: number;
 }
 
+export type StampShape = "circle" | "square" | "star" | "diamond" | "heart";
+
 export interface LoyaltyCard {
   id: string;
   businessId: string;
@@ -41,9 +43,11 @@ export interface LoyaltyCard {
   welcomeMessage?: string; // shown/notified when a customer joins (customizable per card)
   cardColor: string;
   textColor?: string;
+  stampShape?: StampShape; // stamp icon shape (paid plans); default circle
   logoPng?: string; // optional business logo (base64 PNG), shown instead of the name
   isActive: boolean;
   createdAt?: number;
+  deletedAt?: number; // soft-deleted by the owner: hidden from the dashboard, but kept (voided) so customers' passes keep rendering greyed
 }
 
 export interface CustomerCard {

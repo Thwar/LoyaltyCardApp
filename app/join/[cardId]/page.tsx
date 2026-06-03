@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { TiltCard } from "@/components/TiltCard";
 import { PageLoader } from "@/components/PageLoader";
 import { APPLE_WALLET_BADGE, GOOGLE_WALLET_BADGE } from "@/lib/walletBadges";
+import type { StampShape } from "@/lib/types";
 
 interface PublicCard {
   id: string;
@@ -12,6 +13,7 @@ interface PublicCard {
   rewardDescription: string;
   cardColor: string;
   textColor?: string;
+  stampShape?: StampShape;
   logoPng?: string;
 }
 
@@ -117,6 +119,7 @@ export default function JoinPage() {
           rewardDescription={card.rewardDescription}
           cardColor={card.cardColor}
           textColor={card.textColor}
+          stampShape={card.stampShape}
           logoUrl={card.logoPng ? `data:image/png;base64,${card.logoPng}` : undefined}
         />
 
@@ -178,6 +181,7 @@ export default function JoinPage() {
         rewardDescription={card.rewardDescription}
         cardColor={card.cardColor}
         textColor={card.textColor}
+        stampShape={card.stampShape}
         logoUrl={card.logoPng ? `data:image/png;base64,${card.logoPng}` : undefined}
       />
 

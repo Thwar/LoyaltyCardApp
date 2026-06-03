@@ -1,3 +1,6 @@
+import { stampShapeMarkup } from "@/lib/stampShapes";
+import type { StampShape } from "@/lib/types";
+
 // Stamp-card preview shown in the dashboard + enrollment page.
 // (The Apple Wallet pass renders its own strip image; this is just the web preview.)
 export function CardPreview({
@@ -11,6 +14,7 @@ export function CardPreview({
   logoUrl,
   lastVisit = "Hoy",
   showBarcode = false,
+  stampShape = "circle",
 }: {
   businessName: string;
   totalSlots: number;
@@ -22,6 +26,7 @@ export function CardPreview({
   logoUrl?: string;
   lastVisit?: string;
   showBarcode?: boolean;
+  stampShape?: StampShape;
 }) {
   const label = { fontSize: 10, letterSpacing: 1, opacity: 0.8, textTransform: "uppercase" as const };
 
@@ -43,25 +48,26 @@ export function CardPreview({
         </div>
       </div>
 
-      {/* stamps: big circles grid — star when filled, number when empty */}
+      {/* stamps: the chosen shape, solid when earned and faint outline when not */}
       <div className="stamp-grid" style={{ margin: "16px 0" }}>
-        {Array.from({ length: totalSlots }).map((_, i) => {
-          const filled = i < currentStamps;
-          return (
-            <div
-              key={i}
-              className="stamp"
-              style={{
-                border: `2px solid ${textColor}`,
-                background: filled ? textColor : "transparent",
-                color: filled ? cardColor : textColor,
-                opacity: filled ? 1 : 0.6,
-              }}
-            >
-              {filled ? "" : i + 1}
-            </div>
-          );
-        })}
+        {Array.from({ length: totalSlots }).map((_, i) => (
+          <div
+            key={i}
+            className="stamp"
+            style={{ border: "none", borderRadius: 0, background: "transparent" }}
+            dangerouslySetInnerHTML={{
+              __html: `<svg viewBox="0 0 100 100" width="100%" height="100%">${stampShapeMarkup(
+                stampShape,
+                50,
+                50,
+                42,
+                i < currentStamps,
+                textColor,
+                7
+              )}</svg>`,
+            }}
+          />
+        ))}
       </div>
 
       {/* fields: reward + code */}

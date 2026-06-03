@@ -12,7 +12,8 @@ import { QrCode } from "@/components/QrCode";
 import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Lock, Pencil } from "lucide-react";
-import type { Business, CustomerCard, LoyaltyCard } from "@/lib/types";
+import type { Business, CustomerCard, LoyaltyCard, StampShape } from "@/lib/types";
+import { STAMP_SHAPES } from "@/lib/stampShapes";
 
 interface MeResponse {
   business: Business | null;
@@ -218,7 +219,7 @@ function fileToResizedPng(file: File, maxW = 480, maxH = 150): Promise<string> {
 }
 
 /* ---------- Create / edit the stamp card ---------- */
-function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard; businessName?: string; onSaved: () => void }) {
+function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: LoyaltyCard; businessName?: string; planInfo: PlanInfo; onSaved: () => void }) {
   const [totalSlots, setTotalSlots] = useState(existing?.totalSlots ?? CARD_DEFAULTS.DEFAULT_SLOTS);
   const [rewardDescription, setRewardDescription] = useState(existing?.rewardDescription ?? CARD_DEFAULTS.DEFAULT_REWARD);
   const [welcomeMessage, setWelcomeMessage] = useState(
@@ -227,6 +228,7 @@ function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard;
   );
   const [cardColor, setCardColor] = useState(existing?.cardColor ?? CARD_COLOR_CHOICES[0]);
   const [textColor, setTextColor] = useState(existing?.textColor ?? "#FFFFFF");
+  const [stampShape, setStampShape] = useState<StampShape>(existing?.stampShape ?? "circle");
   const [logo, setLogo] = useState<string | null>(existing?.logoPng ? `data:image/png;base64,${existing.logoPng}` : null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
@@ -236,7 +238,7 @@ function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard;
     setSaving(true);
     const res = await authedFetch("/api/business/card", {
       method: "POST",
-      body: JSON.stringify({ cardId: existing?.id, totalSlots, rewardDescription: rewardDescription.trim(), welcomeMessage: welcomeMessage.trim(), cardColor, textColor, logo }),
+      body: JSON.stringify({ cardId: existing?.id, totalSlots, rewardDescription: rewardDescription.trim(), welcomeMessage: welcomeMessage.trim(), cardColor, textColor, stampShape, logo }),
     });
     const json = await res.json();
     setSaving(false);
@@ -271,6 +273,7 @@ function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard;
           rewardDescription={rewardDescription || "Tu recompensa"}
           cardColor={cardColor}
           textColor={textColor}
+          stampShape={stampShape}
           logoUrl={logo || undefined}
         />
       </div>
@@ -376,6 +379,28 @@ function CardForm({ existing, businessName, onSaved }: { existing?: LoyaltyCard;
         </div>
 
         <div className="field">
+          <label>Forma del sello</label>
+          {planInfo.paid ? (
+            <select className="input" value={stampShape} onChange={(e) => setStampShape(e.target.value as StampShape)}>
+              {STAMP_SHAPES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <>
+              <select className="input" value="circle" disabled style={{ opacity: 0.6, cursor: "not-allowed" }}>
+                <option value="circle">Círculo</option>
+              </select>
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Lock size={13} aria-hidden /> Mejora al plan Café o Negocio para elegir estrella, diamante y más.
+              </p>
+            </>
+          )}
+        </div>
+
+        <div className="field">
           <label>Logo (opcional)</label>
           {logo && (
             <div className="row" style={{ alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -435,6 +460,7 @@ function CardManager({
         <CardForm
           existing={editing === "new" ? undefined : editing}
           businessName={business.name}
+          planInfo={planInfo}
           onSaved={() => {
             setEditing(null);
             setTab("tarjetas"); // after creating/editing a card, land on the Tarjetas panel
@@ -776,6 +802,7 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
   const [joinUrl, setJoinUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [busyActive, setBusyActive] = useState(false);
+  const [busyDelete, setBusyDelete] = useState(false);
 
   useEffect(() => {
     // Prefer the canonical domain so QR links never point customers at the
@@ -794,6 +821,26 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
       if (res.ok) onChanged();
     } finally {
       setBusyActive(false);
+    }
+  }
+
+  async function deleteCard() {
+    if (
+      !confirm(
+        "¿Eliminar esta tarjeta? Se borrará la tarjeta y su historial, y las tarjetas de tus clientes quedarán finalizadas (en gris). Esta acción no se puede deshacer."
+      )
+    ) {
+      return;
+    }
+    setBusyDelete(true);
+    try {
+      const res = await authedFetch("/api/business/card/delete", {
+        method: "POST",
+        body: JSON.stringify({ cardId: card.id }),
+      });
+      if (res.ok) onChanged();
+    } finally {
+      setBusyDelete(false);
     }
   }
 
@@ -823,6 +870,7 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
           rewardDescription={card.rewardDescription}
           cardColor={card.cardColor}
           textColor={card.textColor}
+          stampShape={card.stampShape}
           logoUrl={card.logoPng ? `data:image/png;base64,${card.logoPng}` : undefined}
         />
       </div>
@@ -848,24 +896,33 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
         </button>
       </div>
 
-      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 14 }}>
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
         {inactive ? (
-          <button className="btn btn-primary" onClick={() => setActive(true)} disabled={busyActive}>
+          <button className="btn btn-primary" style={{ width: "auto" }} onClick={() => setActive(true)} disabled={busyActive || busyDelete}>
             {busyActive ? "Reactivando…" : "Reactivar tarjeta"}
           </button>
         ) : (
           <button
             className="btn btn-outline"
+            style={{ width: "auto" }}
             onClick={() => {
               if (confirm("¿Desactivar esta tarjeta? Las tarjetas de tus clientes se verán en gris (finalizadas).")) {
                 setActive(false);
               }
             }}
-            disabled={busyActive}
+            disabled={busyActive || busyDelete}
           >
             {busyActive ? "Desactivando…" : "Desactivar tarjeta"}
           </button>
         )}
+        <button
+          className="btn"
+          style={{ width: "auto", background: "#fdecea", color: "#c62828" }}
+          onClick={deleteCard}
+          disabled={busyActive || busyDelete}
+        >
+          {busyDelete ? "Eliminando…" : "Eliminar tarjeta"}
+        </button>
       </div>
     </div>
   );

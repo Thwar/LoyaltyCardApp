@@ -18,6 +18,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ loyaltyCardId:
         rewardDescription: card.rewardDescription,
         cardColor: card.cardColor,
         textColor: card.textColor || "#FFFFFF",
+        stampShape: card.stampShape || "circle",
         logoPng: card.logoPng || "",
       },
     });

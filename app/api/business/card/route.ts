@@ -32,6 +32,11 @@ export async function POST(req: Request) {
     const cardColor = hexOk(cardColorRaw) ? cardColorRaw : "#E53935";
     const textColor = hexOk(textColorRaw) ? textColorRaw : "#FFFFFF";
 
+    // Custom stamp shapes are a paid feature; free plans are forced to circle.
+    const SHAPES = ["circle", "square", "star", "diamond", "heart"];
+    const shapeRaw = String(body.stampShape || "circle");
+    const stampShape = effectivePlan(business).paid && SHAPES.includes(shapeRaw) ? shapeRaw : "circle";
+
     if (!Number.isFinite(totalSlots) || totalSlots < CARD_DEFAULTS.MIN_SLOTS || totalSlots > CARD_DEFAULTS.MAX_SLOTS) {
       return NextResponse.json(
         { error: `Los sellos deben estar entre ${CARD_DEFAULTS.MIN_SLOTS} y ${CARD_DEFAULTS.MAX_SLOTS}.` },
@@ -65,6 +70,7 @@ export async function POST(req: Request) {
       welcomeMessage,
       cardColor,
       textColor,
+      stampShape,
       logoPng,
     };
 

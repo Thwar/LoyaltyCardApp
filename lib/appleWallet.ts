@@ -80,9 +80,9 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
   const filled = Math.min(customer.currentStamps, card.totalSlots);
   const textColor = card.textColor || "#FFFFFF";
   const [strip1x, strip2x, strip3x] = await Promise.all([
-    renderStampStrip(filled, card.totalSlots, textColor, 1),
-    renderStampStrip(filled, card.totalSlots, textColor, 2),
-    renderStampStrip(filled, card.totalSlots, textColor, 3),
+    renderStampStrip(filled, card.totalSlots, textColor, 1, card.stampShape),
+    renderStampStrip(filled, card.totalSlots, textColor, 2, card.stampShape),
+    renderStampStrip(filled, card.totalSlots, textColor, 3, card.stampShape),
   ]);
 
   // Logo (the card's own, already resolved to the business logo upstream if unset),

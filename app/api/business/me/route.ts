@@ -20,6 +20,7 @@ export async function GET(req: Request) {
 
     const cards = await getLoyaltyCardsByBusiness(business.id);
     const card = cards[0] ?? null; // primary card (current UI); cards[] is the multi-card foundation
+    const liveCardIds = new Set(cards.map((c) => c.id)); // excludes soft-deleted cards
 
     const snap = await adminDb()
       .collection(COLLECTIONS.CUSTOMER_CARDS)
@@ -31,14 +32,16 @@ export async function GET(req: Request) {
     // server-side so hidden contact never reaches the dashboard. We keep
     // marketingConsent so the UI can explain *why* contact is hidden.
     const paid = effectivePlan(business).paid;
-    const customers: CustomerCard[] = snap.docs.map((d) => {
-      const c: CustomerCard = { id: d.id, ...(d.data() as Omit<CustomerCard, "id">) };
-      if (!(paid && c.marketingConsent === true)) {
-        delete c.customerEmail;
-        delete c.customerPhone;
-      }
-      return c;
-    });
+    const customers: CustomerCard[] = snap.docs
+      .map((d) => {
+        const c: CustomerCard = { id: d.id, ...(d.data() as Omit<CustomerCard, "id">) };
+        if (!(paid && c.marketingConsent === true)) {
+          delete c.customerEmail;
+          delete c.customerPhone;
+        }
+        return c;
+      })
+      .filter((c) => liveCardIds.has(c.loyaltyCardId)); // hide memberships of deleted cards
     customers.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     return NextResponse.json({

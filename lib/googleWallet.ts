@@ -43,6 +43,20 @@ function businessLogoSquareUri(card: LoyaltyCard): string | null {
   return `${base}/api/card/${card.id}/logo?shape=square&v=${v}`;
 }
 
+// Per-customer hero banner = the stamp grid for their current count. Object-level
+// heroImage overrides the class hero, and the ?filled= URL changes on every stamp
+// so Google re-fetches the updated banner. ?v= busts the cache on a design change.
+function stampHeroUri(card: LoyaltyCard, currentStamps: number): string {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com";
+  const v = crypto
+    .createHash("sha1")
+    .update(`${card.stampShape || "circle"}|${card.cardColor}|${card.textColor}|${card.totalSlots}`)
+    .digest("hex")
+    .slice(0, 8);
+  const filled = Math.max(0, Math.min(currentStamps, card.totalSlots));
+  return `${base}/api/card/${card.id}/stamps?filled=${filled}&v=${v}`;
+}
+
 export function balanceText(currentStamps: number, slots: number): string {
   return `${Math.min(currentStamps, slots)} / ${slots} sellos`;
 }
@@ -152,6 +166,7 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard, descr
     accountName: customer.customerName || "Cliente",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
     barcode: { type: "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
+    heroImage: { sourceUri: { uri: stampHeroUri(card, customer.currentStamps) } },
     textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
     // Welcome message — Google surfaces this as a notification when the pass is saved.
     messages: [
@@ -198,6 +213,7 @@ export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCar
   const res = await api("PATCH", `/loyaltyObject/${id}`, {
     state: card.isActive === false ? "INACTIVE" : "ACTIVE",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
+    heroImage: { sourceUri: { uri: stampHeroUri(card, customer.currentStamps) } },
     textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
     // A new message id triggers a Google Wallet notification; replacing the array
     // (rather than appending) keeps only the latest event on the pass.
