@@ -17,6 +17,8 @@ export interface Business {
   name: string;
   ownerId: string;
   ownerEmail?: string;
+  ownerName?: string; // owner's full name (collected at signup)
+  ownerPhone?: string; // owner's cellphone incl. country code (collected at signup)
   logoUrl?: string;
   logoPng?: string; // business brand logo (base64 PNG) — default for passes when a card has none
   description?: string; // short business description, shown on the wallet pass

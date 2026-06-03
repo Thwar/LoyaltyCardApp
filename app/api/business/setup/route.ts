@@ -27,7 +27,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ business: { ...existing, name } });
     }
 
-    const data = { name, ownerId: session.uid, ownerEmail: session.email || "", createdAt: Date.now() };
+    const ownerName = String(body.ownerName || "").trim();
+    const ownerPhone = String(body.ownerPhone || "").trim();
+    const data = { name, ownerId: session.uid, ownerEmail: session.email || "", ownerName, ownerPhone, createdAt: Date.now() };
     const ref = await adminDb().collection(COLLECTIONS.BUSINESSES).add(data);
     return NextResponse.json({ business: { id: ref.id, ...data } });
   } catch (e: unknown) {
