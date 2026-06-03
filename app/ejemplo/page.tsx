@@ -10,6 +10,13 @@ export const metadata: Metadata = {
 
 const DEMO_CARD_ID = "demo-pizza-ejemplo";
 
+const STEPS = [
+  "📲 El cliente escanea tu QR.",
+  "👛 Guarda la tarjeta en su Apple Wallet o Google Wallet.",
+  "🔔 Tú sumas sellos con un toque y le llega una notificación.",
+  "🎁 El cliente vuelve hasta completar su tarjeta y reclamar su recompensa.",
+];
+
 export default function EjemploPage() {
   const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com";
   const joinUrl = `${base}/join/${DEMO_CARD_ID}`;
@@ -22,47 +29,47 @@ export default function EjemploPage() {
 
       <div style={{ textAlign: "center", marginTop: 18 }}>
         <h1 style={{ fontSize: 28, margin: "0 0 8px" }}>Pruébalo tú mismo</h1>
-        <p className="muted" style={{ maxWidth: 470, margin: "0 auto 26px", lineHeight: 1.5 }}>
+        <p className="muted" style={{ maxWidth: 540, margin: "0 auto", lineHeight: 1.5 }}>
           Esta es una tarjeta de sellos <strong>real</strong>. Añádela a tu Apple Wallet o Google Wallet y vive lo que verán tus clientes — sin descargar
           ninguna app.
         </p>
       </div>
 
-      <div style={{ maxWidth: 380, margin: "0 auto" }}>
-        <TiltCard
-          businessName="Pizzería Don Luis"
-          totalSlots={8}
-          currentStamps={5}
-          rewardDescription="Tu 8.ª pizza, gratis 🍕"
-          cardColor="#c1121f"
-          textColor="#FFFFFF"
-          stampShape="pizza"
-          code="142"
-          lastVisit="Hoy"
-          logoUrl="/homepage/pizza.png"
-          showBarcode
-        />
-      </div>
+      {/* Card + enroll side by side on desktop, stacked on mobile (flex-wrap) */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 36, justifyContent: "center", alignItems: "center", maxWidth: 860, margin: "30px auto 0" }}>
+        <div style={{ flex: "1 1 320px", maxWidth: 380 }}>
+          <TiltCard
+            businessName="Pizzería Don Luis"
+            totalSlots={8}
+            currentStamps={5}
+            rewardDescription="Tu 8.ª pizza, gratis 🍕"
+            cardColor="#c1121f"
+            textColor="#FFFFFF"
+            stampShape="pizza"
+            code="142"
+            lastVisit="Hoy"
+            logoUrl="/homepage/pizza.png"
+            showBarcode
+          />
+        </div>
 
-      <div style={{ textAlign: "center", marginTop: 22 }}>
-        <Link href={`/join/${DEMO_CARD_ID}`} className="btn btn-primary" style={{ display: "inline-block", width: "auto" }}>
-          Unirme y añadir a mi wallet
-        </Link>
-        <p className="muted" style={{ fontSize: 13, margin: "16px 0 8px" }}>o escanea con tu celular:</p>
-        <div className="center">
-          <QrCode value={joinUrl} size={168} />
+        <div style={{ flex: "1 1 260px", maxWidth: 320, textAlign: "center" }}>
+          <h2 style={{ fontSize: 20, margin: "0 0 14px" }}>Añádela a tu wallet</h2>
+          <Link href={`/join/${DEMO_CARD_ID}`} className="btn btn-primary" style={{ display: "inline-block", width: "auto" }}>
+            Unirme y añadir a mi wallet
+          </Link>
+          <p className="muted" style={{ fontSize: 13, margin: "16px 0 10px" }}>o escanea con tu celular:</p>
+          <div className="center">
+            <QrCode value={joinUrl} size={168} />
+          </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 480, margin: "40px auto 0" }}>
+      {/* Steps */}
+      <div style={{ maxWidth: 520, margin: "44px auto 0" }}>
         <h2 style={{ fontSize: 21, textAlign: "center", margin: "0 0 22px" }}>Cómo funciona</h2>
         <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 18 }}>
-          {[
-            "El cliente escanea tu QR.",
-            "Guarda la tarjeta en su Apple Wallet o Google Wallet.",
-            "Tú sumas sellos con un toque y le llega una notificación.",
-            "El cliente vuelve hasta completar su tarjeta y reclamar su recompensa.",
-          ].map((step, i) => (
+          {STEPS.map((step, i) => (
             <li key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <span
                 style={{
