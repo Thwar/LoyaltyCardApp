@@ -22,7 +22,7 @@ export default function EjemploPage() {
   const joinUrl = `${base}/join/${DEMO_CARD_ID}`;
 
   return (
-    <main className="container" style={{ paddingTop: 26, paddingBottom: 64 }}>
+    <main className="container" style={{ maxWidth: 920, padding: "26px 20px 64px" }}>
       <Link href="/" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
         ← Volver
       </Link>
