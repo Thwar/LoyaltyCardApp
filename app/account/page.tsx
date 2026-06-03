@@ -49,6 +49,8 @@ export default function AccountPage() {
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"cuenta" | "negocio" | "cajeros">("cuenta");
+  const [role, setRole] = useState<"owner" | "cajero">("owner");
+  const [cajeroName, setCajeroName] = useState("");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [hasBusiness, setHasBusiness] = useState(false);
@@ -76,7 +78,9 @@ export default function AccountPage() {
         const res = await authedFetch("/api/business/me");
         const json = await res.json();
         if (res.ok && json.role === "cajero") {
-          router.replace("/dashboard"); // cajeros have no account/manager area
+          setRole("cajero");
+          setCajeroName(json.staffName || "");
+          setLoading(false);
           return;
         }
         if (res.ok && json.business) {
@@ -195,6 +199,10 @@ export default function AccountPage() {
 
       <h1 style={{ fontSize: 24 }}>Mi cuenta</h1>
 
+      {role === "cajero" ? (
+        <CajeroAccount email={email} initialName={cajeroName} />
+      ) : (
+        <>
       {err && <div className="error-box">{err}</div>}
       {msg && <div className="success-box">{msg}</div>}
 
@@ -333,9 +341,75 @@ export default function AccountPage() {
           </div>
         </>
       )}
+        </>
+      )}
 
       <SiteFooter />
     </div>
+  );
+}
+
+/* ---------- A cajero's own account: change name + reset password ---------- */
+function CajeroAccount({ email, initialName }: { email: string; initialName: string }) {
+  const [name, setName] = useState(initialName);
+  const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+
+  async function saveName() {
+    if (!name.trim()) return setErr("Ingresa tu nombre.");
+    setErr("");
+    setMsg("");
+    setSaving(true);
+    const res = await authedFetch("/api/staff", { method: "PATCH", body: JSON.stringify({ name: name.trim() }) });
+    setSaving(false);
+    if (!res.ok) return setErr("No se pudo guardar.");
+    setMsg("Guardado.");
+  }
+
+  async function resetPassword() {
+    setErr("");
+    setMsg("");
+    setResetting(true);
+    try {
+      await sendPasswordResetEmail(getClientAuth(), email);
+      setMsg("Te enviamos un correo para restablecer tu contraseña.");
+    } catch {
+      setErr("No se pudo enviar el correo.");
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  return (
+    <>
+      {err && <div className="error-box mt">{err}</div>}
+      {msg && <div className="success-box mt">{msg}</div>}
+      <div className="card mt">
+        <div className="field">
+          <label>Correo</label>
+          <input className="input" value={email} readOnly style={{ opacity: 0.7 }} />
+        </div>
+        <div className="field">
+          <label>Tu nombre</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tu nombre" />
+        </div>
+        <button className="btn btn-primary" onClick={saveName} disabled={saving}>
+          {saving ? "Guardando…" : "Guardar"}
+        </button>
+      </div>
+
+      <div className="card mt">
+        <h3 style={{ fontSize: 18, marginTop: 0, marginBottom: 6 }}>Contraseña</h3>
+        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+          Te enviaremos un enlace a <strong>{email}</strong> para crear una contraseña nueva.
+        </p>
+        <button className="btn btn-outline" style={{ width: "auto" }} onClick={resetPassword} disabled={resetting}>
+          {resetting ? "Enviando…" : "Restablecer contraseña"}
+        </button>
+      </div>
+    </>
   );
 }
 

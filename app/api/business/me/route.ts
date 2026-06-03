@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { COLLECTIONS, type CustomerCard } from "@/lib/types";
+import { COLLECTIONS, type Business, type CustomerCard } from "@/lib/types";
 import { getBusinessByOwner, getLoyaltyCardsByBusiness, getStaffByUid, getBusinessById } from "@/lib/serverData";
 import { walletConfigured } from "@/lib/googleWallet";
 import { effectivePlan } from "@/lib/plans";
@@ -15,15 +15,17 @@ export async function GET(req: Request) {
     const session = await authenticate(req);
     if (!session.ok) return NextResponse.json({ error: session.reason }, { status: session.status });
 
-    const business = await getBusinessByOwner(session.uid);
+    // Resolve the business for the owner OR a cajero (cashier) login.
+    let business = await getBusinessByOwner(session.uid);
+    let role: "owner" | "cajero" = "owner";
+    let staffName: string | undefined;
     if (!business) {
-      // A cajero (cashier) login gets a minimal payload — no customers/cards/contact.
       const staff = await getStaffByUid(session.uid);
-      if (staff) {
-        const biz = await getBusinessById(staff.businessId);
-        return NextResponse.json({ role: "cajero", staffName: staff.name, businessName: biz?.name || "", walletConfigured: walletConfigured() });
-      }
-      return NextResponse.json({ business: null, walletConfigured: walletConfigured() });
+      if (!staff) return NextResponse.json({ business: null, walletConfigured: walletConfigured() });
+      business = await getBusinessById(staff.businessId);
+      role = "cajero";
+      staffName = staff.name;
+      if (!business) return NextResponse.json({ business: null, walletConfigured: walletConfigured() });
     }
 
     const cards = await getLoyaltyCardsByBusiness(business.id);
@@ -35,15 +37,13 @@ export async function GET(req: Request) {
       .where("businessId", "==", business.id)
       .limit(100)
       .get();
-    // Customer contact is gated: only paid plans (café/negocio) AND customers who
-    // opted in to marketing may have their email/phone surfaced. Strip them
-    // server-side so hidden contact never reaches the dashboard. We keep
-    // marketingConsent so the UI can explain *why* contact is hidden.
-    const paid = effectivePlan(business).paid;
+    // Contact (email/phone) is for the OWNER only, and only on a paid plan with the
+    // customer's marketing consent. Cajeros never see contact. Stripped server-side.
+    const showContact = role === "owner" && effectivePlan(business).paid;
     const customers: CustomerCard[] = snap.docs
       .map((d) => {
         const c: CustomerCard = { id: d.id, ...(d.data() as Omit<CustomerCard, "id">) };
-        if (!(paid && c.marketingConsent === true)) {
+        if (!(showContact && c.marketingConsent === true)) {
           delete c.customerEmail;
           delete c.customerPhone;
         }
@@ -52,9 +52,16 @@ export async function GET(req: Request) {
       .filter((c) => liveCardIds.has(c.loyaltyCardId)); // hide memberships of deleted cards
     customers.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
+    // Cajeros get a slim business object (no owner email/phone, broadcast history, etc.).
+    const businessOut: Business =
+      role === "cajero"
+        ? ({ id: business.id, name: business.name, ownerId: "", plan: business.plan, planExpiresAt: business.planExpiresAt ?? null } as Business)
+        : business;
+
     return NextResponse.json({
-      role: "owner",
-      business,
+      role,
+      staffName,
+      business: businessOut,
       card,
       cards,
       customers,

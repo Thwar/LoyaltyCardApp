@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type Staff } from "@/lib/types";
-import { getBusinessByOwner } from "@/lib/serverData";
+import { getBusinessByOwner, getStaffByUid } from "@/lib/serverData";
 import { effectivePlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
@@ -60,6 +60,25 @@ export async function POST(req: Request) {
   const staff: Staff = { uid, businessId: business.id, name, email, role: "cajero", createdAt: Date.now() };
   await adminDb().collection(COLLECTIONS.STAFF).doc(uid).set(staff);
   return NextResponse.json({ ok: true, staff: { uid, name, email } });
+}
+
+// PATCH — a cajero updates their own display name.
+export async function PATCH(req: Request) {
+  const session = await authenticate(req);
+  if (!session.ok) return NextResponse.json({ error: session.reason }, { status: session.status });
+  const staff = await getStaffByUid(session.uid);
+  if (!staff) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+
+  const name = String((await req.json().catch(() => ({}))).name || "").trim();
+  if (!name) return NextResponse.json({ error: "Ingresa tu nombre." }, { status: 400 });
+
+  await adminDb().collection(COLLECTIONS.STAFF).doc(session.uid).update({ name });
+  try {
+    await adminAuth().updateUser(session.uid, { displayName: name });
+  } catch (e) {
+    console.error("[staff] updateUser:", e);
+  }
+  return NextResponse.json({ ok: true, name });
 }
 
 // DELETE — remove a cajero (must belong to this owner's business).

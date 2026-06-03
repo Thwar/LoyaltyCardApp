@@ -104,11 +104,9 @@ export default function DashboardPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" />
         <div className="row" style={{ width: "auto", gap: 8 }}>
-          {data?.role !== "cajero" && (
-            <Link href="/account" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
-              Cuenta
-            </Link>
-          )}
+          <Link href="/account" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
+            Cuenta
+          </Link>
           <button
             className="btn btn-sm btn-ghost"
             style={{ width: "auto" }}
@@ -132,9 +130,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {data?.role === "cajero" ? (
-        <CajeroView businessName={data.businessName || ""} staffName={data.staffName || ""} />
-      ) : !data?.business ? (
+      {!data?.business ? (
         <BusinessSetupForm onSaved={load} />
       ) : (
         <CardManager
@@ -143,23 +139,12 @@ export default function DashboardPage() {
           customers={data.customers || []}
           count={data.count || 0}
           onChanged={load}
+          cajero={data.role === "cajero"}
+          staffName={data.staffName}
         />
       )}
 
       <SiteFooter />
-    </div>
-  );
-}
-
-/* ---------- Cajero (cashier) view: stamp-only, no manager access ---------- */
-function CajeroView({ businessName, staffName }: { businessName: string; staffName: string }) {
-  return (
-    <div>
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>{businessName || "Tu negocio"}</h1>
-      <p className="muted" style={{ marginTop: 0, marginBottom: 18 }}>
-        Hola{staffName ? `, ${staffName}` : ""} 👋 — escribe el código del cliente para sumar un sello.
-      </p>
-      <StampBox onChanged={() => {}} />
     </div>
   );
 }
@@ -465,19 +450,37 @@ function CardManager({
   customers,
   count,
   onChanged,
+  cajero = false,
+  staffName,
 }: {
   business: Business;
   cards: LoyaltyCard[];
   customers: CustomerCard[];
   count: number;
   onChanged: () => void;
+  cajero?: boolean;
+  staffName?: string;
 }) {
   const [selected, setSelected] = useState<Client | null>(null);
   const [tab, setTab] = useState<"resumen" | "tarjetas" | "comunicacion">("resumen");
-  // No cards yet → open straight into the create form.
-  const [editing, setEditing] = useState<LoyaltyCard | "new" | null>(cards.length === 0 ? "new" : null);
+  // No cards yet → open straight into the create form (owners only).
+  const [editing, setEditing] = useState<LoyaltyCard | "new" | null>(cards.length === 0 && !cajero ? "new" : null);
   const planInfo = effectivePlan(business);
   const cardsById = new Map(cards.map((c) => [c.id, c]));
+
+  // Cajero: read-only stamp + stats, no tabs / editing / contact / comunicación.
+  if (cajero) {
+    return (
+      <div>
+        <h1 style={{ fontSize: 24, margin: 0 }}>{business.name}</h1>
+        <p className="muted" style={{ marginTop: 4, marginBottom: 18 }}>
+          Hola{staffName ? `, ${staffName}` : ""} 👋 — suma sellos y revisa tus clientes.
+        </p>
+        <ResumenTab cards={cards} customers={customers} count={count} planInfo={planInfo} onChanged={onChanged} onSelect={setSelected} cajero />
+        {selected && <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onChanged={onChanged} onClose={() => setSelected(null)} cajero />}
+      </div>
+    );
+  }
 
   if (editing) {
     return (
@@ -556,6 +559,7 @@ function ResumenTab({
   planInfo,
   onChanged,
   onSelect,
+  cajero = false,
 }: {
   cards: LoyaltyCard[];
   customers: CustomerCard[];
@@ -563,6 +567,7 @@ function ResumenTab({
   planInfo: PlanInfo;
   onChanged: () => void;
   onSelect: (c: Client) => void;
+  cajero?: boolean;
 }) {
   const [sortBy, setSortBy] = useState<"recent" | "stamps" | "rewards" | "closest">("recent");
   const [page, setPage] = useState(0);
@@ -907,7 +912,8 @@ function ResumenTab({
                 <option value="closest">Cerca de completar</option>
               </select>
             )}
-            {clients.length > 0 &&
+            {!cajero &&
+              clients.length > 0 &&
               (planInfo.paid ? (
                 <button className="btn btn-sm btn-outline" style={{ width: "auto" }} onClick={exportCsv} disabled={exporting}>
                   {exporting ? "Exportando…" : "Exportar CSV"}
@@ -1490,12 +1496,14 @@ function ClientModal({
   plan,
   onChanged,
   onClose,
+  cajero = false,
 }: {
   client: Client;
   cardsById: Map<string, LoyaltyCard>;
   plan?: Business["plan"];
   onChanged: () => void;
   onClose: () => void;
+  cajero?: boolean;
 }) {
   const paid = plan === "cafe" || plan === "negocio";
   const canSeeContact = paid && client.consent;
@@ -1553,14 +1561,16 @@ function ClientModal({
             style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}
           >
             <span style={{ fontSize: 14 }}>Este cliente eliminó su pase del wallet.</span>
-            <button
-              className="btn btn-sm"
-              style={{ width: "auto", background: "#c62828", color: "#fff", flex: "0 0 auto" }}
-              onClick={deleteClient}
-              disabled={busy}
-            >
-              {busy ? "Eliminando…" : "Eliminar cliente"}
-            </button>
+            {!cajero && (
+              <button
+                className="btn btn-sm"
+                style={{ width: "auto", background: "#c62828", color: "#fff", flex: "0 0 auto" }}
+                onClick={deleteClient}
+                disabled={busy}
+              >
+                {busy ? "Eliminando…" : "Eliminar cliente"}
+              </button>
+            )}
           </div>
         )}
         {err && <div className="error-box" style={{ marginBottom: 10 }}>{err}</div>}
@@ -1572,30 +1582,34 @@ function ClientModal({
           <DetailRow label="Sellos acumulados" value={String(totalStamps)} />
         </div>
 
-        <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
-          Contacto
-        </h4>
-        {canSeeContact ? (
-          <div className="detail-list">
-            <DetailRow label="Correo" value={client.email || "—"} />
-            <DetailRow label="Teléfono" value={client.phone || "No proporcionado"} />
-          </div>
-        ) : (
-          <div
-            style={{
-              background: "var(--bg-soft)",
-              border: "1px solid var(--border)",
-              borderRadius: 12,
-              padding: "12px 14px",
-              fontSize: 13,
-              color: "var(--text-secondary)",
-              lineHeight: 1.5,
-            }}
-          >
-            {!paid
-              ? "🔒 Mejora a un plan Café o Negocio para ver el correo y teléfono de tus clientes."
-              : "Este cliente no autorizó compartir su contacto para fines de marketing."}
-          </div>
+        {!cajero && (
+          <>
+            <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
+              Contacto
+            </h4>
+            {canSeeContact ? (
+              <div className="detail-list">
+                <DetailRow label="Correo" value={client.email || "—"} />
+                <DetailRow label="Teléfono" value={client.phone || "No proporcionado"} />
+              </div>
+            ) : (
+              <div
+                style={{
+                  background: "var(--bg-soft)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                  padding: "12px 14px",
+                  fontSize: 13,
+                  color: "var(--text-secondary)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {!paid
+                  ? "🔒 Mejora a un plan Café o Negocio para ver el correo y teléfono de tus clientes."
+                  : "Este cliente no autorizó compartir su contacto para fines de marketing."}
+              </div>
+            )}
+          </>
         )}
 
         <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
