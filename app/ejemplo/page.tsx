@@ -6,16 +6,16 @@ import { SiteFooter } from "@/components/SiteFooter";
 
 export const metadata: Metadata = {
   title: "Ejemplo — SoyCasero",
-  description: "Prueba una tarjeta de sellos real: escanea, añádela a tu wallet y mira cómo la viven tus clientes.",
+  description: "Prueba una tarjeta de sellos real: escanea, añádela a tu wallet y mira cómo la viven tus caseros.",
 };
 
 const DEMO_CARD_ID = "demo-pizza-ejemplo";
 
 const STEPS = [
-  "📲 El cliente escanea tu QR.",
+  "📲 El casero escanea tu QR.",
   "👛 Guarda la tarjeta en su Apple Wallet o Google Wallet.",
   "🔔 Tú sumas sellos con un toque y le llega una notificación.",
-  "🎁 El cliente vuelve hasta completar su tarjeta y reclamar su recompensa.",
+  "🎁 El casero vuelve hasta completar su tarjeta y reclamar su recompensa.",
 ];
 
 export default function EjemploPage() {
@@ -37,7 +37,7 @@ export default function EjemploPage() {
       <div style={{ textAlign: "center", marginTop: 18 }}>
         <h1 style={{ fontSize: 28, margin: "0 0 8px" }}>Pruébalo tú mismo</h1>
         <p className="muted" style={{ maxWidth: 540, margin: "0 auto", lineHeight: 1.5 }}>
-          Esta es una tarjeta de sellos <strong>real</strong>. Añádela a tu Apple Wallet o Google Wallet y vive lo que verán tus clientes — sin descargar
+          Esta es una tarjeta de sellos <strong>real</strong>. Añádela a tu Apple Wallet o Google Wallet y vive lo que verán tus caseros — sin descargar
           ninguna app.
         </p>
       </div>

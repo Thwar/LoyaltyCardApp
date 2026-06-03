@@ -6,7 +6,7 @@ import type { CustomerCard } from "./types";
 export type Segment = "all" | "inactive" | "almost" | "new" | "best";
 
 export const SEGMENTS: { id: Segment; label: string }[] = [
-  { id: "all", label: "Todos los clientes" },
+  { id: "all", label: "Todos los caseros" },
   { id: "inactive", label: "Inactivos (+30 días)" },
   { id: "almost", label: "A 1–2 sellos del premio" },
   { id: "new", label: "Nuevos (últimos 30 días)" },

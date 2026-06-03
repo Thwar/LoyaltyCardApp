@@ -266,7 +266,7 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
     <div>
       <h1 style={{ fontSize: 24 }}>{existing ? "Editar tu tarjeta" : "Crea tu tarjeta de sellos"}</h1>
       <p className="muted" style={{ marginBottom: 18 }}>
-        Así verán tus clientes la tarjeta en su wallet.
+        Así verán tus caseros la tarjeta en su wallet.
       </p>
 
       {err && <div className="error-box">{err}</div>}
@@ -351,7 +351,7 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
             maxLength={240}
           />
           <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
-            Se le envía al cliente como notificación cuando guarda tu tarjeta (Android y iPhone).
+            Se le envía al casero como notificación cuando guarda tu tarjeta (Android y iPhone).
           </p>
         </div>
 
@@ -474,7 +474,7 @@ function CardManager({
       <div>
         <h1 style={{ fontSize: 24, margin: 0 }}>{business.name}</h1>
         <p className="muted" style={{ marginTop: 4, marginBottom: 18 }}>
-          Hola{staffName ? `, ${staffName}` : ""} 👋 — suma sellos y revisa tus clientes.
+          Hola{staffName ? `, ${staffName}` : ""} 👋 — suma sellos y revisa tus caseros.
         </p>
         <ResumenTab cards={cards} customers={customers} count={count} planInfo={planInfo} onChanged={onChanged} onSelect={setSelected} cajero />
         {selected && <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onChanged={onChanged} onClose={() => setSelected(null)} cajero />}
@@ -586,7 +586,7 @@ function ResumenTab({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "clientes.csv";
+      a.download = "caseros.csv";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -682,8 +682,8 @@ function ResumenTab({
     limit == null
       ? ""
       : count >= limit
-        ? "Alcanzaste el límite de tu plan. Mejora tu plan para inscribir más clientes."
-        : `Te quedan ${limit - count} clientes en tu plan ${planInfo.label}.`;
+        ? "Alcanzaste el límite de tu plan. Mejora tu plan para inscribir más caseros."
+        : `Te quedan ${limit - count} caseros en tu plan ${planInfo.label}.`;
   const PAGE_SIZE = 10;
   const pageCount = Math.max(1, Math.ceil(clients.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
@@ -702,7 +702,7 @@ function ResumenTab({
           }}
         >
           <div className="row spread" style={{ alignItems: "center", marginBottom: 12 }}>
-            <h3 style={{ fontSize: 17, margin: 0 }}>👥 Clientes activos</h3>
+            <h3 style={{ fontSize: 17, margin: 0 }}>👥 Caseros activos</h3>
             <span style={{ fontWeight: 800, fontSize: 22, color: nearLimit ? "#c62828" : "var(--primary)" }}>{limitLabel}</span>
           </div>
           <div className="progress" style={{ background: "#fff" }}>
@@ -729,7 +729,7 @@ function ResumenTab({
       )}
 
       <div className="stat-grid mt">
-        <StatCard label="Clientes" value={clients.length} />
+        <StatCard label="Caseros" value={clients.length} />
         <StatCard label="Tarjetas completas" value={completed} />
         <StatCard label="Recompensas canjeadas" value={rewards} />
         <StatCard label="Sellos otorgados" value={stampsGiven} />
@@ -744,12 +744,12 @@ function ResumenTab({
             <StatCard label="Inactivos" value={inactivos} />
             <StatCard label="Tasa de retorno" value={`${retencion}%`} />
             <StatCard label="A 1 sello del premio" value={aboutToWin} />
-            <StatCard label="Sellos por cliente" value={avgStamps} />
+            <StatCard label="Sellos por casero" value={avgStamps} />
           </div>
 
           <div className="row spread" style={{ alignItems: "center", margin: "20px 0 6px", flexWrap: "wrap", gap: 8 }}>
             <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)", margin: 0 }}>
-              {chartMetric === "nuevos" ? "Nuevos clientes" : "Visitas recientes"}
+              {chartMetric === "nuevos" ? "Nuevos caseros" : "Visitas recientes"}
             </h4>
             <div className="row" style={{ width: "auto", gap: 8 }}>
               <select
@@ -758,7 +758,7 @@ function ResumenTab({
                 value={chartMetric}
                 onChange={(e) => setChartMetric(e.target.value as "nuevos" | "visitas")}
               >
-                <option value="nuevos">Nuevos clientes</option>
+                <option value="nuevos">Nuevos caseros</option>
                 <option value="visitas">Visitas recientes</option>
               </select>
               <select
@@ -886,7 +886,7 @@ function ResumenTab({
             <Lock size={22} aria-hidden />
             <strong>Analíticas avanzadas</strong>
             <span className="muted" style={{ fontSize: 13, maxWidth: 300 }}>
-              Mejora al plan Café o Negocio para ver retención, clientes en riesgo y más.
+              Mejora al plan Café o Negocio para ver retención, caseros en riesgo y más.
             </span>
           </div>
         )}
@@ -894,7 +894,7 @@ function ResumenTab({
 
       <div className="card mt">
         <div className="row spread" style={{ alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-          <h3 style={{ fontSize: 18, margin: 0 }}>Clientes</h3>
+          <h3 style={{ fontSize: 18, margin: 0 }}>Caseros</h3>
           <div className="row" style={{ width: "auto", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             {clients.length > 0 && (
               <select
@@ -919,7 +919,7 @@ function ResumenTab({
                   {exporting ? "Exportando…" : "Exportar CSV"}
                 </button>
               ) : (
-                <span title="Mejora a un plan de pago para exportar tus clientes" style={{ display: "inline-flex" }}>
+                <span title="Mejora a un plan de pago para exportar tus caseros" style={{ display: "inline-flex" }}>
                   <button
                     className="btn btn-sm btn-outline"
                     style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6, opacity: 0.6, cursor: "not-allowed" }}
@@ -932,7 +932,7 @@ function ResumenTab({
           </div>
         </div>
         {clients.length === 0 ? (
-          <p className="muted mt">Aún no tienes clientes inscritos.</p>
+          <p className="muted mt">Aún no tienes caseros inscritos.</p>
         ) : (
           <div className="mt">
             {shown.map((cl) => {
@@ -954,7 +954,7 @@ function ResumenTab({
                     </div>
                   </div>
                   <div className="row" style={{ width: "auto", gap: 10, alignItems: "center" }}>
-                    {single && <span className="code-pill">{single.cardCode}</span>}
+                    {!cajero && single && <span className="code-pill">{single.cardCode}</span>}
                     <span aria-hidden style={{ color: "var(--text-secondary)", fontSize: 20, lineHeight: 1 }}>›</span>
                   </div>
                 </div>
@@ -1074,7 +1074,7 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
   async function deleteCard() {
     if (
       !confirm(
-        "¿Eliminar esta tarjeta? Se borrará la tarjeta y su historial, y las tarjetas de tus clientes quedarán finalizadas (en gris). Esta acción no se puede deshacer."
+        "¿Eliminar esta tarjeta? Se borrará la tarjeta y su historial, y las tarjetas de tus caseros quedarán finalizadas (en gris). Esta acción no se puede deshacer."
       )
     ) {
       return;
@@ -1123,7 +1123,7 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
       </div>
 
       <p style={{ fontSize: 15, fontWeight: 600, textAlign: "center", margin: "22px 0 12px" }}>
-        Inscribe clientes — imprime este QR para tu mostrador
+        Inscribe caseros — imprime este QR para tu mostrador
       </p>
       <div className="center">{joinUrl && <QrCode value={joinUrl} size={200} />}</div>
       <div className="row mt" style={{ gap: 8 }}>
@@ -1153,7 +1153,7 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
             className="btn btn-outline"
             style={{ width: "auto" }}
             onClick={() => {
-              if (confirm("¿Desactivar esta tarjeta? Las tarjetas de tus clientes se verán en gris (finalizadas).")) {
+              if (confirm("¿Desactivar esta tarjeta? Las tarjetas de tus caseros se verán en gris (finalizadas).")) {
                 setActive(false);
               }
             }}
@@ -1247,16 +1247,16 @@ function ComunicacionTab({
     const json = await res.json();
     setBusy(false);
     if (!res.ok) return setErr(json.error || "No se pudo enviar.");
-    setMsg(`Enviado a ${json.recipients} cliente(s).`);
+    setMsg(`Enviado a ${json.recipients} casero(s).`);
     setMessage("");
     onChanged();
   }
 
   return (
     <div className="card mt" style={{ position: "relative", overflow: "hidden" }}>
-      <h3 style={{ fontSize: 18, marginTop: 0 }}>Mensajes a tus clientes</h3>
+      <h3 style={{ fontSize: 18, marginTop: 0 }}>Mensajes a tus caseros</h3>
       <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
-        Envía una promoción, recordatorio o aviso al wallet de todos tus clientes.
+        Envía una promoción, recordatorio o aviso al wallet de todos tus caseros.
         {paid
           ? ` Tu plan ${planInfo.label} permite ${planInfo.broadcastsPerDay} mensaje(s) al día${planInfo.broadcastGapHours ? `, con ${planInfo.broadcastGapHours}h entre cada uno` : ""}.`
           : ""}
@@ -1305,7 +1305,7 @@ function ComunicacionTab({
             ))}
           </select>
           <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
-            {planInfo.segments ? `${segCount} cliente(s) en este grupo` : "Mejora al plan Negocio para enviar por segmento (lapsos, casi-completan, VIP…)."}
+            {planInfo.segments ? `${segCount} casero(s) en este grupo` : "Mejora al plan Negocio para enviar por segmento (lapsos, casi-completan, VIP…)."}
           </p>
         </div>
 
@@ -1323,7 +1323,7 @@ function ComunicacionTab({
         </div>
 
         <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim() || segCount === 0}>
-          {busy ? "Enviando…" : segCount === 0 ? "Sin clientes en este grupo" : `Enviar a ${segCount} cliente(s)`}
+          {busy ? "Enviando…" : segCount === 0 ? "Sin caseros en este grupo" : `Enviar a ${segCount} casero(s)`}
         </button>
 
         {history.length > 0 && (
@@ -1339,7 +1339,7 @@ function ComunicacionTab({
                     <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
                       {new Date(h.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
                       {h.segment ? ` · ${h.segment}` : ""}
-                      {h.count != null ? ` · ${h.count} cliente(s)` : ""}
+                      {h.count != null ? ` · ${h.count} casero(s)` : ""}
                     </div>
                   </li>
                 ))}
@@ -1364,9 +1364,9 @@ function ComunicacionTab({
           }}
         >
           <Lock size={22} aria-hidden />
-          <strong>Mensajes a tus clientes</strong>
+          <strong>Mensajes a tus caseros</strong>
           <span className="muted" style={{ fontSize: 13, maxWidth: 320 }}>
-            Mejora al plan Café o Negocio para enviar promociones, recordatorios y avisos a todos tus clientes.
+            Mejora al plan Café o Negocio para enviar promociones, recordatorios y avisos a todos tus caseros.
           </span>
         </div>
       )}
@@ -1381,7 +1381,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
   const [msg, setMsg] = useState<{ kind: "ok" | "err" | "full"; text: string } | null>(null);
 
   async function act(redeem: boolean) {
-    if (!code.trim()) return setMsg({ kind: "err", text: "Ingresa el código del cliente." });
+    if (!code.trim()) return setMsg({ kind: "err", text: "Ingresa el código del casero." });
     setBusy(true);
     setMsg(null);
     const res = await authedFetch("/api/stamp", {
@@ -1393,7 +1393,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
     if (!res.ok) return setMsg({ kind: "err", text: json.error || "Error" });
 
     if (json.redeemed) {
-      setMsg({ kind: "ok", text: `🎁 Recompensa canjeada para ${json.customerName || "el cliente"}. Tarjeta reiniciada.` });
+      setMsg({ kind: "ok", text: `🎁 Recompensa canjeada para ${json.customerName || "el casero"}. Tarjeta reiniciada.` });
     } else if (json.alreadyFull) {
       setMsg({ kind: "full", text: "Esta tarjeta ya está completa. Pulsa “Canjear recompensa”." });
     } else if (json.completed) {
@@ -1408,7 +1408,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
   return (
     <div className="card mt">
       <h3 style={{ fontSize: 18 }}>Sumar un sello</h3>
-      <p className="muted">Escribe el código que aparece en la tarjeta del cliente.</p>
+      <p className="muted">Escribe el código que aparece en la tarjeta del casero.</p>
       {msg && <div className={msg.kind === "err" ? "error-box" : msg.kind === "full" ? "warn-box" : "success-box"}>{msg.text}</div>}
       <div className="row" style={{ gap: 8 }}>
         <input
@@ -1476,11 +1476,11 @@ function groupClients(memberships: CustomerCard[]): Client[] {
     const key = m.customerId || m.id;
     let cl = map.get(key);
     if (!cl) {
-      cl = { customerId: key, name: m.customerName || "Cliente", consent: false, memberships: [] };
+      cl = { customerId: key, name: m.customerName || "Casero", consent: false, memberships: [] };
       map.set(key, cl);
     }
     cl.memberships.push(m);
-    if (m.customerName && cl.name === "Cliente") cl.name = m.customerName;
+    if (m.customerName && cl.name === "Casero") cl.name = m.customerName;
     if (!cl.email && m.customerEmail) cl.email = m.customerEmail;
     if (!cl.phone && m.customerPhone) cl.phone = m.customerPhone;
     if (m.marketingConsent === true) cl.consent = true;
@@ -1560,7 +1560,7 @@ function ClientModal({
             className="warn-box"
             style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}
           >
-            <span style={{ fontSize: 14 }}>Este cliente eliminó su pase del wallet.</span>
+            <span style={{ fontSize: 14 }}>Este casero eliminó su pase del wallet.</span>
             {!cajero && (
               <button
                 className="btn btn-sm"
@@ -1568,7 +1568,7 @@ function ClientModal({
                 onClick={deleteClient}
                 disabled={busy}
               >
-                {busy ? "Eliminando…" : "Eliminar cliente"}
+                {busy ? "Eliminando…" : "Eliminar casero"}
               </button>
             )}
           </div>
@@ -1605,8 +1605,8 @@ function ClientModal({
                 }}
               >
                 {!paid
-                  ? "🔒 Mejora a un plan Café o Negocio para ver el correo y teléfono de tus clientes."
-                  : "Este cliente no autorizó compartir su contacto para fines de marketing."}
+                  ? "🔒 Mejora a un plan Café o Negocio para ver el correo y teléfono de tus caseros."
+                  : "Este casero no autorizó compartir su contacto para fines de marketing."}
               </div>
             )}
           </>
@@ -1633,7 +1633,7 @@ function ClientModal({
                     {m.currentStamps}/{slots} sellos · {m.rewardsRedeemed || 0} canjes · {total} acumulados
                   </div>
                 </div>
-                <span className="code-pill">{m.cardCode}</span>
+                {!cajero && <span className="code-pill">{m.cardCode}</span>}
               </div>
             );
           })}

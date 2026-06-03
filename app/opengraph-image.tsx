@@ -23,7 +23,7 @@ export default function OpengraphImage() {
       >
         <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: 1, opacity: 0.95 }}>SoyCasero</div>
         <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.05, marginTop: 24, maxWidth: 980 }}>
-          Tus clientes vuelven más. Tú vendes más.
+          Tus caseros vuelven más. Tú vendes más.
         </div>
         <div style={{ fontSize: 34, marginTop: 28, opacity: 0.92, maxWidth: 900 }}>
           Tarjeta de sellos digital en Apple Wallet y Google Wallet. Sin apps que descargar.

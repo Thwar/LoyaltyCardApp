@@ -4,7 +4,7 @@ import "./globals.css";
 
 const TITLE = "SoyCasero — Tarjeta de sellos digital para tu negocio";
 const DESC =
-  "Haz que tus clientes vuelvan y vende más. Tarjeta de sellos digital en Apple Wallet y Google Wallet — sin apps que descargar. Hecho para negocios de Bolivia.";
+  "Haz que tus caseros vuelvan y vende más. Tarjeta de sellos digital en Apple Wallet y Google Wallet — sin apps que descargar. Hecho para negocios de Bolivia.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.soycasero.com"),

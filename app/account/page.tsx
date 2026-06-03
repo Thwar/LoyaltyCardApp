@@ -177,7 +177,7 @@ export default function AccountPage() {
       ? planExpiresAt
         ? `Tu plan se renueva / vence el ${fmtDate(planExpiresAt)}.`
         : "Plan activo, sin fecha de vencimiento."
-      : "Plan gratuito — hasta 50 clientes activos.";
+      : "Plan gratuito — hasta 50 caseros activos.";
 
   return (
     <div className="container">
@@ -276,7 +276,7 @@ export default function AccountPage() {
           <div className="card mt" style={{ borderColor: "#f3c0bd" }}>
             <h3 style={{ fontSize: 18, color: "#c62828", marginBottom: 6 }}>Eliminar cuenta</h3>
             <p className="muted" style={{ marginTop: 0 }}>
-              Borra tu negocio, tu tarjeta, tus clientes y tu cuenta. Esta acción no se puede deshacer.
+              Borra tu negocio, tu tarjeta, tus caseros y tu cuenta. Esta acción no se puede deshacer.
             </p>
             <div className="field">
               <label>
@@ -309,7 +309,7 @@ export default function AccountPage() {
           <div className="card mt">
             <h3 style={{ fontSize: 18, marginTop: 0 }}>Logo y descripción</h3>
             <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
-              Aparecen en las tarjetas y notificaciones de tus clientes. Si una tarjeta tiene su propio logo, ese tiene prioridad.
+              Aparecen en las tarjetas y notificaciones de tus caseros. Si una tarjeta tiene su propio logo, ese tiene prioridad.
             </p>
             <div className="field">
               <label>Logo del negocio</label>
@@ -485,7 +485,7 @@ function CajeroManager({ max }: { max: number }) {
         Cajeros ({list.length}/{max})
       </h3>
       <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
-        Un cajero inicia sesión con su correo y solo puede sumar sellos — no ve tus clientes, no edita tarjetas ni envía mensajes.
+        Un cajero inicia sesión con su correo y solo puede sumar sellos — no ve tus caseros, no edita tarjetas ni envía mensajes.
       </p>
       {err && <div className="error-box">{err}</div>}
       {msg && <div className="success-box">{msg}</div>}

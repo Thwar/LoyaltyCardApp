@@ -7,23 +7,23 @@ import { WhatsAppButton } from "@/components/WhatsAppButton";
 // Why a business needs this (the persuasion: retention → sales).
 const WHY = [
   { Icon: Repeat, acc: "acc-blue", title: "Vuelven más seguido", desc: "La tarjeta de sellos les da un motivo para volver a ti, no a la competencia de al lado." },
-  { Icon: TrendingUp, acc: "acc-green", title: "Más ventas por cliente", desc: "Retener cuesta mucho menos que conseguir clientes nuevos — y los clientes fieles gastan más." },
-  { Icon: Heart, acc: "acc-orange", title: "Una relación que dura", desc: "Cada visita suma. Conviertes una compra suelta en un cliente que vuelve y te recomienda." },
+  { Icon: TrendingUp, acc: "acc-green", title: "Más ventas por casero", desc: "Retener cuesta mucho menos que conseguir caseros nuevos — y los caseros fieles gastan más." },
+  { Icon: Heart, acc: "acc-orange", title: "Una relación que dura", desc: "Cada visita suma. Conviertes una compra suelta en un casero que vuelve y te recomienda." },
 ];
 
 const FEATURES = [
-  { Icon: Smartphone, acc: "acc-blue", title: "No es otra app", desc: "Tus clientes no descargan nada. La tarjeta vive en el wallet que ya usan todos los días." },
+  { Icon: Smartphone, acc: "acc-blue", title: "No es otra app", desc: "Tus caseros no descargan nada. La tarjeta vive en el wallet que ya usan todos los días." },
   { Icon: Wallet, acc: "acc-violet", title: "Apple & Google Wallet", desc: "Funciona en iPhone y Android. Un mismo QR sirve para los dos." },
-  { Icon: Stamp, acc: "acc-teal", title: "Sellos al instante", desc: "Sumas un sello con un toque y aparece en el celular del cliente al momento." },
-  { Icon: Bell, acc: "acc-amber", title: "Notificaciones que hacen volver", desc: "El cliente recibe un aviso con cada sello y al inscribirse. Le recuerdas tu negocio, sin costo." },
-  { Icon: Megaphone, acc: "acc-orange", title: "Promociones a tus clientes", desc: "Envía promos, recordatorios o avisos a todos desde tu panel (planes de pago). Llena tu local en días lentos." },
+  { Icon: Stamp, acc: "acc-teal", title: "Sellos al instante", desc: "Sumas un sello con un toque y aparece en el celular del casero al momento." },
+  { Icon: Bell, acc: "acc-amber", title: "Notificaciones que hacen volver", desc: "El casero recibe un aviso con cada sello y al inscribirse. Le recuerdas tu negocio, sin costo." },
+  { Icon: Megaphone, acc: "acc-orange", title: "Promociones a tus caseros", desc: "Envía promos, recordatorios o avisos a todos desde tu panel (planes de pago). Llena tu local en días lentos." },
   { Icon: Palette, acc: "acc-green", title: "Con tu marca y tus íconos", desc: "Tu logo, tus colores y hasta el ícono del sello (☕ 🍕 ✂️). Se ve como tu negocio, no como una app genérica." },
 ];
 
 const STEPS = [
   { Icon: UserPlus, acc: "acc-blue", n: "1", title: "Crea tu cuenta y tu tarjeta", desc: "Elige cuántos sellos y cuál es la recompensa (ej: la 9.ª compra gratis). Toma 2 minutos." },
-  { Icon: QrCode, acc: "acc-violet", n: "2", title: "Pon tu QR en el mostrador", desc: "El cliente escanea, llena sus datos y guarda la tarjeta en su wallet. Sin instalar nada." },
-  { Icon: Hand, acc: "acc-green", n: "3", title: "Suma sellos con un toque", desc: "Escribes el código del cliente y el sello aparece al instante en su celular." },
+  { Icon: QrCode, acc: "acc-violet", n: "2", title: "Pon tu QR en el mostrador", desc: "El casero escanea, llena sus datos y guarda la tarjeta en su wallet. Sin instalar nada." },
+  { Icon: Hand, acc: "acc-green", n: "3", title: "Suma sellos con un toque", desc: "Escribes el código del casero y el sello aparece al instante en su celular." },
 ];
 
 const PLANS = [
@@ -38,7 +38,7 @@ const PLANS = [
     cta: "Crear cuenta gratis",
     features: [
       { t: "1 tarjeta de sellos", ok: true },
-      { t: "Hasta 50 clientes activos", ok: true },
+      { t: "Hasta 50 caseros activos", ok: true },
       { t: "Apple & Google Wallet", ok: true },
       { t: "Logo y colores personalizados", ok: true },
       { t: "Notificaciones de sellos y bienvenida", ok: true },
@@ -58,10 +58,10 @@ const PLANS = [
     cta: "Crear cuenta",
     features: [
       { t: "Todo lo del plan Gratis", ok: true },
-      { t: "Clientes ilimitados", ok: true },
+      { t: "Caseros ilimitados", ok: true },
       { t: "Formas e íconos de sello personalizados", ok: true },
       { t: "Mensajes promocionales (3/día)", ok: true },
-      { t: "Ver y exportar datos de clientes", ok: true },
+      { t: "Ver y exportar datos de caseros", ok: true },
       { t: "Analíticas avanzadas", ok: true },
     ],
   },
@@ -78,7 +78,7 @@ const PLANS = [
       { t: "Todo lo del plan Café", ok: true },
       { t: "3 tarjetas / programas", ok: true },
       { t: "Mensajes promocionales (6/día)", ok: true },
-      { t: "Mensajes por segmento de clientes", ok: true },
+      { t: "Mensajes por segmento de caseros", ok: true },
       { t: 'Sin marca "SoyCasero"', ok: true },
       { t: "Hasta 5 cajeros", ok: true },
     ],
@@ -86,10 +86,10 @@ const PLANS = [
 ];
 
 const FAQS = [
-  { q: "¿Mis clientes necesitan descargar una app?", a: "No. La tarjeta se guarda directamente en Apple Wallet o Google Wallet, que ya tienen en su celular." },
+  { q: "¿Mis caseros necesitan descargar una app?", a: "No. La tarjeta se guarda directamente en Apple Wallet o Google Wallet, que ya tienen en su celular." },
   { q: "¿Funciona en iPhone y Android?", a: "Sí, en ambos. Un mismo QR sirve para los dos sistemas." },
-  { q: "¿Cómo sumo un sello?", a: "Escribes el código del cliente en tu panel y el sello aparece al instante en su celular, sin que tengan que hacer nada." },
-  { q: "¿Puedo enviar promociones a mis clientes?", a: "Sí. Con los planes de pago envías notificaciones de promociones, recordatorios o avisos a todos tus clientes desde tu panel, con un límite diario para no saturar." },
+  { q: "¿Cómo sumo un sello?", a: "Escribes el código del casero en tu panel y el sello aparece al instante en su celular, sin que tengan que hacer nada." },
+  { q: "¿Puedo enviar promociones a mis caseros?", a: "Sí. Con los planes de pago envías notificaciones de promociones, recordatorios o avisos a todos tus caseros desde tu panel, con un límite diario para no saturar." },
   { q: "¿Puedo personalizar la tarjeta?", a: "Sí. Eliges tu logo, tus colores y la forma o el ícono del sello (café, pizza, tijeras y más). Los íconos están disponibles en los planes de pago." },
   { q: "¿Necesito un lector o equipo especial?", a: "No. Solo tu celular o computadora con internet. Pones el QR en el mostrador y listo." },
   { q: "¿Cuánto cuesta?", a: "Hay un plan gratis para siempre. Los planes de pago arrancan en Bs 99/mes, sin contratos." },
@@ -124,9 +124,9 @@ export default function Home() {
           <div className="hero-left">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="SoyCasero" style={{ height: 80, marginBottom: 22, filter: "brightness(0) invert(1)" }} />
-            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>Tus clientes vuelven más. Tú vendes más.</h1>
+            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>Tus caseros vuelven más. Tú vendes más.</h1>
             <p style={{ fontSize: 18, opacity: 0.95, margin: "0 0 24px", maxWidth: 520, lineHeight: 1.55 }}>
-              La tarjeta de sellos digital que premia a tus clientes y los hace volver. <strong style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>No es otra app que descargar</strong> — la guardan en
+              La tarjeta de sellos digital que premia a tus caseros y los hace volver. <strong style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>No es otra app que descargar</strong> — la guardan en
               Apple&nbsp;Wallet o Google&nbsp;Wallet escaneando un QR. Tú sumas sellos con un toque.
             </p>
             <div className="cta-row">
@@ -213,7 +213,7 @@ export default function Home() {
       <section style={{ background: "var(--bg-soft)" }} id="why">
         <div className="landing-section">
           <h2 className="section-title">Por qué tu negocio lo necesita</h2>
-          <p className="section-sub">Conseguir un cliente nuevo es caro. Hacer que el que ya tienes vuelva es lo que hace crecer tu negocio.</p>
+          <p className="section-sub">Conseguir un casero nuevo es caro. Hacer que el que ya tienes vuelva es lo que hace crecer tu negocio.</p>
           <div className="grid-3" style={{ marginTop: 38 }}>
             {WHY.map((w) => {
               const Icon = w.Icon;
@@ -321,7 +321,7 @@ export default function Home() {
             ))}
           </div>
           <p className="center" style={{ marginTop: 18, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-            El plan Gratis incluye 1 tarjeta y hasta 50 clientes activos, con logo y colores personalizados y notificaciones de sellos.
+            El plan Gratis incluye 1 tarjeta y hasta 50 caseros activos, con logo y colores personalizados y notificaciones de sellos.
           </p>
         </div>
       </section>
@@ -342,7 +342,7 @@ export default function Home() {
       {/* FINAL CTA */}
       <section style={{ background: "linear-gradient(135deg, #e53935, #c62828)", color: "#fff", padding: "56px 20px", textAlign: "center" }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, margin: "0 0 10px" }}>Empieza hoy. Gratis.</h2>
-        <p style={{ opacity: 0.95, margin: "0 0 22px" }}>Crea la tarjeta de tu negocio en minutos y haz que tus clientes vuelvan.</p>
+        <p style={{ opacity: 0.95, margin: "0 0 22px" }}>Crea la tarjeta de tu negocio en minutos y haz que tus caseros vuelvan.</p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", alignItems: "center" }}>
           <Link href="/signup" className="btn-hero-white">
             Crear mi cuenta gratis
