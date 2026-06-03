@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authErrorMessage } from "@/lib/authErrors";
 
@@ -11,11 +11,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setNotice("");
     setLoading(true);
     try {
       await signInWithEmailAndPassword(getClientAuth(), email.trim(), password);
@@ -24,6 +26,22 @@ export default function LoginPage() {
       const code = (err as { code?: string })?.code;
       setError(code ? authErrorMessage(code) : "Error");
       setLoading(false);
+    }
+  }
+
+  async function onForgotPassword() {
+    setError("");
+    setNotice("");
+    if (!email.trim()) {
+      setError("Ingresa tu correo y toca de nuevo para restablecer la contraseña.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(getClientAuth(), email.trim());
+      setNotice("Te enviamos un correo para restablecer tu contraseña.");
+    } catch (err: unknown) {
+      const code = (err as { code?: string })?.code;
+      setError(code ? authErrorMessage(code) : "No se pudo enviar el correo.");
     }
   }
 
@@ -39,6 +57,7 @@ export default function LoginPage() {
       </p>
 
       {error && <div className="error-box">{error}</div>}
+      {notice && <div className="success-box">{notice}</div>}
 
       <form onSubmit={onSubmit}>
         <div className="field">
@@ -48,6 +67,15 @@ export default function LoginPage() {
         <div className="field">
           <label>Contraseña</label>
           <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        </div>
+        <div style={{ textAlign: "right", marginTop: 6 }}>
+          <button
+            type="button"
+            onClick={onForgotPassword}
+            style={{ background: "none", border: "none", padding: 0, color: "var(--primary)", fontSize: 13, cursor: "pointer" }}
+          >
+            ¿Olvidaste tu contraseña?
+          </button>
         </div>
         <button className="btn btn-primary mt" type="submit" disabled={loading}>
           {loading ? "Entrando…" : "Entrar"}

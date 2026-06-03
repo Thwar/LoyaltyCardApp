@@ -2,11 +2,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
 import { getClientAuth } from "@/lib/firebaseClient";
 import { authedFetch } from "@/lib/clientApi";
 import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { effectivePlan, getPlan, type PlanId } from "@/lib/plans";
 
 // Read an image file and downscale to a small PNG data URL (keeps uploads tiny).
 function fileToPng(file: File, max = 480): Promise<string> {
@@ -34,10 +35,20 @@ function fileToPng(file: File, max = 480): Promise<string> {
   });
 }
 
+function fmtDate(ts?: number | null): string {
+  if (!ts) return "—";
+  try {
+    return new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+  } catch {
+    return "—";
+  }
+}
+
 export default function AccountPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"cuenta" | "negocio">("cuenta");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [hasBusiness, setHasBusiness] = useState(false);
@@ -45,6 +56,9 @@ export default function AccountPage() {
   const [logo, setLogo] = useState<string | null>(null);
   const [description, setDescription] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
+  const [plan, setPlan] = useState<PlanId | undefined>(undefined);
+  const [planExpiresAt, setPlanExpiresAt] = useState<number | null>(null);
+  const [resetting, setResetting] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [confirmText, setConfirmText] = useState("");
@@ -66,6 +80,8 @@ export default function AccountPage() {
           setName(json.business.name || "");
           setDescription(json.business.description || "");
           setLogo(json.business.logoPng ? `data:image/png;base64,${json.business.logoPng}` : null);
+          setPlan(json.business.plan);
+          setPlanExpiresAt(json.business.planExpiresAt ?? null);
         }
       } catch {}
       setLoading(false);
@@ -113,6 +129,20 @@ export default function AccountPage() {
     setMsg("Guardado.");
   }
 
+  async function resetPassword() {
+    setErr("");
+    setMsg("");
+    setResetting(true);
+    try {
+      await sendPasswordResetEmail(getClientAuth(), email);
+      setMsg("Te enviamos un correo para restablecer tu contraseña.");
+    } catch {
+      setErr("No se pudo enviar el correo de restablecimiento.");
+    } finally {
+      setResetting(false);
+    }
+  }
+
   async function deleteAccount() {
     setErr("");
     setDeleting(true);
@@ -129,6 +159,17 @@ export default function AccountPage() {
   if (!ready || loading) {
     return <PageLoader />;
   }
+
+  const eff = effectivePlan({ plan, planExpiresAt });
+  const storedPaid = plan === "cafe" || plan === "negocio";
+  const expired = storedPaid && planExpiresAt != null && planExpiresAt < Date.now();
+  const planNote = expired
+    ? `Tu plan ${getPlan(plan).label} venció el ${fmtDate(planExpiresAt)}. Ahora estás en Gratis.`
+    : storedPaid
+      ? planExpiresAt
+        ? `Tu plan se renueva / vence el ${fmtDate(planExpiresAt)}.`
+        : "Plan activo, sin fecha de vencimiento."
+      : "Plan gratuito — hasta 50 clientes activos.";
 
   return (
     <div className="container">
@@ -153,74 +194,129 @@ export default function AccountPage() {
       {err && <div className="error-box">{err}</div>}
       {msg && <div className="success-box">{msg}</div>}
 
-      <div className="card mt">
-        <div className="field">
-          <label>Correo</label>
-          <input className="input" value={email} readOnly style={{ opacity: 0.7 }} />
-        </div>
-        <div className="field">
-          <label>Nombre del negocio</label>
-          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Café Central" />
-        </div>
-        <button className="btn btn-primary" onClick={saveName} disabled={savingName}>
-          {savingName ? "Guardando…" : hasBusiness ? "Guardar cambios" : "Crear negocio"}
-        </button>
-      </div>
-
-      <div className="card mt">
-        <h3 style={{ fontSize: 18, marginTop: 0 }}>Logo y descripción</h3>
-        <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
-          Aparecen en las tarjetas y notificaciones de tus clientes. Si una tarjeta tiene su propio logo, ese tiene prioridad.
-        </p>
-        <div className="field">
-          <label>Logo del negocio</label>
-          {logo && (
-            <div className="row" style={{ alignItems: "center", gap: 10, marginBottom: 8 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logo} alt="logo" style={{ maxHeight: 56, maxWidth: 180, objectFit: "contain", background: "#f0f0f0", borderRadius: 8, padding: 4 }} />
-              <button type="button" className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setLogo(null)}>
-                Quitar
-              </button>
-            </div>
-          )}
-          <input type="file" accept="image/*" onChange={onPickLogo} />
-        </div>
-        <div className="field">
-          <label>Descripción</label>
-          <textarea
-            className="input"
-            rows={3}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Ej: Café de especialidad en el centro. Tostado propio."
-            maxLength={240}
-          />
-        </div>
-        <button className="btn btn-primary" onClick={saveProfile} disabled={savingProfile || !hasBusiness}>
-          {savingProfile ? "Guardando…" : "Guardar logo y descripción"}
-        </button>
-      </div>
-
-      <div className="card mt" style={{ borderColor: "#f3c0bd" }}>
-        <h3 style={{ fontSize: 18, color: "#c62828", marginBottom: 6 }}>Eliminar cuenta</h3>
-        <p className="muted" style={{ marginTop: 0 }}>
-          Borra tu negocio, tu tarjeta, tus clientes y tu cuenta. Esta acción no se puede deshacer.
-        </p>
-        <div className="field">
-          <label>
-            Escribe <strong>ELIMINAR</strong> para confirmar
-          </label>
-          <input className="input" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="ELIMINAR" />
-        </div>
+      <div className="tabs mt">
         <button
-          className="btn"
-          style={{ background: "#c62828", color: "#fff" }}
-          disabled={deleting || confirmText.trim().toUpperCase() !== "ELIMINAR"}
-          onClick={deleteAccount}
+          className={`tab${tab === "cuenta" ? " active" : ""}`}
+          onClick={() => {
+            setErr("");
+            setMsg("");
+            setTab("cuenta");
+          }}
         >
-          {deleting ? "Eliminando…" : "Eliminar mi cuenta"}
+          Cuenta
+        </button>
+        <button
+          className={`tab${tab === "negocio" ? " active" : ""}`}
+          onClick={() => {
+            setErr("");
+            setMsg("");
+            setTab("negocio");
+          }}
+        >
+          Negocio
         </button>
       </div>
+
+      {tab === "cuenta" ? (
+        <>
+          <div className="card mt">
+            <div className="field">
+              <label>Correo</label>
+              <input className="input" value={email} readOnly style={{ opacity: 0.7 }} />
+            </div>
+          </div>
+
+          <div className="card mt">
+            <h3 style={{ fontSize: 18, marginTop: 0, marginBottom: 8 }}>Tu plan</h3>
+            <div className="row" style={{ width: "auto", gap: 8, alignItems: "center" }}>
+              <span className={`plan-badge plan-${eff.id}`}>{eff.label}</span>
+              {expired && <span style={{ fontSize: 12, fontWeight: 700, color: "#c62828" }}>vencido</span>}
+            </div>
+            <p className="muted" style={{ fontSize: 13, margin: "10px 0 0" }}>{planNote}</p>
+            <p className="muted" style={{ fontSize: 13, margin: "8px 0 0" }}>
+              Facturación gestionada manualmente. Para cambiar o renovar tu plan, escríbenos a{" "}
+              <a href="mailto:admin@soycasero.com">admin@soycasero.com</a>.
+            </p>
+          </div>
+
+          <div className="card mt">
+            <h3 style={{ fontSize: 18, marginTop: 0, marginBottom: 6 }}>Contraseña</h3>
+            <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+              Te enviaremos un enlace a <strong>{email}</strong> para crear una contraseña nueva.
+            </p>
+            <button className="btn btn-outline" style={{ width: "auto" }} onClick={resetPassword} disabled={resetting}>
+              {resetting ? "Enviando…" : "Restablecer contraseña"}
+            </button>
+          </div>
+
+          <div className="card mt" style={{ borderColor: "#f3c0bd" }}>
+            <h3 style={{ fontSize: 18, color: "#c62828", marginBottom: 6 }}>Eliminar cuenta</h3>
+            <p className="muted" style={{ marginTop: 0 }}>
+              Borra tu negocio, tu tarjeta, tus clientes y tu cuenta. Esta acción no se puede deshacer.
+            </p>
+            <div className="field">
+              <label>
+                Escribe <strong>ELIMINAR</strong> para confirmar
+              </label>
+              <input className="input" value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="ELIMINAR" />
+            </div>
+            <button
+              className="btn"
+              style={{ background: "#c62828", color: "#fff" }}
+              disabled={deleting || confirmText.trim().toUpperCase() !== "ELIMINAR"}
+              onClick={deleteAccount}
+            >
+              {deleting ? "Eliminando…" : "Eliminar mi cuenta"}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="card mt">
+            <div className="field">
+              <label>Nombre del negocio</label>
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Café Central" />
+            </div>
+            <button className="btn btn-primary" onClick={saveName} disabled={savingName}>
+              {savingName ? "Guardando…" : hasBusiness ? "Guardar cambios" : "Crear negocio"}
+            </button>
+          </div>
+
+          <div className="card mt">
+            <h3 style={{ fontSize: 18, marginTop: 0 }}>Logo y descripción</h3>
+            <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+              Aparecen en las tarjetas y notificaciones de tus clientes. Si una tarjeta tiene su propio logo, ese tiene prioridad.
+            </p>
+            <div className="field">
+              <label>Logo del negocio</label>
+              {logo && (
+                <div className="row" style={{ alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={logo} alt="logo" style={{ maxHeight: 56, maxWidth: 180, objectFit: "contain", background: "#f0f0f0", borderRadius: 8, padding: 4 }} />
+                  <button type="button" className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setLogo(null)}>
+                    Quitar
+                  </button>
+                </div>
+              )}
+              <input type="file" accept="image/*" onChange={onPickLogo} />
+            </div>
+            <div className="field">
+              <label>Descripción</label>
+              <textarea
+                className="input"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Ej: Café de especialidad en el centro. Tostado propio."
+                maxLength={240}
+              />
+            </div>
+            <button className="btn btn-primary" onClick={saveProfile} disabled={savingProfile || !hasBusiness}>
+              {savingProfile ? "Guardando…" : "Guardar logo y descripción"}
+            </button>
+          </div>
+        </>
+      )}
 
       <SiteFooter />
     </div>
