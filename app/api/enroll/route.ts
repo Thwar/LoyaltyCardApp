@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
-import { FieldValue, type DocumentReference } from "firebase-admin/firestore";
+import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard, type LoyaltyCard } from "@/lib/types";
 import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
 import { generateUniqueCardCode } from "@/lib/cardCode";
-import { walletConfigured, issuePass, syncLoyaltyObject } from "@/lib/googleWallet";
+import { walletConfigured, issuePass } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
-import { sendApplePassPush } from "@/lib/apns";
 import { effectivePlan } from "@/lib/plans";
 import { allowRequest, clientIp } from "@/lib/rateLimit";
 
@@ -47,47 +46,6 @@ async function cardResponse(ref: DocumentReference, customer: CustomerCard, card
     appleConfigured: appleConfigured(),
     existing,
   });
-}
-
-// Referral reward: when a NEW customer enrolls via someone's ?ref link, that
-// referrer earns one stamp on the same card. Best-effort — never blocks the enroll.
-async function awardReferral(referrerId: string, card: LoyaltyCard, newClientId: string) {
-  const cardsCol = adminDb().collection(COLLECTIONS.CUSTOMER_CARDS);
-  const snap = await cardsCol.doc(referrerId).get();
-  if (!snap.exists) return;
-  const ref = snap.data() as CustomerCard;
-  // Must be a real customer of THIS card, and not the same person referring themselves.
-  if (ref.businessId !== card.businessId || ref.loyaltyCardId !== card.id || ref.customerId === newClientId) return;
-  const current = Number(ref.currentStamps || 0);
-  if (current >= card.totalSlots) return; // card already complete — nothing to add
-
-  const next = Math.min(current + 1, card.totalSlots);
-  await snap.ref.update({
-    currentStamps: next,
-    lastStampDate: Date.now(),
-    referralCount: FieldValue.increment(1),
-    appleUpdatedTag: Date.now(),
-  });
-
-  const business = await getBusinessById(card.businessId);
-  const message = "🎉 ¡Ganaste un sello por invitar a un amigo!";
-  if (walletConfigured() && ref.googleObjectId) {
-    try {
-      const updated: CustomerCard = { ...ref, id: snap.id, currentStamps: next };
-      const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
-      await syncLoyaltyObject(updated, cardForPass, message, business?.description, business ? effectivePlan(business).removeBranding : false);
-    } catch (e) {
-      console.error("[referral] google:", e);
-    }
-  }
-  if (appleConfigured()) {
-    try {
-      const regs = await cardsCol.firestore.collection(COLLECTIONS.APPLE_REGISTRATIONS).where("serialNumber", "==", snap.id).get();
-      await sendApplePassPush(regs.docs.map((d) => d.data().pushToken as string));
-    } catch (e) {
-      console.error("[referral] apple:", e);
-    }
-  }
 }
 
 // Public: a customer enrolls from /join/[cardId]. One card per email per business.
@@ -171,15 +129,10 @@ export async function POST(req: Request) {
       appleUpdatedTag: Date.now(),
       ...(referrerId ? { referredBy: referrerId } : {}),
     };
+    // We only RECORD the referrer here. The stamp is awarded later, when this new
+    // customer earns their first real stamp (see /api/stamp) — prevents bogus-email farming.
     const newRef = await cardsCol.add(data);
     const customer: CustomerCard = { id: newRef.id, ...data };
-    if (referrerId) {
-      try {
-        await awardReferral(referrerId, card, customerId);
-      } catch (e) {
-        console.error("[referral] award:", e);
-      }
-    }
     return cardResponse(newRef, customer, card, false);
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });

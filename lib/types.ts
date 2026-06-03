@@ -76,6 +76,7 @@ export interface CustomerCard {
   lastStampDate?: number;
   marketingConsent?: boolean; // opted in (join-form checkbox) to share contact info for marketing
   referredBy?: string; // the customerCard id that referred this customer (referral program)
+  referralRewarded?: boolean; // true once the referrer was paid out (on this customer's first real stamp)
   referralCount?: number; // how many new customers this customer has referred
   broadcastMessage?: string; // latest marketing broadcast targeted at THIS customer (rendered on the pass)
 }

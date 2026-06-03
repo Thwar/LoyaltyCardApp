@@ -8,6 +8,7 @@ import { walletConfigured, syncLoyaltyObject } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { sendApplePassPush } from "@/lib/apns";
 import { effectivePlan } from "@/lib/plans";
+import { awardReferralStamp } from "@/lib/referral";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -77,6 +78,16 @@ export async function POST(req: Request) {
         loyaltyCardId: loyalty.id,
         timestamp: Date.now(),
       });
+
+      // First real stamp for a referred customer → pay out their referrer (once).
+      if (data.referredBy && !data.referralRewarded) {
+        try {
+          await awardReferralStamp(data.referredBy as string, loyalty, data.customerId as string);
+          await docRef.update({ referralRewarded: true });
+        } catch (re) {
+          console.error("Referral reward error:", re);
+        }
+      }
     }
 
     // Best-effort: sync the whole Google Wallet object (balance, "Sellos

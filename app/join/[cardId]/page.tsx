@@ -171,7 +171,7 @@ export default function JoinPage() {
         <div className="card mt center">
           <p style={{ fontWeight: 700, margin: "0 0 4px" }}>🎁 Invita y gana un sello</p>
           <p className="muted" style={{ fontSize: 13, margin: "0 0 12px" }}>
-            Comparte tu link. Cuando un amigo se una a {card.businessName}, ¡ganas un sello!
+            Comparte tu link. Cuando un amigo se una a {card.businessName} y reciba su primer sello, ¡ganas un sello!
           </p>
           <div className="row" style={{ gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
             <a
