@@ -33,7 +33,9 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const message = String(body.message || "").trim().slice(0, 160);
     if (!message) return NextResponse.json({ error: "Escribe un mensaje." }, { status: 400 });
-    const segment: Segment = SEGMENTS.find((s) => s.id === body.segment)?.id ?? "all";
+    // Segmenting is a Negocio feature; lower paid plans always broadcast to everyone.
+    const requested: Segment = SEGMENTS.find((s) => s.id === body.segment)?.id ?? "all";
+    const segment: Segment = plan.segments ? requested : "all";
 
     // Rate limit: rolling 24h count + minimum gap between sends.
     const now = Date.now();

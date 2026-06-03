@@ -1272,12 +1272,15 @@ function ComunicacionTab({
           <label>Enviar a</label>
           <select className="input" value={segment} onChange={(e) => setSegment(e.target.value as Segment)}>
             {SEGMENTS.map((s) => (
-              <option key={s.id} value={s.id}>
+              <option key={s.id} value={s.id} disabled={!planInfo.segments && s.id !== "all"}>
                 {s.label}
+                {!planInfo.segments && s.id !== "all" ? " (Negocio)" : ""}
               </option>
             ))}
           </select>
-          <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{segCount} cliente(s) en este grupo</p>
+          <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
+            {planInfo.segments ? `${segCount} cliente(s) en este grupo` : "Mejora al plan Negocio para enviar por segmento (lapsos, casi-completan, VIP…)."}
+          </p>
         </div>
 
         <div className="field">

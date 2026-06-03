@@ -14,12 +14,13 @@ export interface PlanInfo {
   broadcastsPerDay: number; // marketing notifications allowed per day (0 = not allowed)
   broadcastGapHours: number; // minimum hours between broadcasts
   removeBranding: boolean; // white-label: drop "Desarrollado por SoyCasero" from passes
+  segments: boolean; // targeted broadcasts by customer segment (else: broadcast to all only)
 }
 
 export const PLANS: Record<PlanId, PlanInfo> = {
-  gratis: { id: "gratis", label: "Gratis", maxClients: 50, maxCards: 1, paid: false, broadcastsPerDay: 0, broadcastGapHours: 0, removeBranding: false },
-  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 1, paid: true, broadcastsPerDay: 3, broadcastGapHours: 0, removeBranding: false },
-  negocio: { id: "negocio", label: "Negocio", maxClients: null, maxCards: 3, paid: true, broadcastsPerDay: 6, broadcastGapHours: 0, removeBranding: true },
+  gratis: { id: "gratis", label: "Gratis", maxClients: 50, maxCards: 1, paid: false, broadcastsPerDay: 0, broadcastGapHours: 0, removeBranding: false, segments: false },
+  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 1, paid: true, broadcastsPerDay: 3, broadcastGapHours: 0, removeBranding: false, segments: false },
+  negocio: { id: "negocio", label: "Negocio", maxClients: null, maxCards: 3, paid: true, broadcastsPerDay: 6, broadcastGapHours: 0, removeBranding: true, segments: true },
 };
 
 export function getPlan(plan?: Business["plan"]): PlanInfo {

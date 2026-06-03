@@ -63,7 +63,6 @@ const PLANS = [
       { t: "Mensajes promocionales (3/día)", ok: true },
       { t: "Ver y exportar datos de clientes", ok: true },
       { t: "Analíticas avanzadas", ok: true },
-      { t: "Mensajes por segmento de clientes", ok: true },
     ],
   },
   {
@@ -79,6 +78,7 @@ const PLANS = [
       { t: "Todo lo del plan Café", ok: true },
       { t: "3 tarjetas / programas", ok: true },
       { t: "Mensajes promocionales (6/día)", ok: true },
+      { t: "Mensajes por segmento de clientes", ok: true },
       { t: 'Sin marca "SoyCasero"', ok: true },
       { t: "Hasta 10 cajeros", ok: true },
     ],
