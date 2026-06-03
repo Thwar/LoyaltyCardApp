@@ -3,7 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
-import { getBusinessByOwner, getLoyaltyCard } from "@/lib/serverData";
+import { getBusinessForUser, getLoyaltyCard } from "@/lib/serverData";
 import { walletConfigured, syncLoyaltyObject } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { sendApplePassPush } from "@/lib/apns";
@@ -19,8 +19,10 @@ export async function POST(req: Request) {
     const session = await authenticate(req);
     if (!session.ok) return NextResponse.json({ error: session.reason }, { status: session.status });
 
-    const business = await getBusinessByOwner(session.uid);
-    if (!business) return NextResponse.json({ error: "Primero crea tu negocio." }, { status: 400 });
+    // Owner OR one of their cajeros may add/redeem stamps.
+    const resolved = await getBusinessForUser(session.uid);
+    if (!resolved) return NextResponse.json({ error: "No autorizado." }, { status: 403 });
+    const business = resolved.business;
 
     const body = await req.json().catch(() => ({}));
     const cardCode = String(body.cardCode || "").trim();

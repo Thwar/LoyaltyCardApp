@@ -80,7 +80,7 @@ const PLANS = [
       { t: "Mensajes promocionales (6/día)", ok: true },
       { t: "Mensajes por segmento de clientes", ok: true },
       { t: 'Sin marca "SoyCasero"', ok: true },
-      { t: "Hasta 10 cajeros", ok: true },
+      { t: "Hasta 5 cajeros", ok: true },
     ],
   },
 ];

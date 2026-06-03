@@ -10,7 +10,18 @@ export const COLLECTIONS = {
   STAMPS: "stamps",
   REWARDS: "rewards",
   APPLE_REGISTRATIONS: "appleRegistrations",
+  STAFF: "staff",
 } as const;
+
+// A cajero (cashier): a limited login that can only add stamps for one business.
+export interface Staff {
+  uid: string; // Firebase Auth uid
+  businessId: string;
+  name: string;
+  email: string;
+  role: "cajero";
+  createdAt?: number;
+}
 
 export interface Business {
   id: string;

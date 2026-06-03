@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { onAuthStateChanged, signOut, sendPasswordResetEmail } from "firebase/auth";
@@ -48,7 +48,7 @@ export default function AccountPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<"cuenta" | "negocio">("cuenta");
+  const [tab, setTab] = useState<"cuenta" | "negocio" | "cajeros">("cuenta");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [hasBusiness, setHasBusiness] = useState(false);
@@ -75,6 +75,10 @@ export default function AccountPage() {
       try {
         const res = await authedFetch("/api/business/me");
         const json = await res.json();
+        if (res.ok && json.role === "cajero") {
+          router.replace("/dashboard"); // cajeros have no account/manager area
+          return;
+        }
         if (res.ok && json.business) {
           setHasBusiness(true);
           setName(json.business.name || "");
@@ -215,9 +219,21 @@ export default function AccountPage() {
         >
           Negocio
         </button>
+        <button
+          className={`tab${tab === "cajeros" ? " active" : ""}`}
+          onClick={() => {
+            setErr("");
+            setMsg("");
+            setTab("cajeros");
+          }}
+        >
+          Cajeros
+        </button>
       </div>
 
-      {tab === "cuenta" ? (
+      {tab === "cajeros" ? (
+        <CajeroManager max={eff.maxCashiers} />
+      ) : tab === "cuenta" ? (
         <>
           <div className="card mt">
             <div className="field">
@@ -319,6 +335,128 @@ export default function AccountPage() {
       )}
 
       <SiteFooter />
+    </div>
+  );
+}
+
+/* ---------- Cajeros (cashiers): stamp-only logins, owner-managed ---------- */
+function CajeroManager({ max }: { max: number }) {
+  const [list, setList] = useState<{ uid: string; name: string; email: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [msg, setMsg] = useState("");
+
+  const load = useCallback(async () => {
+    const res = await authedFetch("/api/staff");
+    const json = await res.json();
+    if (res.ok) setList(json.staff || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function add() {
+    setErr("");
+    setMsg("");
+    if (!name.trim() || !email.trim() || password.length < 6) return setErr("Completa nombre, correo y contraseña (mín. 6 caracteres).");
+    setBusy(true);
+    const res = await authedFetch("/api/staff", { method: "POST", body: JSON.stringify({ name: name.trim(), email: email.trim(), password }) });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) return setErr(json.error || "No se pudo crear el cajero.");
+    setName("");
+    setEmail("");
+    setPassword("");
+    setMsg("Cajero agregado.");
+    load();
+  }
+
+  async function remove(uid: string, n: string) {
+    if (!confirm(`¿Quitar al cajero ${n}? Ya no podrá iniciar sesión.`)) return;
+    const res = await authedFetch("/api/staff", { method: "DELETE", body: JSON.stringify({ uid }) });
+    if (res.ok) load();
+  }
+
+  if (max <= 0) {
+    return (
+      <div className="card mt">
+        <h3 style={{ fontSize: 18, marginTop: 0 }}>Cajeros</h3>
+        <p className="muted" style={{ marginTop: 0 }}>Cajeros que solo pueden sumar sellos, sin acceso al resto de tu información.</p>
+        <div
+          style={{
+            background: "var(--bg-soft)",
+            border: "2px dashed var(--border)",
+            borderRadius: 12,
+            padding: "16px 18px",
+            color: "var(--text-secondary)",
+            fontWeight: 700,
+            textAlign: "center",
+          }}
+        >
+          🔒 Mejora al plan Negocio para agregar cajeros.
+        </div>
+      </div>
+    );
+  }
+
+  const full = list.length >= max;
+  return (
+    <div className="card mt">
+      <h3 style={{ fontSize: 18, marginTop: 0 }}>
+        Cajeros ({list.length}/{max})
+      </h3>
+      <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
+        Un cajero inicia sesión con su correo y solo puede sumar sellos — no ve tus clientes, no edita tarjetas ni envía mensajes.
+      </p>
+      {err && <div className="error-box">{err}</div>}
+      {msg && <div className="success-box">{msg}</div>}
+
+      {loading ? (
+        <p className="muted">Cargando…</p>
+      ) : list.length === 0 ? (
+        <p className="muted">Aún no tienes cajeros.</p>
+      ) : (
+        <ul style={{ listStyle: "none", padding: 0, margin: "0 0 12px", display: "flex", flexDirection: "column", gap: 8 }}>
+          {list.map((s) => (
+            <li key={s.uid} className="cust-row">
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 600 }}>{s.name}</div>
+                <div className="muted" style={{ fontSize: 13 }}>{s.email}</div>
+              </div>
+              <button className="btn btn-sm" style={{ width: "auto", background: "#fdecea", color: "#c62828" }} onClick={() => remove(s.uid, s.name)}>
+                Quitar
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {full ? (
+        <p className="muted" style={{ fontSize: 13, marginBottom: 0 }}>Alcanzaste el máximo de {max} cajeros.</p>
+      ) : (
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+          <div className="field">
+            <label>Nombre del cajero</label>
+            <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: María" />
+          </div>
+          <div className="field">
+            <label>Correo</label>
+            <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="cajero@correo.com" />
+          </div>
+          <div className="field">
+            <label>Contraseña</label>
+            <input className="input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
+          </div>
+          <button className="btn btn-primary" onClick={add} disabled={busy}>
+            {busy ? "Agregando…" : "Agregar cajero"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

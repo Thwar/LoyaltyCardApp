@@ -17,12 +17,15 @@ import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 
 interface MeResponse {
+  role?: "owner" | "cajero";
   business: Business | null;
   card?: LoyaltyCard | null;
   cards?: LoyaltyCard[];
   customers?: CustomerCard[];
   count?: number;
   walletConfigured?: boolean;
+  staffName?: string;
+  businessName?: string;
 }
 
 export default function DashboardPage() {
@@ -101,9 +104,11 @@ export default function DashboardPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" />
         <div className="row" style={{ width: "auto", gap: 8 }}>
-          <Link href="/account" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
-            Cuenta
-          </Link>
+          {data?.role !== "cajero" && (
+            <Link href="/account" className="btn btn-sm btn-ghost" style={{ width: "auto" }}>
+              Cuenta
+            </Link>
+          )}
           <button
             className="btn btn-sm btn-ghost"
             style={{ width: "auto" }}
@@ -127,7 +132,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {!data?.business ? (
+      {data?.role === "cajero" ? (
+        <CajeroView businessName={data.businessName || ""} staffName={data.staffName || ""} />
+      ) : !data?.business ? (
         <BusinessSetupForm onSaved={load} />
       ) : (
         <CardManager
@@ -140,6 +147,19 @@ export default function DashboardPage() {
       )}
 
       <SiteFooter />
+    </div>
+  );
+}
+
+/* ---------- Cajero (cashier) view: stamp-only, no manager access ---------- */
+function CajeroView({ businessName, staffName }: { businessName: string; staffName: string }) {
+  return (
+    <div>
+      <h1 style={{ fontSize: 24, marginBottom: 4 }}>{businessName || "Tu negocio"}</h1>
+      <p className="muted" style={{ marginTop: 0, marginBottom: 18 }}>
+        Hola{staffName ? `, ${staffName}` : ""} 👋 — escribe el código del cliente para sumar un sello.
+      </p>
+      <StampBox onChanged={() => {}} />
     </div>
   );
 }

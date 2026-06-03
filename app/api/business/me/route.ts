@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
-import { getBusinessByOwner, getLoyaltyCardsByBusiness } from "@/lib/serverData";
+import { getBusinessByOwner, getLoyaltyCardsByBusiness, getStaffByUid, getBusinessById } from "@/lib/serverData";
 import { walletConfigured } from "@/lib/googleWallet";
 import { effectivePlan } from "@/lib/plans";
 
@@ -16,7 +16,15 @@ export async function GET(req: Request) {
     if (!session.ok) return NextResponse.json({ error: session.reason }, { status: session.status });
 
     const business = await getBusinessByOwner(session.uid);
-    if (!business) return NextResponse.json({ business: null, walletConfigured: walletConfigured() });
+    if (!business) {
+      // A cajero (cashier) login gets a minimal payload — no customers/cards/contact.
+      const staff = await getStaffByUid(session.uid);
+      if (staff) {
+        const biz = await getBusinessById(staff.businessId);
+        return NextResponse.json({ role: "cajero", staffName: staff.name, businessName: biz?.name || "", walletConfigured: walletConfigured() });
+      }
+      return NextResponse.json({ business: null, walletConfigured: walletConfigured() });
+    }
 
     const cards = await getLoyaltyCardsByBusiness(business.id);
     const card = cards[0] ?? null; // primary card (current UI); cards[] is the multi-card foundation
@@ -45,6 +53,7 @@ export async function GET(req: Request) {
     customers.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
     return NextResponse.json({
+      role: "owner",
       business,
       card,
       cards,

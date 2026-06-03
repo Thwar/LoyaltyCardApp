@@ -1,12 +1,31 @@
 import "server-only";
 import { adminDb } from "./firebaseAdmin";
-import { COLLECTIONS, type Business, type LoyaltyCard } from "./types";
+import { COLLECTIONS, type Business, type LoyaltyCard, type Staff } from "./types";
 
 export async function getBusinessByOwner(uid: string): Promise<Business | null> {
   const snap = await adminDb().collection(COLLECTIONS.BUSINESSES).where("ownerId", "==", uid).limit(1).get();
   if (snap.empty) return null;
   const d = snap.docs[0];
   return { id: d.id, ...(d.data() as Omit<Business, "id">) };
+}
+
+// A cajero (cashier) login → their staff record (or null if not a cajero).
+export async function getStaffByUid(uid: string): Promise<Staff | null> {
+  const d = await adminDb().collection(COLLECTIONS.STAFF).doc(uid).get();
+  if (!d.exists) return null;
+  return d.data() as Staff;
+}
+
+// Resolve the business for a logged-in user, whether they're the owner or a cajero.
+export async function getBusinessForUser(uid: string): Promise<{ business: Business; role: "owner" | "cajero" } | null> {
+  const owned = await getBusinessByOwner(uid);
+  if (owned) return { business: owned, role: "owner" };
+  const staff = await getStaffByUid(uid);
+  if (staff) {
+    const business = await getBusinessById(staff.businessId);
+    if (business) return { business, role: "cajero" };
+  }
+  return null;
 }
 
 export async function getBusinessById(id: string): Promise<Business | null> {
