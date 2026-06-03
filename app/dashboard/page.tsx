@@ -11,7 +11,8 @@ import { CardPreview } from "@/components/CardPreview";
 import { QrCode } from "@/components/QrCode";
 import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { Lock, Pencil } from "lucide-react";
+import { Lock, Pencil, ScanLine } from "lucide-react";
+import { BarcodeScanner } from "@/components/BarcodeScanner";
 import type { Business, CustomerCard, LoyaltyCard, StampShape } from "@/lib/types";
 import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
@@ -1378,15 +1379,17 @@ function ComunicacionTab({
 function StampBox({ onChanged }: { onChanged: () => void }) {
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err" | "full"; text: string } | null>(null);
 
-  async function act(redeem: boolean) {
-    if (!code.trim()) return setMsg({ kind: "err", text: "Ingresa el código del casero." });
+  async function act(redeem: boolean, override?: string) {
+    const cc = (override ?? code).trim();
+    if (!cc) return setMsg({ kind: "err", text: "Ingresa el código del casero." });
     setBusy(true);
     setMsg(null);
     const res = await authedFetch("/api/stamp", {
       method: "POST",
-      body: JSON.stringify({ cardCode: code.trim(), redeem }),
+      body: JSON.stringify({ cardCode: cc, redeem }),
     });
     const json = await res.json();
     setBusy(false);
@@ -1408,7 +1411,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
   return (
     <div className="card mt">
       <h3 style={{ fontSize: 18 }}>Sumar un sello</h3>
-      <p className="muted">Escribe el código que aparece en la tarjeta del casero.</p>
+      <p className="muted">Escribe el código de la tarjeta del casero, o escanéalo con la cámara.</p>
       {msg && <div className={msg.kind === "err" ? "error-box" : msg.kind === "full" ? "warn-box" : "success-box"}>{msg.text}</div>}
       <div className="row" style={{ gap: 8 }}>
         <input
@@ -1423,9 +1426,24 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
           {busy ? "…" : "Sumar sello"}
         </button>
       </div>
-      <button className="btn btn-outline mt-sm" style={{ marginTop: 10 }} onClick={() => act(true)} disabled={busy}>
-        Canjear recompensa
-      </button>
+      <div className="row mt-sm" style={{ gap: 8, marginTop: 10 }}>
+        <button className="btn btn-outline" style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => setScanning(true)} disabled={busy}>
+          <ScanLine size={16} aria-hidden /> Escanear código
+        </button>
+        <button className="btn btn-outline" style={{ width: "auto" }} onClick={() => act(true)} disabled={busy}>
+          Canjear recompensa
+        </button>
+      </div>
+
+      {scanning && (
+        <BarcodeScanner
+          onDetected={(value) => {
+            setScanning(false);
+            act(false, value);
+          }}
+          onClose={() => setScanning(false)}
+        />
+      )}
     </div>
   );
 }
