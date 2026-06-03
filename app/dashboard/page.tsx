@@ -1413,7 +1413,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
       <h3 style={{ fontSize: 18 }}>Sumar un sello</h3>
       <p className="muted">Escribe el código de la tarjeta del casero, o escanéalo con la cámara.</p>
       {msg && <div className={msg.kind === "err" ? "error-box" : msg.kind === "full" ? "warn-box" : "success-box"}>{msg.text}</div>}
-      <div className="row" style={{ gap: 8 }}>
+      <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <input
           className="input"
           inputMode="numeric"
@@ -1421,19 +1421,23 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
           value={code}
           onChange={(e) => setCode(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && act(false)}
+          style={{ flex: "1 1 120px" }}
         />
         <button className="btn" style={{ flex: "0 0 auto", width: "auto", background: "#e53935", color: "#fff" }} onClick={() => act(false)} disabled={busy}>
           {busy ? "…" : "Sumar sello"}
         </button>
-      </div>
-      <div className="row mt-sm" style={{ gap: 8, marginTop: 10 }}>
-        <button className="btn btn-outline" style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => setScanning(true)} disabled={busy}>
-          <ScanLine size={16} aria-hidden /> Escanear código
+        <button
+          className="btn btn-outline"
+          style={{ flex: "0 0 auto", width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
+          onClick={() => setScanning(true)}
+          disabled={busy}
+        >
+          <ScanLine size={16} aria-hidden /> Escanear
         </button>
-        <button className="btn btn-outline" style={{ width: "auto" }} onClick={() => act(true)} disabled={busy}>
-          Canjear recompensa
-        </button>
       </div>
+      <button className="btn" style={{ marginTop: 10, background: "#16a34a", color: "#fff" }} onClick={() => act(true)} disabled={busy}>
+        🎁 Canjear recompensa
+      </button>
 
       {scanning && (
         <BarcodeScanner
