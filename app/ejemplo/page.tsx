@@ -54,14 +54,42 @@ export default function EjemploPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 470, margin: "34px auto 0", textAlign: "center" }}>
-        <p style={{ fontSize: 15, lineHeight: 1.6, margin: 0 }}>
-          <strong>1.</strong> El cliente escanea tu QR &nbsp;·&nbsp; <strong>2.</strong> Guarda la tarjeta en su wallet &nbsp;·&nbsp;{" "}
-          <strong>3.</strong> Tú sumas sellos con un toque y le llega una notificación.
-        </p>
-        <Link href="/signup" className="btn btn-outline" style={{ display: "inline-block", width: "auto", marginTop: 22 }}>
-          ¿Tienes un negocio? Crear mi cuenta gratis
-        </Link>
+      <div style={{ maxWidth: 480, margin: "40px auto 0" }}>
+        <h2 style={{ fontSize: 21, textAlign: "center", margin: "0 0 22px" }}>Cómo funciona</h2>
+        <ol style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 18 }}>
+          {[
+            "El cliente escanea tu QR.",
+            "Guarda la tarjeta en su Apple Wallet o Google Wallet.",
+            "Tú sumas sellos con un toque y le llega una notificación.",
+            "El cliente vuelve hasta completar su tarjeta y reclamar su recompensa.",
+          ].map((step, i) => (
+            <li key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span
+                style={{
+                  flex: "0 0 auto",
+                  width: 34,
+                  height: 34,
+                  borderRadius: "50%",
+                  background: "var(--primary)",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 800,
+                  fontSize: 17,
+                }}
+              >
+                {i + 1}
+              </span>
+              <span style={{ fontSize: 18, lineHeight: 1.4 }}>{step}</span>
+            </li>
+          ))}
+        </ol>
+        <div style={{ textAlign: "center" }}>
+          <Link href="/signup" className="btn btn-outline" style={{ display: "inline-block", width: "auto", marginTop: 28 }}>
+            ¿Tienes un negocio? Crear mi cuenta gratis
+          </Link>
+        </div>
       </div>
     </main>
   );
