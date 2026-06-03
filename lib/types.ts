@@ -39,7 +39,6 @@ export interface Business {
   // Paid-plan expiry (ms epoch). Once past, the plan reverts to free (see
   // effectivePlan). null/absent = no expiry. Set in god mode (e.g. cash for 3 months).
   planExpiresAt?: number | null;
-  broadcastMessage?: string; // (legacy) latest broadcast; messages are now per-customer (CustomerCard.broadcastMessage)
   broadcastHistory?: { message: string; at: number; count?: number; segment?: string }[]; // sent broadcasts (log + rate-limit source)
   broadcastRateResetAt?: number; // god-mode timer reset: ignore broadcasts at/before this for rate limiting
   createdAt?: number;

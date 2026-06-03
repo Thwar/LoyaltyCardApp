@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     if (!session.ok) return NextResponse.json({ error: session.reason }, { status: session.status });
 
     const body = await req.json().catch(() => ({}));
-    const name = String(body.businessName || "").trim();
+    const name = String(body.businessName || "").trim().slice(0, 80);
     if (!name) return NextResponse.json({ error: "El nombre del negocio es obligatorio." }, { status: 400 });
 
     const existing = await getBusinessByOwner(session.uid);

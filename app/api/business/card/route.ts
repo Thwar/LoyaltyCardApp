@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const cardId = typeof body.cardId === "string" ? body.cardId : ""; // present = edit that card; absent = create
     const totalSlots = Math.round(Number(body.totalSlots));
-    const rewardDescription = String(body.rewardDescription || "").trim();
+    const rewardDescription = String(body.rewardDescription || "").trim().slice(0, 120);
     const welcomeMessage = String(body.welcomeMessage || "").trim().slice(0, 240);
     const hexOk = (s: string) => /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/.test(s);
     const cardColorRaw = String(body.cardColor || "#E53935").trim();

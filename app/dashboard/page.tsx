@@ -20,13 +20,11 @@ import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 interface MeResponse {
   role?: "owner" | "cajero";
   business: Business | null;
-  card?: LoyaltyCard | null;
   cards?: LoyaltyCard[];
   customers?: CustomerCard[];
   count?: number;
   walletConfigured?: boolean;
   staffName?: string;
-  businessName?: string;
 }
 
 export default function DashboardPage() {
@@ -1383,6 +1381,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
   const [msg, setMsg] = useState<{ kind: "ok" | "err" | "full"; text: string } | null>(null);
 
   async function act(redeem: boolean, override?: string) {
+    if (busy) return; // guard against double-submit (Enter + click, double-tap, scan)
     const cc = (override ?? code).trim();
     if (!cc) return setMsg({ kind: "err", text: "Ingresa el código del casero." });
     setBusy(true);
@@ -1435,7 +1434,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
           <ScanLine size={16} aria-hidden /> Escanear
         </button>
       </div>
-      <button className="btn" style={{ marginTop: 10, background: "#16a34a", color: "#fff" }} onClick={() => act(true)} disabled={busy}>
+      <button className="btn" style={{ marginTop: 10, background: "#15803d", color: "#fff" }} onClick={() => act(true)} disabled={busy}>
         🎁 Canjear recompensa
       </button>
 

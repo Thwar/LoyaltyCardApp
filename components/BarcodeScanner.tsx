@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from "react";
 // it's unsupported (e.g. iOS Safari), so the cashier can type the code instead.
 export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: string) => void; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const onDetectedRef = useRef(onDetected);
+  onDetectedRef.current = onDetected;
   const [err, setErr] = useState("");
 
   useEffect(() => {
@@ -28,6 +30,10 @@ export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: str
       }
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        if (stopped) {
+          stream.getTracks().forEach((t) => t.stop()); // unmounted while acquiring the camera
+          return;
+        }
         const v = videoRef.current;
         if (!v) return;
         v.srcObject = stream;
@@ -40,7 +46,7 @@ export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: str
             const value = codes?.[0]?.rawValue ? String(codes[0].rawValue).trim() : "";
             if (value) {
               cleanup();
-              onDetected(value);
+              onDetectedRef.current(value);
               return;
             }
           } catch {
@@ -56,7 +62,7 @@ export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: str
 
     start();
     return cleanup;
-  }, [onDetected]);
+  }, []);
 
   return (
     <div className="modal-overlay" onClick={onClose}>

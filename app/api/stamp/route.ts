@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { FieldValue } from "firebase-admin/firestore";
+import { FieldValue, type DocumentData } from "firebase-admin/firestore";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
@@ -30,65 +30,75 @@ export async function POST(req: Request) {
     if (!cardCode) return NextResponse.json({ error: "Ingresa el código del cliente." }, { status: 400 });
 
     const cardsCol = adminDb().collection(COLLECTIONS.CUSTOMER_CARDS);
-    const snap = await cardsCol.where("businessId", "==", business.id).where("cardCode", "==", cardCode).limit(1).get();
-    if (snap.empty) return NextResponse.json({ error: "Código no encontrado." }, { status: 404 });
+    const pre = await cardsCol.where("businessId", "==", business.id).where("cardCode", "==", cardCode).limit(1).get();
+    if (pre.empty) return NextResponse.json({ error: "Código no encontrado." }, { status: 404 });
+    const docRef = pre.docs[0].ref;
 
-    const docRef = snap.docs[0].ref;
-    const data = snap.docs[0].data();
-
-    const loyalty = await getLoyaltyCard(data.loyaltyCardId);
+    const loyalty = await getLoyaltyCard(pre.docs[0].data().loyaltyCardId);
     if (!loyalty) return NextResponse.json({ error: "Tarjeta de lealtad no encontrada." }, { status: 404 });
     const totalSlots = loyalty.totalSlots;
 
-    let newStamps: number;
-    let completed = false;
-    let redeemed = false;
-    let eventMessage = "";
-
-    if (redeem) {
-      newStamps = 0;
-      redeemed = true;
-      eventMessage = "🎁 ¡Recompensa canjeada! Tu tarjeta se reinició.";
-      await docRef.update({
-        currentStamps: 0,
-        isRewardClaimed: false,
-        rewardsRedeemed: FieldValue.increment(1),
+    // Atomic read-check-write so concurrent stamps (double-tap / scan, owner + cajero
+    // at once) can't over-stamp, double-redeem, or double-pay a referral.
+    type StampTx =
+      | { kind: "full"; current: number }
+      | { kind: "ok"; data: DocumentData; newStamps: number; completed: boolean; redeemed: boolean; awardReferral: boolean };
+    const result = await adminDb().runTransaction<StampTx>(async (t) => {
+      const d = (await t.get(docRef)).data() || {};
+      if (redeem) {
+        t.update(docRef, {
+          currentStamps: 0,
+          isRewardClaimed: false,
+          rewardsRedeemed: FieldValue.increment(1),
+          lastStampDate: Date.now(),
+          appleUpdatedTag: Date.now(),
+        });
+        t.set(adminDb().collection(COLLECTIONS.REWARDS).doc(), {
+          customerCardId: docRef.id,
+          businessId: business.id,
+          loyaltyCardId: loyalty.id,
+          cardCode,
+          claimedAt: Date.now(),
+        });
+        return { kind: "ok", data: d, newStamps: 0, completed: false, redeemed: true, awardReferral: false };
+      }
+      const current = Number(d.currentStamps || 0);
+      if (current >= totalSlots) return { kind: "full", current };
+      const awardReferral = !!d.referredBy && !d.referralRewarded;
+      t.update(docRef, {
+        currentStamps: FieldValue.increment(1),
         lastStampDate: Date.now(),
         appleUpdatedTag: Date.now(),
+        ...(awardReferral ? { referralRewarded: true } : {}),
       });
-      await adminDb().collection(COLLECTIONS.REWARDS).add({
-        customerCardId: docRef.id,
-        businessId: business.id,
-        loyaltyCardId: loyalty.id,
-        cardCode,
-        claimedAt: Date.now(),
-      });
-    } else {
-      const current = Number(data.currentStamps || 0);
-      if (current >= totalSlots) {
-        return NextResponse.json({ currentStamps: current, totalSlots, completed: true, alreadyFull: true });
-      }
-      newStamps = current + 1;
-      completed = newStamps >= totalSlots;
-      eventMessage = completed
-        ? `¡Tarjeta completa (${newStamps}/${totalSlots})! Ya puedes canjear tu recompensa 🎁`
-        : `¡Nuevo sello! Llevas ${newStamps}/${totalSlots}.`;
-      await docRef.update({ currentStamps: FieldValue.increment(1), lastStampDate: Date.now(), appleUpdatedTag: Date.now() });
-      await adminDb().collection(COLLECTIONS.STAMPS).add({
+      t.set(adminDb().collection(COLLECTIONS.STAMPS).doc(), {
         customerCardId: docRef.id,
         businessId: business.id,
         loyaltyCardId: loyalty.id,
         timestamp: Date.now(),
       });
+      return { kind: "ok", data: d, newStamps: current + 1, completed: current + 1 >= totalSlots, redeemed: false, awardReferral };
+    });
 
-      // First real stamp for a referred customer → pay out their referrer (once).
-      if (data.referredBy && !data.referralRewarded) {
-        try {
-          await awardReferralStamp(data.referredBy as string, loyalty, data.customerId as string);
-          await docRef.update({ referralRewarded: true });
-        } catch (re) {
-          console.error("Referral reward error:", re);
-        }
+    if (result.kind === "full") {
+      return NextResponse.json({ currentStamps: result.current, totalSlots, completed: true, alreadyFull: true });
+    }
+
+    const { data, newStamps, completed, redeemed } = result;
+    const eventMessage = redeemed
+      ? "🎁 ¡Recompensa canjeada! Tu tarjeta se reinició."
+      : completed
+        ? `¡Tarjeta completa (${newStamps}/${totalSlots})! Ya puedes canjear tu recompensa 🎁`
+        : `¡Nuevo sello! Llevas ${newStamps}/${totalSlots}.`;
+
+    // First real stamp for a referred customer → pay their referrer (once). The
+    // referralRewarded flag was flipped inside the transaction, so only the winning
+    // stamp reaches here even under concurrency.
+    if (result.awardReferral) {
+      try {
+        await awardReferralStamp(data.referredBy as string, loyalty, data.customerId as string);
+      } catch (re) {
+        console.error("Referral reward error:", re);
       }
     }
 
