@@ -548,6 +548,7 @@ function ResumenTab({
   const [exporting, setExporting] = useState(false);
   const [chartRange, setChartRange] = useState<string>("6m");
   const [chartMetric, setChartMetric] = useState<"nuevos" | "visitas">("nuevos");
+  const [hoverPt, setHoverPt] = useState<number | null>(null);
 
   async function exportCsv() {
     setExporting(true);
@@ -611,12 +612,14 @@ function ResumenTab({
       range.unit === "day"
         ? Array.from({ length: range.count }, (_, i) => {
             const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (range.count - 1 - i));
-            return { key: dayKey(d), label: String(d.getDate()), count: 0 };
+            const lab = d.toLocaleDateString("es-ES", { day: "numeric", month: "short" }).replace(".", "");
+            return { key: dayKey(d), label: lab, full: lab, count: 0 };
           })
         : Array.from({ length: range.count }, (_, i) => {
             const d = new Date(now.getFullYear(), now.getMonth() - (range.count - 1 - i), 1);
             const m = d.toLocaleDateString("es-ES", { month: "short" }).replace(".", "");
-            return { key: monKey(d), label: m.charAt(0).toUpperCase() + m.slice(1), count: 0 };
+            const full = d.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+            return { key: monKey(d), label: m.charAt(0).toUpperCase() + m.slice(1), full: full.charAt(0).toUpperCase() + full.slice(1), count: 0 };
           });
     const idx = new Map(buckets.map((b, i) => [b.key, i]));
     for (const c of clients) {
@@ -730,12 +733,12 @@ function ResumenTab({
             </div>
           </div>
           {(() => {
-            const W = 600,
-              H = 190,
-              padL = 32,
-              padR = 14,
+            const W = 620,
+              H = 204,
+              padL = 44,
+              padR = 16,
               padTop = 22,
-              padBottom = 28;
+              padBottom = 36;
             const innerW = W - padL - padR;
             const innerH = H - padTop - padBottom;
             const n = series.length;
@@ -746,33 +749,78 @@ function ResumenTab({
             const gridVals = Array.from(new Set([0, 0.5, 1].map((f) => Math.round(seriesMax * f))));
             const labelEvery = Math.max(1, Math.ceil(n / 8));
             const showValues = n <= 12;
+            const band = n <= 1 ? innerW : innerW / (n - 1);
+            const noun = chartMetric === "nuevos" ? "nuevos" : "visitas";
             return (
-              <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+              <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} onMouseLeave={() => setHoverPt(null)}>
                 {gridVals.map((v) => (
                   <g key={v}>
                     <line x1={padL} y1={cy(v)} x2={W - padR} y2={cy(v)} stroke="var(--border)" strokeWidth="1" />
-                    <text x={padL - 6} y={cy(v) + 3} textAnchor="end" fontSize="10" fill="#9ca3af">
+                    <text x={padL - 8} y={cy(v) + 3} textAnchor="end" fontSize="10" fill="#9ca3af">
                       {v}
                     </text>
                   </g>
                 ))}
+                {/* axis titles */}
+                <text transform={`rotate(-90 13 ${padTop + innerH / 2})`} x={13} y={padTop + innerH / 2} textAnchor="middle" fontSize="10" fontWeight="700" fill="#9ca3af">
+                  CLIENTES
+                </text>
+                <text x={padL + innerW / 2} y={H - 3} textAnchor="middle" fontSize="10" fontWeight="700" fill="#9ca3af">
+                  {range.unit === "day" ? "FECHA" : "MES"}
+                </text>
+
                 <path d={area} fill="var(--primary)" opacity="0.08" />
                 <polyline points={line} fill="none" stroke="var(--primary)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                 {series.map((s, i) => (
                   <g key={s.key}>
-                    <circle cx={cx(i)} cy={cy(s.count)} r="3" fill="var(--primary)" />
-                    {showValues && (
+                    <circle cx={cx(i)} cy={cy(s.count)} r={hoverPt === i ? 5 : 3} fill="var(--primary)" />
+                    {showValues && hoverPt == null && (
                       <text x={cx(i)} y={cy(s.count) - 9} textAnchor="middle" fontSize="11" fontWeight="700" fill="currentColor">
                         {s.count}
                       </text>
                     )}
                     {(i % labelEvery === 0 || i === n - 1) && (
-                      <text x={cx(i)} y={H - 8} textAnchor="middle" fontSize="10" fill="#9ca3af">
+                      <text x={cx(i)} y={padTop + innerH + 16} textAnchor="middle" fontSize="10" fill="#9ca3af">
                         {s.label}
                       </text>
                     )}
                   </g>
                 ))}
+                {/* hover hit areas */}
+                {series.map((s, i) => (
+                  <rect
+                    key={`hit-${i}`}
+                    x={cx(i) - band / 2}
+                    y={padTop}
+                    width={band}
+                    height={innerH}
+                    fill="transparent"
+                    style={{ cursor: "pointer" }}
+                    onMouseEnter={() => setHoverPt(i)}
+                  />
+                ))}
+                {/* tooltip */}
+                {hoverPt != null &&
+                  (() => {
+                    const s = series[hoverPt];
+                    const px = cx(hoverPt);
+                    const tw = 124,
+                      th = 40;
+                    const tx = Math.max(2, Math.min(W - tw - 2, px - tw / 2));
+                    const ty = Math.max(2, cy(s.count) - th - 12);
+                    return (
+                      <g pointerEvents="none">
+                        <line x1={px} y1={padTop} x2={px} y2={padTop + innerH} stroke="var(--primary)" strokeWidth="1" opacity="0.35" />
+                        <rect x={tx} y={ty} width={tw} height={th} rx="8" fill="#1f2937" />
+                        <text x={tx + tw / 2} y={ty + 16} textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">
+                          {s.full}
+                        </text>
+                        <text x={tx + tw / 2} y={ty + 31} textAnchor="middle" fontSize="11" fill="#e5e7eb">
+                          {s.count} {noun}
+                        </text>
+                      </g>
+                    );
+                  })()}
               </svg>
             );
           })()}
