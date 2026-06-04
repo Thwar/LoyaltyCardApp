@@ -16,12 +16,13 @@ export interface PlanInfo {
   removeBranding: boolean; // white-label: drop "Desarrollado por SoyCasero" from passes
   segments: boolean; // targeted broadcasts by customer segment (else: broadcast to all only)
   maxCashiers: number; // cajero (stamp-only) logins allowed
+  maxMemberships: number; // VIP/membership programs allowed (Negocio = 1; future Franquicia = 3)
 }
 
 export const PLANS: Record<PlanId, PlanInfo> = {
-  gratis: { id: "gratis", label: "Gratis", maxClients: 50, maxCards: 1, paid: false, broadcastsPerDay: 0, broadcastGapHours: 0, removeBranding: false, segments: false, maxCashiers: 0 },
-  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 1, paid: true, broadcastsPerDay: 3, broadcastGapHours: 0, removeBranding: false, segments: false, maxCashiers: 0 },
-  negocio: { id: "negocio", label: "Negocio", maxClients: null, maxCards: 3, paid: true, broadcastsPerDay: 6, broadcastGapHours: 0, removeBranding: true, segments: true, maxCashiers: 5 },
+  gratis: { id: "gratis", label: "Gratis", maxClients: 50, maxCards: 1, paid: false, broadcastsPerDay: 0, broadcastGapHours: 0, removeBranding: false, segments: false, maxCashiers: 0, maxMemberships: 0 },
+  cafe: { id: "cafe", label: "Café", maxClients: null, maxCards: 1, paid: true, broadcastsPerDay: 3, broadcastGapHours: 0, removeBranding: false, segments: false, maxCashiers: 0, maxMemberships: 0 },
+  negocio: { id: "negocio", label: "Negocio", maxClients: null, maxCards: 3, paid: true, broadcastsPerDay: 6, broadcastGapHours: 0, removeBranding: true, segments: true, maxCashiers: 5, maxMemberships: 1 },
 };
 
 export function getPlan(plan?: Business["plan"]): PlanInfo {

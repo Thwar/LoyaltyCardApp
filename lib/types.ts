@@ -11,6 +11,11 @@ export const COLLECTIONS = {
   REWARDS: "rewards",
   APPLE_REGISTRATIONS: "appleRegistrations",
   STAFF: "staff",
+  // Memberships (VIP / club cards) — a parallel structure to loyalty, for
+  // gyms, clubs, and member-only businesses. Managed separately from stamp cards.
+  MEMBERSHIP_PROGRAMS: "membershipPrograms", // the card template (≤1 per business in V1)
+  MEMBERS: "members", // an enrolled member (status, expiry, visits)
+  VISITS: "visits", // attendance/usage log (analogous to stamps)
 } as const;
 
 // A cajero (cashier): a limited login that can only add stamps for one business.
@@ -95,4 +100,64 @@ export interface CustomerCard {
   referralCount?: number; // how many new customers this customer has referred
   broadcastMessage?: string; // latest marketing broadcast targeted at THIS customer (rendered on the pass)
   lastEvent?: string; // latest stamp/complete/redeem notification text (drives the Apple Wallet lock-screen message)
+}
+
+// ---------- Memberships (VIP / club cards) — V1: simple member pass ----------
+// Reserved for Phase 2 (tiered memberships). Unused in V1.
+export type MembershipTier = string;
+
+// The membership card template for a business (≤1 in V1; Franquicia plan = 3 later).
+export interface MembershipProgram {
+  id: string;
+  businessId: string;
+  name: string; // card title, e.g. "Membresía VIP" or "Socio Gimnasio Fit"
+  description?: string; // benefits / details, shown on the back of the pass
+  cardColor: string;
+  textColor?: string;
+  logoPng?: string; // optional logo (base64 PNG); falls back to the business logo
+  // Visit/usage tracking is configurable per program (V1 answer): when on, each
+  // member gets a visit allowance that counts down on scan; when off, the card is
+  // unlimited access (a pure active/expired club pass).
+  tracksVisits: boolean;
+  defaultVisitLimit?: number | null; // applied at enrollment when tracksVisits; null = unlimited
+  defaultDurationDays?: number | null; // membership length; sets expiresAt = join + N days. null/0 = no expiration
+  welcomeMessage?: string; // notification when a member joins
+  isActive: boolean;
+  createdAt?: number;
+  deletedAt?: number; // soft-deleted: hidden from the dashboard, members' passes render voided
+}
+
+// An enrolled member of a program.
+export interface Member {
+  id: string;
+  programId: string;
+  businessId: string;
+  memberPersonId: string; // shared id per (business, email): one person, one membership. Not an auth account.
+  memberName: string;
+  memberEmail?: string;
+  memberPhone?: string;
+  memberCode: string; // short numeric code shown on the pass / typed/scanned by staff
+  expiresAt?: number | null; // membership expiry (ms epoch); null/absent = never expires. Owner sets/extends (offline fees).
+  visitLimit?: number | null; // visits allowed (null = unlimited). Copied from the program at enrollment, editable per member.
+  visitsUsed: number; // visits logged so far
+  tier?: MembershipTier; // reserved for Phase 2
+  googleObjectId?: string; // Google Wallet object id, once issued
+  appleUpdatedTag?: number; // bumped on each change so Apple Wallet refreshes
+  passActive?: boolean; // true while the pass is on at least one device
+  passRemovedAt?: number | null;
+  welcomeNotified?: boolean; // Apple: welcome notification sent on first device registration
+  lastEvent?: string; // latest notification text (drives the Apple lock-screen message)
+  lastVisitDate?: number;
+  marketingConsent?: boolean;
+  createdAt?: number;
+}
+
+// A single visit/usage event (attendance log; analogous to a stamp).
+export interface Visit {
+  id: string;
+  memberId: string; // the Member doc id
+  businessId: string;
+  programId: string;
+  timestamp: number;
+  by?: string; // uid of the owner/cajero who logged it
 }
