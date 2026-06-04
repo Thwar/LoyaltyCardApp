@@ -13,10 +13,11 @@ import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Lock, Pencil, ScanLine } from "lucide-react";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
-import type { Business, CustomerCard, LoyaltyCard, StampShape } from "@/lib/types";
+import type { Business, CustomerCard, LoyaltyCard, StampShape, Member, MembershipProgram } from "@/lib/types";
 import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 import { NOTIF_DEFAULTS } from "@/lib/notifications";
+import { memberStatus, visitsRemaining, MEMBER_STATUS_LABEL, type MemberStatus } from "@/lib/membership";
 
 interface MeResponse {
   role?: "owner" | "cajero";
@@ -523,7 +524,7 @@ function CardManager({
   staffName?: string;
 }) {
   const [selected, setSelected] = useState<Client | null>(null);
-  const [tab, setTab] = useState<"resumen" | "tarjetas" | "comunicacion">("resumen");
+  const [tab, setTab] = useState<"resumen" | "tarjetas" | "comunicacion" | "membresias">("resumen");
   // No cards yet → open straight into the create form (owners only).
   const [editing, setEditing] = useState<LoyaltyCard | "new" | null>(cards.length === 0 && !cajero ? "new" : null);
   const planInfo = effectivePlan(business);
@@ -582,6 +583,9 @@ function CardManager({
         <button className={`tab${tab === "comunicacion" ? " active" : ""}`} onClick={() => setTab("comunicacion")}>
           Comunicación
         </button>
+        <button className={`tab${tab === "membresias" ? " active" : ""}`} onClick={() => setTab("membresias")}>
+          Membresías
+        </button>
       </div>
 
       {tab === "resumen" ? (
@@ -601,13 +605,528 @@ function CardManager({
           onNew={() => setEditing("new")}
           onChanged={onChanged}
         />
-      ) : (
+      ) : tab === "comunicacion" ? (
         <ComunicacionTab business={business} planInfo={planInfo} customers={customers} cards={cards} onChanged={onChanged} />
+      ) : (
+        <MembershipTab businessName={business.name} />
       )}
 
       {selected && (
         <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onChanged={onChanged} onClose={() => setSelected(null)} />
       )}
+    </div>
+  );
+}
+
+/* ========================= Memberships (VIP / club cards) ========================= */
+interface MembershipMe {
+  eligible: boolean;
+  program: MembershipProgram | null;
+  members: Member[];
+  stats: { total: number; active: number; expired: number; expiringSoon: number; visitsTotal: number } | null;
+}
+
+// Date pinned to Bolivia time (server builds in UTC).
+function fmtDay(ts?: number | null): string {
+  if (ts == null) return "—";
+  try {
+    return new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric", timeZone: "America/La_Paz" });
+  } catch {
+    return new Date(ts).toISOString().slice(0, 10);
+  }
+}
+
+function StatusBadge({ status }: { status: MemberStatus }) {
+  const c = status === "active" ? { bg: "#dcfce7", fg: "#166534" } : status === "expired" ? { bg: "#fee2e2", fg: "#991b1b" } : { bg: "#fef3c7", fg: "#92400e" };
+  return (
+    <span style={{ background: c.bg, color: c.fg, fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>
+      {MEMBER_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+function MembershipTab({ businessName }: { businessName: string }) {
+  const [data, setData] = useState<MembershipMe | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [editingProgram, setEditingProgram] = useState(false);
+  const [selected, setSelected] = useState<Member | null>(null);
+
+  const load = useCallback(async () => {
+    const res = await authedFetch("/api/membership/me");
+    const json = await res.json();
+    setData(json);
+    setLoading(false);
+  }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (loading) return <p className="muted mt">Cargando…</p>;
+  if (!data) return <div className="error-box mt">No se pudo cargar.</div>;
+
+  if (!data.eligible) return <MembershipUpsell />;
+
+  if (!data.program || editingProgram) {
+    return (
+      <div>
+        {data.program && (
+          <button className="btn btn-sm btn-ghost" onClick={() => setEditingProgram(false)} style={{ marginTop: 14, marginBottom: 6 }}>
+            ← Volver
+          </button>
+        )}
+        <MembershipForm
+          existing={data.program || undefined}
+          businessName={businessName}
+          onSaved={() => {
+            setEditingProgram(false);
+            load();
+          }}
+        />
+      </div>
+    );
+  }
+
+  const { program, members } = data;
+  const stats = data.stats!;
+  return (
+    <div>
+      <div className="row spread" style={{ alignItems: "center", marginTop: 14 }}>
+        <h3 style={{ margin: 0, fontSize: 18 }}>🎫 {program.name}</h3>
+        <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setEditingProgram(true)}>
+          Editar
+        </button>
+      </div>
+
+      <MemberVerifyBox onChanged={load} />
+
+      <div className="stat-grid mt">
+        <StatCard label="Socios activos" value={stats.active} />
+        <StatCard label="Por vencer (7 días)" value={stats.expiringSoon} />
+        <StatCard label="Vencidos" value={stats.expired} />
+        <StatCard label="Visitas registradas" value={stats.visitsTotal} />
+      </div>
+
+      <AddMemberForm onAdded={load} />
+
+      <MembersList members={members} onSelect={setSelected} />
+
+      {selected && <MemberModal member={selected} program={program} onChanged={load} onClose={() => setSelected(null)} />}
+    </div>
+  );
+}
+
+function MembershipUpsell() {
+  const href = `https://wa.me/59175983004?text=${encodeURIComponent("Hola, quiero activar las membresías (tarjetas VIP) en mi plan de SoyCasero.")}`;
+  return (
+    <div className="card mt">
+      <h3 style={{ marginTop: 0, fontSize: 18 }}>🎫 Tarjetas de membresía (VIP)</h3>
+      <p className="muted" style={{ lineHeight: 1.5 }}>
+        Para gimnasios, clubes y negocios con socios: una tarjeta que identifica a tus miembros, controla su vencimiento
+        y, si quieres, sus visitas. Disponible en el <strong>plan Negocio</strong>.
+      </p>
+      <a className="btn btn-primary mt" href={href} target="_blank" rel="noreferrer" style={{ width: "auto", display: "inline-block" }}>
+        Activar con el plan Negocio
+      </a>
+    </div>
+  );
+}
+
+function MembershipForm({ existing, businessName, onSaved }: { existing?: MembershipProgram; businessName: string; onSaved: () => void }) {
+  const [name, setName] = useState(existing?.name ?? `Membresía ${businessName}`);
+  const [description, setDescription] = useState(existing?.description ?? "");
+  const [welcomeMessage, setWelcomeMessage] = useState(existing?.welcomeMessage ?? `¡Bienvenido al club de ${businessName}! 🎉`);
+  const [cardColor, setCardColor] = useState(existing?.cardColor ?? "#1f2937");
+  const [textColor, setTextColor] = useState(existing?.textColor ?? "#FFFFFF");
+  const [tracksVisits, setTracksVisits] = useState(existing?.tracksVisits ?? false);
+  const [visitLimit, setVisitLimit] = useState(String(existing?.defaultVisitLimit ?? 10));
+  const [durationDays, setDurationDays] = useState(String(existing?.defaultDurationDays ?? 30));
+  const [logo, setLogo] = useState<string | null>(existing?.logoPng ? `data:image/png;base64,${existing.logoPng}` : null);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function save() {
+    setErr("");
+    setSaving(true);
+    const res = await authedFetch("/api/membership/program", {
+      method: "POST",
+      body: JSON.stringify({
+        programId: existing?.id,
+        name: name.trim(),
+        description: description.trim(),
+        welcomeMessage: welcomeMessage.trim(),
+        cardColor,
+        textColor,
+        tracksVisits,
+        defaultVisitLimit: tracksVisits ? Number(visitLimit) : null,
+        defaultDurationDays: Number(durationDays) || 0,
+        logo,
+      }),
+    });
+    const json = await res.json();
+    setSaving(false);
+    if (!res.ok) return setErr(json.error || "No se pudo guardar.");
+    onSaved();
+  }
+
+  async function onPickLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setLogo(await fileToResizedPng(file));
+    } catch {
+      setErr("No se pudo procesar la imagen.");
+    }
+  }
+
+  const days = Number(durationDays) || 0;
+  return (
+    <div>
+      <h1 style={{ fontSize: 24 }}>{existing ? "Editar tu membresía" : "Crea tu tarjeta de membresía"}</h1>
+      <p className="muted" style={{ marginBottom: 16 }}>Para gimnasios, clubes y negocios con socios.</p>
+      {err && <div className="error-box">{err}</div>}
+
+      {/* Mini preview */}
+      <div
+        style={{
+          background: cardColor,
+          color: textColor,
+          borderRadius: 16,
+          padding: "16px 18px",
+          marginBottom: 16,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+        }}
+      >
+        <div style={{ fontSize: 13, opacity: 0.85, fontWeight: 600 }}>{name || "Tu membresía"}</div>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18, fontSize: 12, opacity: 0.85 }}>
+          <span>SOCIO</span>
+          <span>{tracksVisits ? "VISITAS" : "ESTADO"}</span>
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 700 }}>
+          <span>Nombre</span>
+          <span>{tracksVisits ? `${visitLimit || 0}` : "Activo"}</span>
+        </div>
+        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 14 }}>{days > 0 ? `Vence en ${days} días` : "Sin vencimiento"}</div>
+      </div>
+
+      <div className="card">
+        <div className="field">
+          <label>Nombre de la membresía</label>
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Socio Gimnasio Fit" />
+        </div>
+        <div className="field">
+          <label>Beneficios / descripción (opcional)</label>
+          <textarea className="input" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} maxLength={240} placeholder="Acceso ilimitado, 1 invitado, descuentos…" />
+        </div>
+
+        <div className="field">
+          <label style={{ display: "flex", alignItems: "center", gap: 9, cursor: "pointer" }}>
+            <input type="checkbox" checked={tracksVisits} onChange={(e) => setTracksVisits(e.target.checked)} style={{ width: 18, height: 18 }} />
+            <span>Controlar visitas (descuenta una por cada registro)</span>
+          </label>
+          {tracksVisits && (
+            <input className="input mt" type="number" min={1} value={visitLimit} onChange={(e) => setVisitLimit(e.target.value)} placeholder="Visitas incluidas (ej: 10)" />
+          )}
+          {!tracksVisits && <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Acceso ilimitado: la tarjeta solo verifica si el socio está activo.</p>}
+        </div>
+
+        <div className="field">
+          <label>Duración (días)</label>
+          <input className="input" type="number" min={0} value={durationDays} onChange={(e) => setDurationDays(e.target.value)} placeholder="30" />
+          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Cada socio vence después de estos días. Usa 0 para sin vencimiento.</p>
+        </div>
+
+        <div className="field">
+          <label>Mensaje de bienvenida</label>
+          <textarea className="input" rows={2} value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} maxLength={240} />
+        </div>
+
+        <div className="field">
+          <label>Color de la tarjeta</label>
+          <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            {CARD_COLOR_CHOICES.map((c) => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCardColor(c)}
+                aria-label={c}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: c, border: cardColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "3px solid transparent", cursor: "pointer" }}
+              />
+            ))}
+            <input type="color" value={normalizeHex(cardColor, "#1f2937")} onChange={(e) => setCardColor(e.target.value)} aria-label="Color" style={{ width: 42, height: 36, padding: 0, border: "none", background: "none", cursor: "pointer" }} />
+            <input className="input" style={{ maxWidth: 110 }} value={cardColor} onChange={(e) => setCardColor(e.target.value)} placeholder="#1f2937" />
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Color del texto</label>
+          <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            {["#FFFFFF", "#000000"].map((c) => (
+              <button key={c} type="button" onClick={() => setTextColor(c)} aria-label={c} style={{ width: 32, height: 32, borderRadius: "50%", background: c, border: textColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "1px solid #ccc", cursor: "pointer" }} />
+            ))}
+          </div>
+        </div>
+
+        <div className="field">
+          <label>Logo (opcional)</label>
+          {logo && (
+            <div className="row" style={{ alignItems: "center", gap: 10, marginBottom: 8 }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={logo} alt="logo" style={{ maxHeight: 44, maxWidth: 160, objectFit: "contain", background: "#f0f0f0", borderRadius: 8, padding: 4 }} />
+              <button type="button" className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setLogo(null)}>
+                Quitar
+              </button>
+            </div>
+          )}
+          <input type="file" accept="image/*" onChange={onPickLogo} />
+        </div>
+
+        <button className="btn btn-primary mt" onClick={save} disabled={saving}>
+          {saving ? "Guardando…" : existing ? "Guardar cambios" : "Crear membresía"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MemberVerifyBox({ onChanged }: { onChanged: () => void }) {
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState<{ status: MemberStatus; logged: boolean; memberName: string; visitsRemaining: number | null; visitLimit: number | null; expiresAt: number | null } | null>(null);
+  const [err, setErr] = useState("");
+
+  async function go(verifyOnly: boolean, override?: string) {
+    const c = (override ?? code).trim();
+    if (busy || !c) return;
+    setBusy(true);
+    setErr("");
+    setResult(null);
+    const res = await authedFetch("/api/membership/visit", { method: "POST", body: JSON.stringify({ memberCode: c, verifyOnly }) });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) return setErr(json.error || "No se pudo procesar.");
+    setResult(json);
+    setCode("");
+    if (!verifyOnly && json.logged) onChanged();
+  }
+
+  return (
+    <div className="card mt">
+      <h3 style={{ marginTop: 0, fontSize: 16 }}>Registrar visita / Verificar socio</h3>
+      {err && <div className="error-box">{err}</div>}
+      <div className="row" style={{ gap: 8, alignItems: "stretch", flexWrap: "wrap" }}>
+        <input className="input" style={{ flex: "1 1 140px" }} value={code} onChange={(e) => setCode(e.target.value)} placeholder="Código del socio" inputMode="numeric" />
+        <button className="btn btn-primary" style={{ width: "auto" }} disabled={busy} onClick={() => go(false)}>
+          Registrar visita
+        </button>
+        <button className="btn btn-outline" style={{ width: "auto" }} disabled={busy} onClick={() => go(true)}>
+          Verificar
+        </button>
+        <button className="btn btn-outline" style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }} disabled={busy} onClick={() => setScanning(true)}>
+          <ScanLine size={16} /> Escanear
+        </button>
+      </div>
+
+      {result && (
+        <div className="mt" style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+          <StatusBadge status={result.status} />
+          <strong>{result.memberName}</strong>
+          <span className="muted" style={{ fontSize: 14 }}>
+            {result.visitLimit != null ? `${result.visitsRemaining} visita(s) restantes` : "Acceso ilimitado"}
+            {result.expiresAt != null ? ` · vence ${fmtDay(result.expiresAt)}` : ""}
+          </span>
+          {result.logged && <span style={{ color: "#166534", fontWeight: 700 }}>✓ Visita registrada</span>}
+          {!result.logged && result.status !== "active" && <span style={{ color: "#991b1b", fontWeight: 700 }}>No se registró (membresía {MEMBER_STATUS_LABEL[result.status].toLowerCase()})</span>}
+        </div>
+      )}
+
+      {scanning && <BarcodeScanner onDetected={(v) => { setScanning(false); go(false, v); }} onClose={() => setScanning(false)} />}
+    </div>
+  );
+}
+
+function AddMemberForm({ onAdded }: { onAdded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [newCode, setNewCode] = useState("");
+
+  async function add() {
+    if (busy || !name.trim()) return;
+    setBusy(true);
+    setErr("");
+    const res = await authedFetch("/api/membership/member", { method: "POST", body: JSON.stringify({ name: name.trim(), email: email.trim(), phone: phone.trim() }) });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) return setErr(json.error || "No se pudo agregar.");
+    setNewCode(json.member?.memberCode || "");
+    setName("");
+    setEmail("");
+    setPhone("");
+    onAdded();
+  }
+
+  if (!open) {
+    return (
+      <button className="btn btn-outline mt" style={{ width: "auto" }} onClick={() => setOpen(true)}>
+        + Agregar socio
+      </button>
+    );
+  }
+
+  return (
+    <div className="card mt">
+      <div className="row spread" style={{ alignItems: "center", marginBottom: 8 }}>
+        <h3 style={{ margin: 0, fontSize: 16 }}>Agregar socio</h3>
+        <button className="modal-close" onClick={() => setOpen(false)} aria-label="Cerrar">✕</button>
+      </div>
+      {err && <div className="error-box">{err}</div>}
+      {newCode && <div className="success-box">Socio agregado. Su código es <strong>{newCode}</strong>.</div>}
+      <div className="field">
+        <label>Nombre</label>
+        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del socio" />
+      </div>
+      <div className="field">
+        <label>Correo (opcional)</label>
+        <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+      <div className="field">
+        <label>Teléfono (opcional)</label>
+        <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+      </div>
+      <button className="btn btn-primary" disabled={busy} onClick={add}>
+        {busy ? "Agregando…" : "Agregar socio"}
+      </button>
+    </div>
+  );
+}
+
+function MembersList({ members, onSelect }: { members: Member[]; onSelect: (m: Member) => void }) {
+  const [q, setQ] = useState("");
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 10;
+  const term = q.trim().toLowerCase();
+  const filtered = term
+    ? members.filter((m) => [m.memberName, m.memberEmail, m.memberPhone, m.memberCode].some((v) => (v || "").toLowerCase().includes(term)))
+    : members;
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const shown = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  if (!members.length) return <p className="muted mt">Aún no tienes socios. Agrega el primero arriba.</p>;
+
+  return (
+    <div className="mt">
+      <input className="input" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder="Buscar por nombre, correo, teléfono o código" style={{ marginBottom: 10 }} />
+      {shown.map((m) => {
+        const st = memberStatus(m);
+        const rem = visitsRemaining(m);
+        return (
+          <button key={m.id} className="list-row" onClick={() => onSelect(m)} style={{ width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 10, background: "#fff", marginBottom: 8, cursor: "pointer" }}>
+            <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+              <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.memberName}</strong>
+              <span className="muted" style={{ fontSize: 13 }}>
+                {rem != null ? `${rem} visita(s)` : "Ilimitado"}
+                {m.expiresAt != null ? ` · vence ${fmtDay(m.expiresAt)}` : ""}
+              </span>
+            </span>
+            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span className="code-pill">{m.memberCode}</span>
+              <StatusBadge status={st} />
+            </span>
+          </button>
+        );
+      })}
+      {pageCount > 1 && (
+        <div className="row" style={{ justifyContent: "center", gap: 12, marginTop: 6 }}>
+          <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>← Anterior</button>
+          <span className="muted" style={{ fontSize: 13 }}>{safePage + 1} / {pageCount}</span>
+          <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>Siguiente →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MemberModal({ member, program, onChanged, onClose }: { member: Member; program: MembershipProgram; onChanged: () => void; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const [days, setDays] = useState("30");
+  const st = memberStatus(member);
+  const rem = visitsRemaining(member);
+
+  async function patch(body: Record<string, unknown>) {
+    setBusy(true);
+    setErr("");
+    const res = await authedFetch("/api/membership/member", { method: "PATCH", body: JSON.stringify({ memberId: member.id, ...body }) });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) return setErr(json.error || "No se pudo actualizar.");
+    onChanged();
+    onClose();
+  }
+
+  async function remove() {
+    if (!confirm(`¿Eliminar a ${member.memberName}?`)) return;
+    setBusy(true);
+    setErr("");
+    const res = await authedFetch("/api/membership/member", { method: "DELETE", body: JSON.stringify({ memberId: member.id }) });
+    const json = await res.json();
+    setBusy(false);
+    if (!res.ok) return setErr(json.error || "No se pudo eliminar.");
+    onChanged();
+    onClose();
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="row spread" style={{ alignItems: "flex-start", marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 18 }}>{member.memberName}</h3>
+          <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
+        </div>
+
+        <div className="row" style={{ gap: 10, alignItems: "center", marginBottom: 12 }}>
+          <StatusBadge status={st} />
+          <span className="code-pill">{member.memberCode}</span>
+        </div>
+
+        <div className="stat-grid" style={{ marginBottom: 14 }}>
+          <StatCard label="Visitas" value={program.tracksVisits ? `${member.visitsUsed || 0}${member.visitLimit != null ? ` / ${member.visitLimit}` : ""}` : "Ilimitado"} />
+          <StatCard label="Vence" value={fmtDay(member.expiresAt)} />
+        </div>
+
+        {err && <div className="error-box">{err}</div>}
+
+        <div className="field">
+          <label>Renovar / extender</label>
+          <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <input className="input" type="number" min={1} value={days} onChange={(e) => setDays(e.target.value)} style={{ maxWidth: 100 }} />
+            <button className="btn btn-primary" style={{ width: "auto" }} disabled={busy} onClick={() => patch({ addDays: Number(days) || 0 })}>
+              + {Number(days) || 0} días
+            </button>
+            {program.tracksVisits && (
+              <button className="btn btn-outline" style={{ width: "auto" }} disabled={busy} onClick={() => patch({ resetVisits: true })}>
+                Reiniciar visitas
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+          {st !== "expired" && (
+            <button className="btn btn-outline" style={{ width: "auto" }} disabled={busy} onClick={() => patch({ deactivate: true })}>
+              Desactivar
+            </button>
+          )}
+          <button className="btn btn-ghost" style={{ width: "auto", color: "#c62828" }} disabled={busy} onClick={remove}>
+            Eliminar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

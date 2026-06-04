@@ -1,6 +1,6 @@
 import "server-only";
 import { adminDb } from "./firebaseAdmin";
-import { COLLECTIONS, type Business, type LoyaltyCard, type Staff } from "./types";
+import { COLLECTIONS, type Business, type LoyaltyCard, type MembershipProgram, type Member, type Staff } from "./types";
 
 export async function getBusinessByOwner(uid: string): Promise<Business | null> {
   const snap = await adminDb().collection(COLLECTIONS.BUSINESSES).where("ownerId", "==", uid).limit(1).get();
@@ -32,6 +32,28 @@ export async function getBusinessById(id: string): Promise<Business | null> {
   const d = await adminDb().collection(COLLECTIONS.BUSINESSES).doc(id).get();
   if (!d.exists) return null;
   return { id: d.id, ...(d.data() as Omit<Business, "id">) };
+}
+
+// The business's membership program (≤1 in V1), excluding soft-deleted ones.
+export async function getMembershipProgramByBusiness(businessId: string): Promise<MembershipProgram | null> {
+  const snap = await adminDb().collection(COLLECTIONS.MEMBERSHIP_PROGRAMS).where("businessId", "==", businessId).get();
+  const live = snap.docs
+    .map((d) => ({ id: d.id, ...(d.data() as Omit<MembershipProgram, "id">) }))
+    .filter((p) => !p.deletedAt)
+    .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  return live[0] ?? null;
+}
+
+export async function getMembershipProgram(id: string): Promise<MembershipProgram | null> {
+  const d = await adminDb().collection(COLLECTIONS.MEMBERSHIP_PROGRAMS).doc(id).get();
+  if (!d.exists) return null;
+  return { id: d.id, ...(d.data() as Omit<MembershipProgram, "id">) };
+}
+
+export async function getMember(id: string): Promise<Member | null> {
+  const d = await adminDb().collection(COLLECTIONS.MEMBERS).doc(id).get();
+  if (!d.exists) return null;
+  return { id: d.id, ...(d.data() as Omit<Member, "id">) };
 }
 
 // Primary (oldest non-deleted) card. Soft-deleted cards are excluded.
