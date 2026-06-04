@@ -16,6 +16,7 @@ import { BarcodeScanner } from "@/components/BarcodeScanner";
 import type { Business, CustomerCard, LoyaltyCard, StampShape } from "@/lib/types";
 import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
+import { NOTIF_DEFAULTS } from "@/lib/notifications";
 
 interface MeResponse {
   role?: "owner" | "cajero";
@@ -235,6 +236,10 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
   const [textColor, setTextColor] = useState(existing?.textColor ?? "#FFFFFF");
   const [stampShape, setStampShape] = useState<StampShape>(existing?.stampShape ?? "circle");
   const [logo, setLogo] = useState<string | null>(existing?.logoPng ? `data:image/png;base64,${existing.logoPng}` : null);
+  const [stampMessage, setStampMessage] = useState(existing?.stampMessage || NOTIF_DEFAULTS.stamp);
+  const [completeMessage, setCompleteMessage] = useState(existing?.completeMessage || NOTIF_DEFAULTS.complete);
+  const [redeemMessage, setRedeemMessage] = useState(existing?.redeemMessage || NOTIF_DEFAULTS.redeem);
+  const [formTab, setFormTab] = useState<"tarjeta" | "notificaciones">("tarjeta");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -243,7 +248,19 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
     setSaving(true);
     const res = await authedFetch("/api/business/card", {
       method: "POST",
-      body: JSON.stringify({ cardId: existing?.id, totalSlots, rewardDescription: rewardDescription.trim(), welcomeMessage: welcomeMessage.trim(), cardColor, textColor, stampShape, logo }),
+      body: JSON.stringify({
+        cardId: existing?.id,
+        totalSlots,
+        rewardDescription: rewardDescription.trim(),
+        welcomeMessage: welcomeMessage.trim(),
+        stampMessage: stampMessage.trim(),
+        completeMessage: completeMessage.trim(),
+        redeemMessage: redeemMessage.trim(),
+        cardColor,
+        textColor,
+        stampShape,
+        logo,
+      }),
     });
     const json = await res.json();
     setSaving(false);
@@ -283,7 +300,18 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
         />
       </div>
 
+      <div className="tabs mt">
+        <button className={`tab${formTab === "tarjeta" ? " active" : ""}`} onClick={() => setFormTab("tarjeta")}>
+          Tarjeta
+        </button>
+        <button className={`tab${formTab === "notificaciones" ? " active" : ""}`} onClick={() => setFormTab("notificaciones")}>
+          Notificaciones
+        </button>
+      </div>
+
       <div className="card">
+        {formTab === "tarjeta" ? (
+          <>
         <div className="field">
           <label>Forma del sello</label>
           {planInfo.paid ? (
@@ -337,21 +365,6 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
             onChange={(e) => setRewardDescription(e.target.value)}
             placeholder="Ej: Un café gratis"
           />
-        </div>
-
-        <div className="field">
-          <label>Mensaje de bienvenida</label>
-          <textarea
-            className="input"
-            rows={2}
-            value={welcomeMessage}
-            onChange={(e) => setWelcomeMessage(e.target.value)}
-            placeholder="¡Bienvenido! 🎉"
-            maxLength={240}
-          />
-          <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
-            Se le envía al casero como notificación cuando guarda tu tarjeta (Android y iPhone).
-          </p>
         </div>
 
         <div className="field">
@@ -433,6 +446,55 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
             cuadradas se verán chicas.
           </p>
         </div>
+          </>
+        ) : (
+          <>
+            <div className="field">
+              <label>Mensaje de bienvenida</label>
+              <textarea
+                className="input"
+                rows={2}
+                value={welcomeMessage}
+                onChange={(e) => setWelcomeMessage(e.target.value)}
+                placeholder="¡Bienvenido! 🎉"
+                maxLength={240}
+              />
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+                Se le envía al casero como notificación cuando guarda tu tarjeta (Android y iPhone). Disponible en todos los planes.
+              </p>
+            </div>
+
+            {!planInfo.paid && (
+              <p className="muted" style={{ fontSize: 12, margin: "0 0 14px", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <Lock size={13} aria-hidden /> Personaliza los mensajes de sellos y recompensa con el plan Café o Negocio.
+              </p>
+            )}
+
+            {(
+              [
+                { label: "Notificación de nuevo sello", val: stampMessage, set: setStampMessage },
+                { label: "Notificación de tarjeta completa", val: completeMessage, set: setCompleteMessage },
+                { label: "Notificación de recompensa canjeada", val: redeemMessage, set: setRedeemMessage },
+              ] as const
+            ).map((f) => (
+              <div className="field" key={f.label}>
+                <label>{f.label}</label>
+                <textarea
+                  className="input"
+                  rows={2}
+                  value={f.val}
+                  onChange={(e) => f.set(e.target.value)}
+                  disabled={!planInfo.paid}
+                  maxLength={180}
+                  style={planInfo.paid ? undefined : { opacity: 0.6, cursor: "not-allowed" }}
+                />
+              </div>
+            ))}
+            <p className="muted" style={{ fontSize: 12, marginTop: 2, lineHeight: 1.45 }}>
+              Escribe <strong>{"{sellos}"}</strong> y <strong>{"{total}"}</strong> donde quieras mostrar el progreso (ej: 5/9).
+            </p>
+          </>
+        )}
 
         <button className="btn btn-primary mt" onClick={save} disabled={saving}>
           {saving ? "Guardando…" : existing ? "Guardar cambios" : "Crear tarjeta"}

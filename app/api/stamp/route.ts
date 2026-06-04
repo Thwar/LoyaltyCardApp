@@ -9,6 +9,7 @@ import { appleConfigured } from "@/lib/appleWallet";
 import { sendApplePassPush } from "@/lib/apns";
 import { effectivePlan } from "@/lib/plans";
 import { awardReferralStamp } from "@/lib/referral";
+import { NOTIF_DEFAULTS, renderNotif } from "@/lib/notifications";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +38,11 @@ export async function POST(req: Request) {
     const loyalty = await getLoyaltyCard(pre.docs[0].data().loyaltyCardId);
     if (!loyalty) return NextResponse.json({ error: "Tarjeta de lealtad no encontrada." }, { status: 404 });
     const totalSlots = loyalty.totalSlots;
+    // Custom notification templates are a paid feature; free plans get the defaults.
+    const paid = effectivePlan(business).paid;
+    const tmplStamp = (paid && loyalty.stampMessage) || NOTIF_DEFAULTS.stamp;
+    const tmplComplete = (paid && loyalty.completeMessage) || NOTIF_DEFAULTS.complete;
+    const tmplRedeem = (paid && loyalty.redeemMessage) || NOTIF_DEFAULTS.redeem;
 
     // Atomic read-check-write so concurrent stamps (double-tap / scan, owner + cajero
     // at once) can't over-stamp, double-redeem, or double-pay a referral.
@@ -46,7 +52,7 @@ export async function POST(req: Request) {
     const result = await adminDb().runTransaction<StampTx>(async (t) => {
       const d = (await t.get(docRef)).data() || {};
       if (redeem) {
-        const eventMessage = "🎁 ¡Recompensa canjeada! Tu tarjeta se reinició.";
+        const eventMessage = renderNotif(tmplRedeem, 0, totalSlots);
         t.update(docRef, {
           currentStamps: 0,
           isRewardClaimed: false,
@@ -69,9 +75,7 @@ export async function POST(req: Request) {
       const awardReferral = !!d.referredBy && !d.referralRewarded;
       const newStamps = current + 1;
       const completed = newStamps >= totalSlots;
-      const eventMessage = completed
-        ? `¡Tarjeta completa (${newStamps}/${totalSlots})! Ya puedes canjear tu recompensa 🎁`
-        : `¡Nuevo sello! Llevas ${newStamps}/${totalSlots}.`;
+      const eventMessage = renderNotif(completed ? tmplComplete : tmplStamp, newStamps, totalSlots);
       t.update(docRef, {
         currentStamps: FieldValue.increment(1),
         lastStampDate: Date.now(),

@@ -33,9 +33,17 @@ export async function POST(req: Request) {
     const cardColor = hexOk(cardColorRaw) ? cardColorRaw : "#E53935";
     const textColor = hexOk(textColorRaw) ? textColorRaw : "#FFFFFF";
 
+    const paid = effectivePlan(business).paid;
+
     // Custom stamp shapes/icons are a paid feature; free plans are forced to circle.
     const shapeRaw = String(body.stampShape || "circle") as StampShape;
-    const stampShape = effectivePlan(business).paid && STAMP_SHAPE_IDS.includes(shapeRaw) ? shapeRaw : "circle";
+    const stampShape = paid && STAMP_SHAPE_IDS.includes(shapeRaw) ? shapeRaw : "circle";
+
+    // Custom notification templates are paid-only; free plans store none (defaults apply).
+    const notif = (v: unknown) => (paid ? String(v || "").trim().slice(0, 180) : "");
+    const stampMessage = notif(body.stampMessage);
+    const completeMessage = notif(body.completeMessage);
+    const redeemMessage = notif(body.redeemMessage);
 
     if (!Number.isFinite(totalSlots) || totalSlots < CARD_DEFAULTS.MIN_SLOTS || totalSlots > CARD_DEFAULTS.MAX_SLOTS) {
       return NextResponse.json(
@@ -68,6 +76,9 @@ export async function POST(req: Request) {
       totalSlots,
       rewardDescription,
       welcomeMessage,
+      stampMessage,
+      completeMessage,
+      redeemMessage,
       cardColor,
       textColor,
       stampShape,

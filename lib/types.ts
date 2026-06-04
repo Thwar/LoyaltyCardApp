@@ -55,7 +55,12 @@ export interface LoyaltyCard {
   businessName: string;
   totalSlots: number;
   rewardDescription: string;
-  welcomeMessage?: string; // shown/notified when a customer joins (customizable per card)
+  welcomeMessage?: string; // shown/notified when a customer joins (customizable per card; all plans)
+  // Custom wallet notification templates (paid plans). Tokens {sellos}/{total}.
+  // Empty/absent → the default template in lib/notifications.ts is used.
+  stampMessage?: string; // sent on each new stamp
+  completeMessage?: string; // sent when the card fills up
+  redeemMessage?: string; // sent when the reward is redeemed
   cardColor: string;
   textColor?: string;
   stampShape?: StampShape; // stamp icon shape (paid plans); default circle
