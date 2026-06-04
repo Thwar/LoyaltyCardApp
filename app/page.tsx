@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { Smartphone, Wallet, QrCode, Stamp, Bell, Palette, Megaphone, Repeat, TrendingUp, Heart, UserPlus, Hand, Check, X, ArrowRight } from "lucide-react";
+import { Smartphone, Wallet, QrCode, Bell, Palette, Megaphone, Repeat, TrendingUp, Heart, UserPlus, Hand, Users, ScanLine, Check, X, ArrowRight } from "lucide-react";
 import { CardPreview } from "@/components/CardPreview";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
@@ -14,16 +14,19 @@ const WHY = [
 const FEATURES = [
   { Icon: Smartphone, acc: "acc-blue", title: "No es otra app", desc: "Tus caseros no descargan nada. La tarjeta vive en el wallet que ya usan todos los días." },
   { Icon: Wallet, acc: "acc-violet", title: "Apple & Google Wallet", desc: "Funciona en iPhone y Android. Un mismo QR sirve para los dos." },
-  { Icon: Stamp, acc: "acc-teal", title: "Sellos al instante", desc: "Sumas un sello con un toque y aparece en el celular del casero al momento." },
+  { Icon: ScanLine, acc: "acc-teal", title: "Sellos en un toque", desc: "Escanea el código del casero con la cámara o escríbelo, y el sello aparece al instante en su celular." },
   { Icon: Bell, acc: "acc-amber", title: "Notificaciones que hacen volver", desc: "El casero recibe un aviso con cada sello y al inscribirse. Le recuerdas tu negocio, sin costo." },
-  { Icon: Megaphone, acc: "acc-orange", title: "Promociones a tus caseros", desc: "Envía promos, recordatorios o avisos a todos desde tu panel (planes de pago). Llena tu local en días lentos." },
+  { Icon: Megaphone, acc: "acc-orange", title: "Promociones a tus caseros", desc: "Envía promos y recordatorios a todos —o por segmento: los que se alejaron, los que casi completan, tus VIP— y llena tu local en días lentos (planes de pago)." },
   { Icon: Palette, acc: "acc-green", title: "Con tu marca y tus íconos", desc: "Tu logo, tus colores y hasta el ícono del sello (☕ 🍕 ✂️). Se ve como tu negocio, no como una app genérica." },
+  { Icon: UserPlus, acc: "acc-blue", title: "Programa de referidos", desc: "Cada casero invita a sus amigos con un link. Cuando el amigo se une y recibe su primer sello, premias a quien lo trajo. En todos los planes." },
+  { Icon: TrendingUp, acc: "acc-violet", title: "Datos y analíticas", desc: "Mira quién vuelve, quién se aleja y quién está por ganar su premio. Exporta tus caseros a CSV cuando quieras (planes de pago)." },
+  { Icon: Users, acc: "acc-amber", title: "Suma con tu equipo", desc: "Da acceso a hasta 5 cajeros para que sumen sellos —sin ver contactos ni tocar tu configuración (plan Negocio)." },
 ];
 
 const STEPS = [
   { Icon: UserPlus, acc: "acc-blue", n: "1", title: "Crea tu cuenta y tu tarjeta", desc: "Elige cuántos sellos y cuál es la recompensa (ej: la 9.ª compra gratis). Toma 2 minutos." },
   { Icon: QrCode, acc: "acc-violet", n: "2", title: "Pon tu QR en el mostrador", desc: "El casero escanea, llena sus datos y guarda la tarjeta en su wallet. Sin instalar nada." },
-  { Icon: Hand, acc: "acc-green", n: "3", title: "Suma sellos con un toque", desc: "Escribes el código del casero y el sello aparece al instante en su celular." },
+  { Icon: Hand, acc: "acc-green", n: "3", title: "Suma sellos con un toque", desc: "Escaneas el código del casero con la cámara o lo escribes, y el sello aparece al instante en su celular." },
 ];
 
 const PLANS = [
@@ -89,9 +92,11 @@ const FAQS = [
   { q: "¿Mis caseros necesitan descargar una app?", a: "No. La tarjeta se guarda directamente en Apple Wallet o Google Wallet, que ya tienen en su celular." },
   { q: "¿Funciona en iPhone y Android?", a: "Sí, en ambos. Un mismo QR sirve para los dos sistemas." },
   { q: "¿Cómo sumo un sello?", a: "Escribes el código del casero en tu panel y el sello aparece al instante en su celular, sin que tengan que hacer nada." },
-  { q: "¿Puedo enviar promociones a mis caseros?", a: "Sí. Con los planes de pago envías notificaciones de promociones, recordatorios o avisos a todos tus caseros desde tu panel, con un límite diario para no saturar." },
+  { q: "¿Puedo enviar promociones a mis caseros?", a: "Sí. Con los planes de pago envías notificaciones de promociones, recordatorios o avisos a todos tus caseros desde tu panel, con un límite diario para no saturar. En el plan Negocio puedes enviarlos por segmento (por ejemplo, solo a quienes se alejaron o a quienes están por ganar su premio)." },
+  { q: "¿Cómo funciona el programa de referidos?", a: "Cada casero recibe un link para invitar a sus amigos. Cuando un amigo se une a tu tarjeta y recibe su primer sello, le das un sello de premio a quien lo trajo. Así tus propios caseros te consiguen caseros nuevos. Está incluido en todos los planes, incluso el gratis." },
+  { q: "¿Puede mi equipo sumar sellos por mí?", a: "Sí. En el plan Negocio creas hasta 5 cajeros, cada uno con su propio acceso para sumar sellos. Los cajeros no ven los datos de contacto de tus caseros ni pueden cambiar tu configuración." },
   { q: "¿Puedo personalizar la tarjeta?", a: "Sí. Eliges tu logo, tus colores y la forma o el ícono del sello (café, pizza, tijeras y más). Los íconos están disponibles en los planes de pago." },
-  { q: "¿Necesito un lector o equipo especial?", a: "No. Solo tu celular o computadora con internet. Pones el QR en el mostrador y listo." },
+  { q: "¿Necesito un lector o equipo especial?", a: "No. Solo tu celular o computadora con internet. Pones el QR en el mostrador y listo. Para sumar sellos puedes escanear el código del casero con la cámara o escribirlo." },
   { q: "¿Cuánto cuesta?", a: "Hay un plan gratis para siempre. Los planes de pago arrancan en Bs 99/mes, sin contratos." },
 ];
 
@@ -279,6 +284,51 @@ export default function Home() {
                 </Fragment>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* ANALYTICS SHOWCASE */}
+      <section className="landing-section">
+        <div style={{ display: "flex", gap: 44, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 320px", minWidth: 280 }}>
+            <h2 className="section-title" style={{ textAlign: "left" }}>
+              Conoce a tus caseros, no solo tus ventas
+            </h2>
+            <p className="section-sub" style={{ textAlign: "left", margin: "12px 0 20px" }}>
+              Tu panel te muestra quién vuelve, quién se aleja y quién está a un solo sello de ganar su premio —con un
+              gráfico de crecimiento mes a mes. Toma decisiones con datos, no a ciegas.
+            </p>
+            <ul className="plan-list" style={{ marginBottom: 22 }}>
+              <li>
+                <Check size={18} />
+                <span>Tasa de retorno, caseros activos y en riesgo</span>
+              </li>
+              <li>
+                <Check size={18} />
+                <span>Quiénes están por completar su tarjeta</span>
+              </li>
+              <li>
+                <Check size={18} />
+                <span>Crecimiento de caseros y visitas en el tiempo</span>
+              </li>
+              <li>
+                <Check size={18} />
+                <span>Exporta tus caseros a CSV cuando quieras</span>
+              </li>
+            </ul>
+            <Link href="/signup" className="btn btn-primary" style={{ width: "auto", display: "inline-block" }}>
+              Crear mi cuenta gratis
+            </Link>
+            <p className="muted" style={{ fontSize: 13, margin: "12px 0 0" }}>Analíticas avanzadas en los planes de pago.</p>
+          </div>
+          <div style={{ flex: "1 1 440px", minWidth: 280 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/homepage/stats.png"
+              alt="Panel de analíticas de SoyCasero: caseros, tasa de retorno y gráfico de crecimiento"
+              style={{ width: "100%", height: "auto", borderRadius: 14, border: "1px solid var(--border)", boxShadow: "0 18px 44px rgba(0,0,0,0.15)" }}
+            />
           </div>
         </div>
       </section>
