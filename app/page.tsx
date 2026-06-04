@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { Smartphone, Wallet, QrCode, Bell, Palette, Megaphone, Repeat, TrendingUp, Heart, UserPlus, Hand, Users, ScanLine, Check, X, ArrowRight } from "lucide-react";
+import { Smartphone, Wallet, QrCode, Bell, Palette, Megaphone, Repeat, TrendingUp, Heart, UserPlus, Hand, Users, ScanLine, Eye, Check, X, ArrowRight } from "lucide-react";
 import { CardPreview } from "@/components/CardPreview";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
@@ -138,14 +138,14 @@ export default function Home() {
               <Link href="/signup" className="btn-hero-white">
                 Crear mi cuenta gratis
               </Link>
-              <Link href="/login" className="btn-hero-outline">
-                Ya tengo cuenta
+              <Link href="/ejemplo" className="btn-hero-outline">
+                <Eye size={19} style={{ marginRight: 9 }} /> Ver un ejemplo
               </Link>
             </div>
             <p style={{ fontSize: 14, opacity: 0.9, margin: "14px 0 0" }}>
               Gratis para empezar · Sin tarjeta de crédito ·{" "}
-              <Link href="/ejemplo" style={{ color: "#fff", textDecoration: "underline", textUnderlineOffset: "3px" }}>
-                Ver un ejemplo
+              <Link href="/login" style={{ color: "#fff", textDecoration: "underline", textUnderlineOffset: "3px" }}>
+                ¿Ya tienes cuenta? Entrar
               </Link>
             </p>
             <div className="wallet-badges" style={{ marginTop: 22 }}>
