@@ -142,9 +142,8 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
     key: "count",
     label: "SELLOS",
     value: `${Math.min(customer.currentStamps, card.totalSlots)}/${card.totalSlots}`,
-    // changeMessage turns each stamp/redeem (the count changes) into a lock-screen
-    // notification when the pass refreshes. %@ is the new value, e.g. "6/9".
-    changeMessage: "¡Tu tarjeta se actualizó! Sellos: %@",
+    // The lock-screen notification text comes from the "activity" field below
+    // (its value is the event-specific message), not from this count field.
   });
   pass.secondaryFields.push({ key: "lastVisit", label: "ÚLTIMA VISITA", value: formatVisit(customer.lastStampDate) });
   pass.auxiliaryFields.push({ key: "code", label: "TU CÓDIGO", value: customer.cardCode });
@@ -152,6 +151,12 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
   // total across completed cards (each redemption clears a full card of totalSlots).
   const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   pass.backFields.push({ key: "reward", label: "Recompensa", value: card.rewardDescription });
+  // Latest stamp/complete/redeem message. Its changeMessage fires the lock-screen
+  // notification when the value changes (set per event in /api/stamp), so completing
+  // a card and redeeming a reward each show their own message — not a generic one.
+  if (customer.lastEvent) {
+    pass.backFields.push({ key: "activity", label: "Actividad", value: customer.lastEvent, changeMessage: "%@" });
+  }
   // Rendered (with a changeMessage) only after the device registers, so adding the
   // pass fires a one-time welcome notification — see the registration endpoint.
   if (card.welcomeMessage && customer.welcomeNotified) {

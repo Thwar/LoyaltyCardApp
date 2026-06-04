@@ -89,4 +89,5 @@ export interface CustomerCard {
   referralRewarded?: boolean; // true once the referrer was paid out (on this customer's first real stamp)
   referralCount?: number; // how many new customers this customer has referred
   broadcastMessage?: string; // latest marketing broadcast targeted at THIS customer (rendered on the pass)
+  lastEvent?: string; // latest stamp/complete/redeem notification text (drives the Apple Wallet lock-screen message)
 }

@@ -42,16 +42,18 @@ export async function POST(req: Request) {
     // at once) can't over-stamp, double-redeem, or double-pay a referral.
     type StampTx =
       | { kind: "full"; current: number }
-      | { kind: "ok"; data: DocumentData; newStamps: number; completed: boolean; redeemed: boolean; awardReferral: boolean };
+      | { kind: "ok"; data: DocumentData; newStamps: number; completed: boolean; redeemed: boolean; awardReferral: boolean; eventMessage: string };
     const result = await adminDb().runTransaction<StampTx>(async (t) => {
       const d = (await t.get(docRef)).data() || {};
       if (redeem) {
+        const eventMessage = "🎁 ¡Recompensa canjeada! Tu tarjeta se reinició.";
         t.update(docRef, {
           currentStamps: 0,
           isRewardClaimed: false,
           rewardsRedeemed: FieldValue.increment(1),
           lastStampDate: Date.now(),
           appleUpdatedTag: Date.now(),
+          lastEvent: eventMessage,
         });
         t.set(adminDb().collection(COLLECTIONS.REWARDS).doc(), {
           customerCardId: docRef.id,
@@ -60,15 +62,21 @@ export async function POST(req: Request) {
           cardCode,
           claimedAt: Date.now(),
         });
-        return { kind: "ok", data: d, newStamps: 0, completed: false, redeemed: true, awardReferral: false };
+        return { kind: "ok", data: d, newStamps: 0, completed: false, redeemed: true, awardReferral: false, eventMessage };
       }
       const current = Number(d.currentStamps || 0);
       if (current >= totalSlots) return { kind: "full", current };
       const awardReferral = !!d.referredBy && !d.referralRewarded;
+      const newStamps = current + 1;
+      const completed = newStamps >= totalSlots;
+      const eventMessage = completed
+        ? `¡Tarjeta completa (${newStamps}/${totalSlots})! Ya puedes canjear tu recompensa 🎁`
+        : `¡Nuevo sello! Llevas ${newStamps}/${totalSlots}.`;
       t.update(docRef, {
         currentStamps: FieldValue.increment(1),
         lastStampDate: Date.now(),
         appleUpdatedTag: Date.now(),
+        lastEvent: eventMessage,
         ...(awardReferral ? { referralRewarded: true } : {}),
       });
       t.set(adminDb().collection(COLLECTIONS.STAMPS).doc(), {
@@ -77,19 +85,14 @@ export async function POST(req: Request) {
         loyaltyCardId: loyalty.id,
         timestamp: Date.now(),
       });
-      return { kind: "ok", data: d, newStamps: current + 1, completed: current + 1 >= totalSlots, redeemed: false, awardReferral };
+      return { kind: "ok", data: d, newStamps, completed, redeemed: false, awardReferral, eventMessage };
     });
 
     if (result.kind === "full") {
       return NextResponse.json({ currentStamps: result.current, totalSlots, completed: true, alreadyFull: true });
     }
 
-    const { data, newStamps, completed, redeemed } = result;
-    const eventMessage = redeemed
-      ? "🎁 ¡Recompensa canjeada! Tu tarjeta se reinició."
-      : completed
-        ? `¡Tarjeta completa (${newStamps}/${totalSlots})! Ya puedes canjear tu recompensa 🎁`
-        : `¡Nuevo sello! Llevas ${newStamps}/${totalSlots}.`;
+    const { data, newStamps, completed, redeemed, eventMessage } = result;
 
     // First real stamp for a referred customer → pay their referrer (once). The
     // referralRewarded flag was flipped inside the transaction, so only the winning
