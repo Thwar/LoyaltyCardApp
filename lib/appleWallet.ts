@@ -182,10 +182,12 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
   pass.backFields.push({ key: "created", label: "Casero desde", value: formatVisit(customer.createdAt) });
   pass.backFields.push({ key: "business", label: "Negocio", value: card.businessName });
   // Referral link — share it and earn a stamp when a friend joins.
+  // Opens a share screen (QR + share buttons), not the raw join link, so the
+  // customer can easily pass their referral link to friends.
   pass.backFields.push({
     key: "referral",
     label: "Invita y gana un sello",
-    value: `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/join/${card.id}?ref=${customer.id}`,
+    value: `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/share/${customer.id}`,
   });
   pass.backFields.push({ key: "passId", label: "Identificador", value: customer.id });
   pass.backFields.push({ key: "cardId", label: "ID de tarjeta", value: card.id });

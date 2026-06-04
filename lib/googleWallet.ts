@@ -83,6 +83,12 @@ function formatDate(ts?: number): string {
 // name is already the program name at the top of the Google card. "Sellos
 // acumulados" is the lifetime total across completed cards (each redemption
 // clears a full card of totalSlots). Kept at ≤10 modules in every state.
+// Referral share screen (QR + share buttons) for this customer.
+function referralLinks(customer: CustomerCard) {
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com";
+  return { uris: [{ uri: `${base}/share/${customer.id}`, description: "Invita y gana un sello", id: "referral" }] };
+}
+
 function loyaltyTextModules(card: LoyaltyCard, customer: CustomerCard, description?: string, hideBranding?: boolean) {
   const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   return [
@@ -168,6 +174,7 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard, descr
     barcode: { type: "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
     heroImage: { sourceUri: { uri: stampHeroUri(card, customer.currentStamps) } },
     textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
+    linksModuleData: referralLinks(customer),
     // Welcome message — Google surfaces this as a notification when the pass is saved.
     messages: [
       {
@@ -215,6 +222,7 @@ export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCar
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
     heroImage: { sourceUri: { uri: stampHeroUri(card, customer.currentStamps) } },
     textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
+    linksModuleData: referralLinks(customer),
     // A new message id triggers a Google Wallet notification; replacing the array
     // (rather than appending) keeps only the latest event on the pass.
     ...(message
