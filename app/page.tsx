@@ -333,6 +333,43 @@ export default function Home() {
         </div>
       </section>
 
+      {/* NOTIFICATIONS SHOWCASE — paired with the analytics block above (image left, copy right) */}
+      <section className="landing-section" style={{ paddingTop: 0 }}>
+        <div style={{ display: "flex", gap: 44, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ flex: "1 1 300px", minWidth: 260, textAlign: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/homepage/notifi.jpeg"
+              alt="Notificaciones de SoyCasero en el celular: nuevo sello, tarjeta completa, bienvenida y un mensaje '¡Te extrañamos!'"
+              style={{ width: "100%", maxWidth: 340, height: "auto", borderRadius: 16, border: "1px solid var(--border)", boxShadow: "0 18px 44px rgba(0,0,0,0.15)" }}
+            />
+          </div>
+          <div style={{ flex: "1 1 320px", minWidth: 280 }}>
+            <h2 className="section-title" style={{ textAlign: "left" }}>
+              Aparece en su pantalla, no en una app
+            </h2>
+            <p className="section-sub" style={{ textAlign: "left", margin: "12px 0 20px" }}>
+              Cada sello, tarjeta completa y recompensa llega como notificación al celular del casero —sin que abran nada
+              y sin que tú pagues SMS.
+            </p>
+            <ul className="plan-list">
+              <li>
+                <Check size={18} />
+                <span>Avisos de cada sello, bienvenida y recompensa</span>
+              </li>
+              <li>
+                <Check size={18} />
+                <span>Mensajes personalizados a tu gusto (planes de pago)</span>
+              </li>
+              <li>
+                <Check size={18} />
+                <span>Recupera caseros dormidos con un “¡Te extrañamos!”</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* PRICING */}
       <section style={{ background: "#1f2937" }} id="pricing">
         <div className="landing-section">
