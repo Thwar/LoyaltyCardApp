@@ -699,6 +699,8 @@ function MembershipTab({ businessName }: { businessName: string }) {
 
       <MemberVerifyBox onChanged={load} />
 
+      <MembershipShare programId={program.id} />
+
       <div className="stat-grid mt">
         <StatCard label="Socios activos" value={stats.active} />
         <StatCard label="Por vencer (7 días)" value={stats.expiringSoon} />
@@ -727,6 +729,44 @@ function MembershipUpsell() {
       <a className="btn btn-primary mt" href={href} target="_blank" rel="noreferrer" style={{ width: "auto", display: "inline-block" }}>
         Activar con el plan Negocio
       </a>
+    </div>
+  );
+}
+
+function MembershipShare({ programId }: { programId: string }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const base = process.env.NEXT_PUBLIC_BASE_URL || (typeof window !== "undefined" ? window.location.origin : "");
+  const url = `${base}/m/${programId}`;
+  return (
+    <div className="card mt">
+      <div className="row spread" style={{ alignItems: "center" }}>
+        <h3 style={{ margin: 0, fontSize: 16 }}>Inscribir socios</h3>
+        <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setOpen((o) => !o)}>
+          {open ? "Ocultar" : "Ver QR"}
+        </button>
+      </div>
+      <p className="muted" style={{ fontSize: 13, marginTop: 6, marginBottom: open ? 12 : 0 }}>
+        Comparte este QR o enlace para que tus socios se inscriban y guarden la tarjeta en su wallet.
+      </p>
+      {open && (
+        <div className="center" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+          <QrCode value={url} size={200} />
+          <button
+            className="btn btn-outline"
+            style={{ width: "auto" }}
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(url);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              } catch {}
+            }}
+          >
+            {copied ? "¡Copiado!" : "Copiar enlace"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1114,6 +1154,13 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
               </button>
             )}
           </div>
+        </div>
+
+        <div className="field">
+          <label>Tarjeta del socio (wallet)</label>
+          <a className="btn btn-outline" style={{ width: "auto", display: "inline-block" }} href={`/m/card/${member.id}`} target="_blank" rel="noreferrer">
+            Abrir / compartir tarjeta
+          </a>
         </div>
 
         <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>

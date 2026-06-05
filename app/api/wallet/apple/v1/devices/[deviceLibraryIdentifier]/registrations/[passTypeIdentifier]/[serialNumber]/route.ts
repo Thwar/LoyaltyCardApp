@@ -26,11 +26,16 @@ export async function POST(req: Request, ctx: { params: Promise<Params> }) {
   // first registration, arm the welcome: set the flag + nudge a refresh so the
   // pass rebuilds with the welcome field, firing a one-time welcome notification.
   try {
-    const cardRef = adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(serialNumber);
-    const snap = await cardRef.get();
+    // The serial is a loyalty card OR a membership — arm the welcome on whichever exists.
+    let ref2 = adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(serialNumber);
+    let snap = await ref2.get();
+    if (!snap.exists) {
+      ref2 = adminDb().collection(COLLECTIONS.MEMBERS).doc(serialNumber);
+      snap = await ref2.get();
+    }
     if (snap.exists) {
       const firstWelcome = snap.data()?.welcomeNotified !== true;
-      await cardRef.update({
+      await ref2.update({
         passActive: true,
         passRemovedAt: null,
         ...(firstWelcome ? { welcomeNotified: true, appleUpdatedTag: Date.now() } : {}),
@@ -38,7 +43,7 @@ export async function POST(req: Request, ctx: { params: Promise<Params> }) {
       if (firstWelcome) await sendApplePassPush([pushToken]);
     }
   } catch {
-    // card may not exist for a test serial — ignore
+    // serial may not exist for a test pass — ignore
   }
   return new Response(null, { status: existed ? 200 : 201 });
 }
@@ -61,8 +66,11 @@ export async function DELETE(req: Request, ctx: { params: Promise<Params> }) {
     .limit(1)
     .get();
   if (remaining.empty) {
+    const patch = { passActive: false, passRemovedAt: Date.now() };
     try {
-      await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(serialNumber).update({ passActive: false, passRemovedAt: Date.now() });
+      const card = adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(serialNumber);
+      if ((await card.get()).exists) await card.update(patch);
+      else await adminDb().collection(COLLECTIONS.MEMBERS).doc(serialNumber).update(patch);
     } catch {
       // ignore
     }

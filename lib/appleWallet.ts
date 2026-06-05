@@ -3,9 +3,10 @@ import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import { PKPass } from "passkit-generator";
-import type { CustomerCard, LoyaltyCard } from "./types";
+import type { CustomerCard, LoyaltyCard, Member, MembershipProgram } from "./types";
 import { renderStampStrip } from "./stampStrip";
 import { squareLogo } from "./logo";
+import { memberStatus, visitsRemaining, MEMBER_STATUS_LABEL } from "./membership";
 
 // Apple Wallet pass generation. Phase A: issuance only (a static .pkpass the
 // customer adds to their iPhone). Live updates (PassKit web service + APNs) come
@@ -199,6 +200,80 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
     format: "PKBarcodeFormatPDF417",
     message: customer.cardCode,
     altText: hideBranding ? `Código ${customer.cardCode}` : "Desarrollado por soycasero.com",
+    messageEncoding: "iso-8859-1",
+  });
+
+  return pass.getAsBuffer();
+}
+
+// ---------- Membership (VIP / club) pass — Apple "generic" style ----------
+export async function buildMembershipPkpass(member: Member, program: MembershipProgram, hideBranding?: boolean): Promise<Buffer> {
+  const textColor = program.textColor || "#FFFFFF";
+  const logoBuf = program.logoPng ? Buffer.from(program.logoPng, "base64") : null;
+  if (!defaultIcon) defaultIcon = img("icon.png");
+  const iconBuf = logoBuf ? await squareLogo(logoBuf, program.cardColor || "#1f2937", 256) : defaultIcon;
+
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "";
+  const updatable = !!process.env.APPLE_AUTH_SECRET && baseUrl.startsWith("https://");
+
+  const status = memberStatus(member);
+  const remaining = visitsRemaining(member);
+  // Grey the pass when the membership has lapsed by date or the program is gone.
+  const voided = status === "expired" || program.isActive === false || !!program.deletedAt;
+
+  const pass = new PKPass(
+    {
+      "icon.png": iconBuf,
+      "icon@2x.png": iconBuf,
+      ...(logoBuf ? { "logo.png": logoBuf, "logo@2x.png": logoBuf } : {}),
+    },
+    {
+      wwdr: fromBase64(process.env.APPLE_WWDR, "APPLE_WWDR"),
+      signerCert: fromBase64(process.env.APPLE_SIGNER_CERT, "APPLE_SIGNER_CERT"),
+      signerKey: fromBase64(process.env.APPLE_SIGNER_KEY, "APPLE_SIGNER_KEY"),
+      signerKeyPassphrase: process.env.APPLE_KEY_PASSPHRASE || undefined,
+    },
+    {
+      passTypeIdentifier: process.env.APPLE_PASS_TYPE_ID!,
+      teamIdentifier: process.env.APPLE_TEAM_ID!,
+      organizationName: program.name || "SoyCasero",
+      description: `Membresía de ${program.name}`,
+      serialNumber: member.id,
+      groupingIdentifier: program.businessId,
+      voided,
+      ...(logoBuf ? {} : { logoText: program.name }),
+      foregroundColor: hexToRgb(textColor),
+      labelColor: hexToRgb(textColor),
+      backgroundColor: hexToRgb(program.cardColor || "#1f2937"),
+      ...(updatable ? { webServiceURL: `${baseUrl}/api/wallet/apple`, authenticationToken: passAuthToken(member.id) } : {}),
+    }
+  );
+
+  pass.type = "generic";
+  pass.primaryFields.push({ key: "member", label: "SOCIO", value: member.memberName || "—" });
+  pass.secondaryFields.push({ key: "status", label: "ESTADO", value: MEMBER_STATUS_LABEL[status] });
+  pass.secondaryFields.push({ key: "expires", label: "VENCE", value: member.expiresAt != null ? formatVisit(member.expiresAt) : "Sin vencimiento" });
+  if (program.tracksVisits) {
+    pass.auxiliaryFields.push({ key: "visits", label: "VISITAS RESTANTES", value: remaining != null ? String(remaining) : "∞" });
+  }
+
+  if (program.description) pass.backFields.push({ key: "benefits", label: "Beneficios", value: program.description });
+  // Notification driver (same pattern as loyalty): a field whose changeMessage fires.
+  if (member.lastEvent) pass.backFields.push({ key: "activity", label: "Actividad", value: member.lastEvent, changeMessage: "%@" });
+  if (program.welcomeMessage && member.welcomeNotified) pass.backFields.push({ key: "welcome", label: "Bienvenida", value: program.welcomeMessage, changeMessage: "%@" });
+  pass.backFields.push({ key: "code", label: "Tu código", value: member.memberCode });
+  pass.backFields.push({ key: "statusBack", label: "Estado", value: MEMBER_STATUS_LABEL[status] });
+  pass.backFields.push({ key: "expiresBack", label: "Vence", value: member.expiresAt != null ? formatVisit(member.expiresAt) : "Sin vencimiento" });
+  if (program.tracksVisits) pass.backFields.push({ key: "visitsBack", label: "Visitas restantes", value: remaining != null ? String(remaining) : "Ilimitado" });
+  pass.backFields.push({ key: "since", label: "Socio desde", value: formatVisit(member.createdAt) });
+  pass.backFields.push({ key: "business", label: "Negocio", value: program.name });
+  pass.backFields.push({ key: "memberId", label: "Identificador", value: member.id });
+  if (!hideBranding) pass.backFields.push({ key: "poweredBy", label: "Acerca de", value: "Desarrollado por SoyCasero.com" });
+
+  pass.setBarcodes({
+    format: "PKBarcodeFormatPDF417",
+    message: member.memberCode,
+    altText: `Código ${member.memberCode}`,
     messageEncoding: "iso-8859-1",
   });
 

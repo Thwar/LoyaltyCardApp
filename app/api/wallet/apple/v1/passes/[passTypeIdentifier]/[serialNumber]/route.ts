@@ -1,7 +1,7 @@
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
-import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
-import { buildPkpass, verifyApplePassAuth } from "@/lib/appleWallet";
+import { getLoyaltyCard, getBusinessById, getMember, getMembershipProgram } from "@/lib/serverData";
+import { buildPkpass, buildMembershipPkpass, verifyApplePassAuth } from "@/lib/appleWallet";
 import { effectivePlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
@@ -16,8 +16,20 @@ export async function GET(req: Request, ctx: { params: Promise<Params> }) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  // The membership pass shares this pass type id; disambiguate by serial.
   const snap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(serialNumber).get();
-  if (!snap.exists) return new Response("Not Found", { status: 404 });
+  if (!snap.exists) {
+    const member = await getMember(serialNumber);
+    if (!member) return new Response("Not Found", { status: 404 });
+    const program = await getMembershipProgram(member.programId);
+    if (!program) return new Response("Not Found", { status: 404 });
+    const biz = await getBusinessById(program.businessId);
+    const buf = await buildMembershipPkpass(member, program, biz ? effectivePlan(biz).removeBranding : false);
+    return new Response(new Uint8Array(buf), {
+      status: 200,
+      headers: { "Content-Type": "application/vnd.apple.pkpass", "Last-Modified": new Date(Number(member.appleUpdatedTag || Date.now())).toUTCString() },
+    });
+  }
   const customer: CustomerCard = { id: snap.id, ...(snap.data() as Omit<CustomerCard, "id">) };
 
   const card = await getLoyaltyCard(customer.loyaltyCardId);

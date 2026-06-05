@@ -5,6 +5,7 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type Member } from "@/lib/types";
 import { getBusinessForUser } from "@/lib/serverData";
 import { memberStatus, visitsRemaining } from "@/lib/membership";
+import { pushMemberPass } from "@/lib/membershipWallet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -65,6 +66,7 @@ export async function POST(req: Request) {
     });
 
     if (!txData) return result(member, false); // lost the race; report current state
+    await pushMemberPass(txData, txData.lastEvent); // best-effort wallet update + notification
     return result(txData, true);
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });

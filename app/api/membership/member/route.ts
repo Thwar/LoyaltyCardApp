@@ -5,6 +5,7 @@ import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type Member } from "@/lib/types";
 import { getBusinessByOwner, getMembershipProgramByBusiness, getMember } from "@/lib/serverData";
 import { generateUniqueCardCode } from "@/lib/cardCode";
+import { pushMemberPass } from "@/lib/membershipWallet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -106,8 +107,14 @@ export async function PATCH(req: Request) {
 
     if (typeof body.name === "string" && body.name.trim()) update.memberName = body.name.trim().slice(0, 80);
 
+    // A short message for the wallet notification, based on what changed.
+    const msg = body.deactivate === true ? "Tu membresía fue desactivada." : body.resetVisits === true ? "¡Tus visitas se reiniciaron!" : update.expiresAt !== undefined ? "¡Tu membresía fue renovada!" : "";
+    if (msg) update.lastEvent = msg;
+
     await adminDb().collection(COLLECTIONS.MEMBERS).doc(memberId).update(update);
-    return NextResponse.json({ member: { ...member, ...update } });
+    const updated = { ...member, ...update } as Member;
+    await pushMemberPass(updated, msg || undefined); // best-effort pass refresh
+    return NextResponse.json({ member: updated });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }

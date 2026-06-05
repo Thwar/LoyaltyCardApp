@@ -6,7 +6,8 @@ import { GoogleAuth } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import crypto from "node:crypto";
 import { getServiceAccount } from "./firebaseAdmin";
-import type { CustomerCard, LoyaltyCard } from "./types";
+import type { CustomerCard, LoyaltyCard, Member, MembershipProgram } from "./types";
+import { memberStatus, visitsRemaining, MEMBER_STATUS_LABEL } from "./membership";
 
 const BASE = "https://walletobjects.googleapis.com/walletobjects/v1";
 const SCOPE = "https://www.googleapis.com/auth/wallet_object.issuer";
@@ -235,13 +236,99 @@ export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCar
 }
 
 function buildSaveUrl(objectId: string): string {
+  return buildSaveUrlFor({ loyaltyObjects: [{ id: objectId }] });
+}
+
+function buildSaveUrlFor(payload: Record<string, unknown>): string {
   const sa = getServiceAccount();
   const claims = {
     iss: sa.client_email,
     aud: "google",
     typ: "savetowallet",
     origins: [process.env.NEXT_PUBLIC_BASE_URL || ""],
-    payload: { loyaltyObjects: [{ id: objectId }] },
+    payload,
   };
   return `https://pay.google.com/gp/v/save/${jwt.sign(claims, sa.private_key, { algorithm: "RS256" })}`;
+}
+
+// ===================== Memberships (Google "generic" passes) =====================
+const genericClassIdFor = (programId: string) => `${issuerId()}.mem_${programId}`;
+const genericObjectIdFor = (memberId: string) => `${issuerId()}.member_${memberId}`;
+
+function programLogoUri(program: MembershipProgram): string | null {
+  if (!program.logoPng) return null;
+  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com";
+  const v = crypto.createHash("sha1").update(program.logoPng).digest("hex").slice(0, 10);
+  return `${base}/api/membership/${program.id}/logo?shape=square&v=${v}`;
+}
+
+async function ensureGenericClass(program: MembershipProgram): Promise<string> {
+  const id = genericClassIdFor(program.id);
+  const existing = await api("GET", `/genericClass/${id}`);
+  if (existing.status === 200) return id;
+  const inserted = await api("POST", `/genericClass`, { id });
+  if (inserted.status !== 200 && inserted.status !== 409) {
+    throw new Error(`Error creando clase de membresía (${inserted.status}): ${await inserted.text()}`);
+  }
+  return id;
+}
+
+function membershipModules(member: Member, program: MembershipProgram) {
+  const rem = visitsRemaining(member);
+  return [
+    { id: "estado", header: "Estado", body: MEMBER_STATUS_LABEL[memberStatus(member)] },
+    { id: "vence", header: "Vence", body: member.expiresAt != null ? formatDate(member.expiresAt) : "Sin vencimiento" },
+    ...(program.tracksVisits ? [{ id: "visitas", header: "Visitas restantes", body: rem != null ? String(rem) : "Ilimitado" }] : []),
+    ...(program.description ? [{ id: "beneficios", header: "Beneficios", body: program.description }] : []),
+    { id: "memberId", header: "Identificador", body: member.id },
+  ];
+}
+
+function membershipObject(member: Member, program: MembershipProgram, classId: string) {
+  const logoUri = programLogoUri(program) || `${process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com"}/icon.png`;
+  return {
+    id: genericObjectIdFor(member.id),
+    classId,
+    genericType: "GENERIC_GYM_MEMBERSHIP",
+    cardTitle: { defaultValue: { language: "es", value: program.name } },
+    header: { defaultValue: { language: "es", value: member.memberName || "Socio" } },
+    subheader: { defaultValue: { language: "es", value: MEMBER_STATUS_LABEL[memberStatus(member)] } },
+    hexBackgroundColor: program.cardColor || "#1f2937",
+    logo: { sourceUri: { uri: logoUri } },
+    textModulesData: membershipModules(member, program),
+    barcode: { type: "PDF_417", value: member.memberCode, alternateText: `Código ${member.memberCode}` },
+    // Google marks the pass expired after this instant.
+    ...(member.expiresAt != null ? { validTimeInterval: { end: { date: new Date(member.expiresAt).toISOString() } } } : {}),
+  };
+}
+
+export async function issueMembershipPass(member: Member, program: MembershipProgram): Promise<{ objectId: string; saveUrl: string }> {
+  const classId = await ensureGenericClass(program);
+  const obj = membershipObject(member, program, classId);
+  const res = await api("POST", `/genericObject`, {
+    ...obj,
+    messages: [{ id: `welcome-${member.id}`, header: program.name || "SoyCasero", body: program.welcomeMessage || `¡Bienvenido a ${program.name}! 🎉` }],
+  });
+  if (res.status !== 200 && res.status !== 409) {
+    throw new Error(`Error creando membresía de Wallet (${res.status}): ${await res.text()}`);
+  }
+  return { objectId: obj.id, saveUrl: buildSaveUrlFor({ genericObjects: [{ id: obj.id }] }) };
+}
+
+// Save-to-Wallet URL for an already-issued membership object (no API call).
+export function membershipSaveUrl(memberId: string): string {
+  return buildSaveUrlFor({ genericObjects: [{ id: genericObjectIdFor(memberId) }] });
+}
+
+// Push a member's current state (status, visits, expiry) onto their Google pass.
+export async function syncMembershipObject(member: Member, program: MembershipProgram, message?: string): Promise<void> {
+  const id = genericObjectIdFor(member.id);
+  const classId = genericClassIdFor(program.id);
+  const res = await api("PATCH", `/genericObject/${id}`, {
+    ...membershipObject(member, program, classId),
+    ...(message ? { messages: [{ id: `evt-${Date.now()}`, header: program.name || "SoyCasero", body: message }] } : {}),
+  });
+  if (res.status !== 200 && res.status !== 404) {
+    throw new Error(`Error actualizando membresía de Wallet (${res.status}): ${await res.text()}`);
+  }
 }

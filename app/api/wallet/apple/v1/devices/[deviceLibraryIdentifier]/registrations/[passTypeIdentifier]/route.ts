@@ -22,9 +22,11 @@ export async function GET(req: Request, ctx: { params: Promise<Params> }) {
   let maxTag = since;
   for (const r of regs.docs) {
     const serial = r.data().serialNumber as string;
-    const cardSnap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(serial).get();
-    if (!cardSnap.exists) continue;
-    const tag = Number((cardSnap.data() as { appleUpdatedTag?: number })?.appleUpdatedTag || 0);
+    // The serial is a loyalty card OR a membership; check both.
+    let data = (await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(serial).get()).data();
+    if (!data) data = (await adminDb().collection(COLLECTIONS.MEMBERS).doc(serial).get()).data();
+    if (!data) continue;
+    const tag = Number((data as { appleUpdatedTag?: number })?.appleUpdatedTag || 0);
     if (tag > since) {
       serialNumbers.push(serial);
       if (tag > maxTag) maxTag = tag;
