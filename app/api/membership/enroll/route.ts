@@ -67,6 +67,7 @@ export async function POST(req: Request) {
       marketingConsent,
       createdAt: now,
       appleUpdatedTag: now,
+      history: [{ t: now, kind: "created" as const }],
     };
     const ref = await membersCol.add(data);
     const member: Member = { id: ref.id, ...data };

@@ -150,6 +150,15 @@ export interface Member {
   lastVisitDate?: number;
   marketingConsent?: boolean;
   createdAt?: number;
+  // Audit log of membership lifecycle events (joined, renewed, reset, (de)activated).
+  history?: MemberEvent[];
+}
+
+export interface MemberEvent {
+  t: number; // ms epoch
+  kind: "created" | "renewed" | "reset" | "deactivated";
+  days?: number; // for "renewed": how many days added
+  until?: number | null; // for "renewed": the resulting expiry
 }
 
 // A single visit/usage event (attendance log; analogous to a stamp).

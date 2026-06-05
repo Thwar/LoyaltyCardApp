@@ -2,9 +2,58 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { COLLECTIONS } from "@/lib/types";
+import { COLLECTIONS, type Member } from "@/lib/types";
 import { getBusinessByOwner, getMembershipProgramByBusiness, getMembershipProgram } from "@/lib/serverData";
 import { effectivePlan } from "@/lib/plans";
+import { pushMemberPass } from "@/lib/membershipWallet";
+
+// Bump every member's update tag + push their pass (so Apple re-fetches and the
+// pass reflects the program going inactive/deleted — Apple greys it out).
+async function refreshProgramMembers(programId: string, businessId: string) {
+  const snap = await adminDb().collection(COLLECTIONS.MEMBERS).where("businessId", "==", businessId).get();
+  const members = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Member, "id">) })).filter((m) => m.programId === programId);
+  const now = Date.now();
+  await Promise.all(members.map((m) => adminDb().collection(COLLECTIONS.MEMBERS).doc(m.id).update({ appleUpdatedTag: now }).catch(() => {})));
+  await Promise.all(members.map((m) => pushMemberPass({ ...m, appleUpdatedTag: now }).catch(() => {})));
+}
+
+async function ownerProgram(req: Request) {
+  const session = await authenticate(req);
+  if (!session.ok) return { error: NextResponse.json({ error: session.reason }, { status: session.status }) };
+  const business = await getBusinessByOwner(session.uid);
+  if (!business) return { error: NextResponse.json({ error: "No autorizado." }, { status: 403 }) };
+  const body = await req.json().catch(() => ({}));
+  const program = await getMembershipProgram(String(body.programId || ""));
+  if (!program || program.businessId !== business.id) return { error: NextResponse.json({ error: "Membresía no encontrada." }, { status: 404 }) };
+  return { business, program, body };
+}
+
+// Activate / deactivate the program. Inactive = members' passes void; no new enrollments.
+export async function PATCH(req: Request) {
+  try {
+    const ctx = await ownerProgram(req);
+    if ("error" in ctx) return ctx.error;
+    const isActive = ctx.body.isActive !== false;
+    await adminDb().collection(COLLECTIONS.MEMBERSHIP_PROGRAMS).doc(ctx.program.id).update({ isActive });
+    await refreshProgramMembers(ctx.program.id, ctx.business.id);
+    return NextResponse.json({ program: { ...ctx.program, isActive } });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
+  }
+}
+
+// Soft-delete the program (kept so members' passes keep rendering, voided).
+export async function DELETE(req: Request) {
+  try {
+    const ctx = await ownerProgram(req);
+    if ("error" in ctx) return ctx.error;
+    await adminDb().collection(COLLECTIONS.MEMBERSHIP_PROGRAMS).doc(ctx.program.id).update({ deletedAt: Date.now(), isActive: false });
+    await refreshProgramMembers(ctx.program.id, ctx.business.id);
+    return NextResponse.json({ ok: true });
+  } catch (e: unknown) {
+    return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
+  }
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

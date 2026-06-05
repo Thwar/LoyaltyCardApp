@@ -640,6 +640,30 @@ function fmtDay(ts?: number | null): string {
   }
 }
 
+function fmtDateTime(ts?: number | null): string {
+  if (ts == null) return "—";
+  try {
+    return new Date(ts).toLocaleString("es-ES", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "America/La_Paz" });
+  } catch {
+    return new Date(ts).toISOString().slice(0, 16).replace("T", " ");
+  }
+}
+
+function memberEventLabel(e: import("@/lib/types").MemberEvent): string {
+  switch (e.kind) {
+    case "created":
+      return "Se unió";
+    case "renewed":
+      return (e.days ? `Renovado +${e.days} días` : "Renovado") + (e.until ? ` · vence ${fmtDay(e.until)}` : "");
+    case "reset":
+      return "Visitas reiniciadas";
+    case "deactivated":
+      return "Desactivado";
+    default:
+      return "Cambio";
+  }
+}
+
 function StatusBadge({ status }: { status: MemberStatus }) {
   const c = status === "active" ? { bg: "#dcfce7", fg: "#166534" } : status === "expired" ? { bg: "#fee2e2", fg: "#991b1b" } : { bg: "#fef3c7", fg: "#92400e" };
   return (
@@ -700,7 +724,12 @@ function MembershipTab({ businessName }: { businessName: string }) {
   return (
     <div>
       <div className="row spread" style={{ alignItems: "center" }}>
-        <h3 className="vip-on-dark" style={{ margin: 0, fontSize: 19 }}>🎫 {program.name}</h3>
+        <h3 className="vip-on-dark" style={{ margin: 0, fontSize: 19, display: "flex", alignItems: "center", gap: 10 }}>
+          🎫 {program.name}
+          {program.isActive === false && (
+            <span style={{ background: "#fee2e2", color: "#991b1b", fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 999 }}>Inactiva</span>
+          )}
+        </h3>
         <button className="btn btn-sm" style={{ width: "auto", background: "rgba(255,255,255,0.14)", color: "#fff" }} onClick={() => setEditingProgram(true)}>
           Editar
         </button>
@@ -828,6 +857,24 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
     }
   }
 
+  async function setActive(isActive: boolean) {
+    setErr("");
+    setSaving(true);
+    const res = await authedFetch("/api/membership/program", { method: "PATCH", body: JSON.stringify({ programId: existing?.id, isActive }) });
+    setSaving(false);
+    if (!res.ok) return setErr((await res.json()).error || "No se pudo actualizar.");
+    onSaved();
+  }
+  async function del() {
+    if (!confirm("¿Eliminar esta membresía? Las tarjetas de tus socios dejarán de funcionar.")) return;
+    setErr("");
+    setSaving(true);
+    const res = await authedFetch("/api/membership/program", { method: "DELETE", body: JSON.stringify({ programId: existing?.id }) });
+    setSaving(false);
+    if (!res.ok) return setErr((await res.json()).error || "No se pudo eliminar.");
+    onSaved();
+  }
+
   const days = Number(durationDays) || 0;
   return (
     <div>
@@ -924,6 +971,22 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
         <button className="btn btn-primary mt" onClick={save} disabled={saving}>
           {saving ? "Guardando…" : existing ? "Guardar cambios" : "Crear membresía"}
         </button>
+
+        {existing && (
+          <div style={{ borderTop: "1px solid var(--border)", marginTop: 18, paddingTop: 16 }}>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+              <button className="btn btn-outline" style={{ width: "auto" }} disabled={saving} onClick={() => setActive(existing.isActive === false)}>
+                {existing.isActive === false ? "Reactivar membresía" : "Desactivar membresía"}
+              </button>
+              <button className="btn btn-ghost" style={{ width: "auto", color: "#c62828" }} disabled={saving} onClick={del}>
+                Eliminar membresía
+              </button>
+            </div>
+            <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+              Desactivar pausa la membresía (las tarjetas quedan inactivas). Eliminar la quita por completo.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1138,6 +1201,8 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
         <div className="stat-grid" style={{ marginBottom: 14 }}>
           <StatCard label="Visitas" value={program.tracksVisits ? `${member.visitsUsed || 0}${member.visitLimit != null ? ` / ${member.visitLimit}` : ""}` : "Ilimitado"} />
           <StatCard label="Vence" value={fmtDay(member.expiresAt)} />
+          <StatCard label="Socio desde" value={fmtDay(member.createdAt)} />
+          {member.lastVisitDate ? <StatCard label="Última visita" value={fmtDay(member.lastVisitDate)} /> : null}
         </div>
 
         {err && <div className="error-box">{err}</div>}
@@ -1145,12 +1210,12 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
         <div className="field">
           <label>Renovar / extender</label>
           <div className="row" style={{ gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-            <input className="input" type="number" min={1} value={days} onChange={(e) => setDays(e.target.value)} style={{ maxWidth: 100 }} />
-            <button className="btn btn-primary" style={{ width: "auto" }} disabled={busy} onClick={() => patch({ addDays: Number(days) || 0 })}>
+            <input className="input" type="number" min={1} value={days} onChange={(e) => setDays(e.target.value)} style={{ flex: "0 0 90px" }} />
+            <button className="btn btn-primary" style={{ flex: "1 1 120px" }} disabled={busy} onClick={() => patch({ addDays: Number(days) || 0 })}>
               + {Number(days) || 0} días
             </button>
             {program.tracksVisits && (
-              <button className="btn btn-outline" style={{ width: "auto" }} disabled={busy} onClick={() => patch({ resetVisits: true })}>
+              <button className="btn btn-outline" style={{ flex: "1 1 120px" }} disabled={busy} onClick={() => patch({ resetVisits: true })}>
                 Reiniciar visitas
               </button>
             )}
@@ -1159,20 +1224,38 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
 
         <div className="field">
           <label>Tarjeta del socio (wallet)</label>
-          <a className="btn btn-outline" style={{ width: "auto", display: "inline-block" }} href={`/m/card/${member.id}`} target="_blank" rel="noreferrer">
+          <a className="btn btn-outline" style={{ width: "100%", textAlign: "center" }} href={`/m/card/${member.id}`} target="_blank" rel="noreferrer">
             Abrir / compartir tarjeta
           </a>
         </div>
 
-        <div className="row" style={{ gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
           {st !== "expired" && (
-            <button className="btn btn-outline" style={{ width: "auto" }} disabled={busy} onClick={() => patch({ deactivate: true })}>
+            <button className="btn btn-outline" style={{ flex: "1 1 120px" }} disabled={busy} onClick={() => patch({ deactivate: true })}>
               Desactivar
             </button>
           )}
-          <button className="btn btn-ghost" style={{ width: "auto", color: "#c62828" }} disabled={busy} onClick={remove}>
+          <button className="btn btn-ghost" style={{ flex: "1 1 120px", color: "#c62828" }} disabled={busy} onClick={remove}>
             Eliminar
           </button>
+        </div>
+
+        <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+          <h4 style={{ margin: "0 0 10px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>Historial</h4>
+          {(() => {
+            const events = [...(member.history || [])].sort((a, b) => b.t - a.t);
+            if (!events.length) return <p className="muted" style={{ fontSize: 13, margin: 0 }}>Sin actividad todavía.</p>;
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                {events.map((e, i) => (
+                  <div key={i} className="row spread" style={{ alignItems: "baseline", gap: 12, fontSize: 13 }}>
+                    <span>{memberEventLabel(e)}</span>
+                    <span className="muted" style={{ whiteSpace: "nowrap", fontSize: 12 }}>{fmtDateTime(e.t)}</span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
+import { FieldValue } from "firebase-admin/firestore";
+import type { MemberEvent } from "@/lib/types";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type Member } from "@/lib/types";
@@ -68,6 +70,7 @@ export async function POST(req: Request) {
       visitsUsed: 0,
       createdAt: now,
       appleUpdatedTag: now,
+      history: [{ t: now, kind: "created" as const }],
     };
     const ref = await membersCol.add(data);
     return NextResponse.json({ member: { id: ref.id, ...data } });
@@ -111,8 +114,15 @@ export async function PATCH(req: Request) {
     const msg = body.deactivate === true ? "Tu membresía fue desactivada." : body.resetVisits === true ? "¡Tus visitas se reiniciaron!" : update.expiresAt !== undefined ? "¡Tu membresía fue renovada!" : "";
     if (msg) update.lastEvent = msg;
 
+    // Audit-log entries for what changed.
+    const events: MemberEvent[] = [];
+    if (body.deactivate === true) events.push({ t: now, kind: "deactivated" });
+    else if (update.expiresAt !== undefined) events.push({ t: now, kind: "renewed", days: Number.isFinite(Number(body.addDays)) ? Math.round(Number(body.addDays)) : undefined, until: update.expiresAt as number | null });
+    if (body.resetVisits === true) events.push({ t: now, kind: "reset" });
+    if (events.length) update.history = FieldValue.arrayUnion(...events);
+
     await adminDb().collection(COLLECTIONS.MEMBERS).doc(memberId).update(update);
-    const updated = { ...member, ...update } as Member;
+    const updated = { ...member, ...update, history: [...(member.history || []), ...events] } as Member;
     await pushMemberPass(updated, msg || undefined); // best-effort pass refresh
     return NextResponse.json({ member: updated });
   } catch (e: unknown) {

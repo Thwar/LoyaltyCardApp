@@ -1015,7 +1015,7 @@ select.input {
 /* Memberships (VIP) — a dark backdrop so the section reads as premium and is
    clearly distinct from the loyalty (stamp) experience. White cards sit on top. */
 .vip-section {
-  background: linear-gradient(160deg, #0b1220, #1e293b);
+  background: linear-gradient(160deg, #2a3a52, #3b4d68);
   border-radius: 18px;
   padding: 24px 18px 28px;
   margin-top: 20px;
