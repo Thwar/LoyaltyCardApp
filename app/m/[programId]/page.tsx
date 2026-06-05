@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { PageLoader } from "@/components/PageLoader";
 import { MembershipCardVisual } from "@/components/MembershipCardVisual";
+import { TiltWrap } from "@/components/TiltWrap";
 
 interface PublicProgram {
   id: string;
@@ -86,15 +87,17 @@ export default function MembershipJoinPage() {
         <img src="/logo-rojo.png" alt="SoyCasero" className="brand-logo" style={{ height: 48 }} />
       </div>
 
-      <MembershipCardVisual
-        programName={program.name}
-        cardColor={program.cardColor}
-        textColor={program.textColor}
-        logoPng={program.logoPng || undefined}
-        rightLabel={rightLabel}
-        rightValue={rightValue}
-        footer={footer}
-      />
+      <TiltWrap radius={16}>
+        <MembershipCardVisual
+          programName={program.name}
+          cardColor={program.cardColor}
+          textColor={program.textColor}
+          logoPng={program.logoPng || undefined}
+          rightLabel={rightLabel}
+          rightValue={rightValue}
+          footer={footer}
+        />
+      </TiltWrap>
 
       <h1 style={{ fontSize: 22, marginTop: 22 }}>Hazte socio de {program.name}</h1>
       {program.description && <p style={{ fontSize: 15, color: "var(--text-secondary)", margin: "6px 0 10px" }}>{program.description}</p>}

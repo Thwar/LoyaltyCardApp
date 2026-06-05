@@ -1012,6 +1012,22 @@ select.input {
   animation: tiltIntro 2.6s ease-in-out 0.4s 1 both;
 }
 
+/* Memberships (VIP) — a dark backdrop so the section reads as premium and is
+   clearly distinct from the loyalty (stamp) experience. White cards sit on top. */
+.vip-section {
+  background: linear-gradient(160deg, #0b1220, #1e293b);
+  border-radius: 18px;
+  padding: 24px 18px 28px;
+  margin-top: 20px;
+}
+/* Text that sits directly on the dark backdrop (not inside a white card). */
+.vip-section .vip-on-dark {
+  color: #fff;
+}
+.vip-section .vip-on-dark-muted {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 /* centered feature + step cards (icon, title, text) */
 .feature-card,
 .step-card {

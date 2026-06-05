@@ -18,6 +18,8 @@ import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 import { NOTIF_DEFAULTS } from "@/lib/notifications";
 import { memberStatus, visitsRemaining, MEMBER_STATUS_LABEL, type MemberStatus } from "@/lib/membership";
+import { MembershipCardVisual } from "@/components/MembershipCardVisual";
+import { TiltWrap } from "@/components/TiltWrap";
 
 interface MeResponse {
   role?: "owner" | "cajero";
@@ -608,7 +610,9 @@ function CardManager({
       ) : tab === "comunicacion" ? (
         <ComunicacionTab business={business} planInfo={planInfo} customers={customers} cards={cards} onChanged={onChanged} />
       ) : (
-        <MembershipTab businessName={business.name} />
+        <div className="vip-section">
+          <MembershipTab businessName={business.name} />
+        </div>
       )}
 
       {selected && (
@@ -661,7 +665,12 @@ function MembershipTab({ businessName }: { businessName: string }) {
     load();
   }, [load]);
 
-  if (loading) return <p className="muted mt">Cargando…</p>;
+  if (loading)
+    return (
+      <div className="center" style={{ padding: "48px 0" }}>
+        <span className="spinner" role="status" aria-label="Cargando" />
+      </div>
+    );
   if (!data) return <div className="error-box mt">No se pudo cargar.</div>;
 
   if (!data.eligible) return <MembershipUpsell />;
@@ -670,7 +679,7 @@ function MembershipTab({ businessName }: { businessName: string }) {
     return (
       <div>
         {data.program && (
-          <button className="btn btn-sm btn-ghost" onClick={() => setEditingProgram(false)} style={{ marginTop: 14, marginBottom: 6 }}>
+          <button className="btn btn-sm" onClick={() => setEditingProgram(false)} style={{ width: "auto", marginBottom: 12, background: "rgba(255,255,255,0.14)", color: "#fff" }}>
             ← Volver
           </button>
         )}
@@ -690,9 +699,9 @@ function MembershipTab({ businessName }: { businessName: string }) {
   const stats = data.stats!;
   return (
     <div>
-      <div className="row spread" style={{ alignItems: "center", marginTop: 14 }}>
-        <h3 style={{ margin: 0, fontSize: 18 }}>🎫 {program.name}</h3>
-        <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setEditingProgram(true)}>
+      <div className="row spread" style={{ alignItems: "center" }}>
+        <h3 className="vip-on-dark" style={{ margin: 0, fontSize: 19 }}>🎫 {program.name}</h3>
+        <button className="btn btn-sm" style={{ width: "auto", background: "rgba(255,255,255,0.14)", color: "#fff" }} onClick={() => setEditingProgram(true)}>
           Editar
         </button>
       </div>
@@ -822,31 +831,22 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
   const days = Number(durationDays) || 0;
   return (
     <div>
-      <h1 style={{ fontSize: 24 }}>{existing ? "Editar tu membresía" : "Crea tu tarjeta de membresía"}</h1>
-      <p className="muted" style={{ marginBottom: 16 }}>Para gimnasios, clubes y negocios con socios.</p>
+      <h1 className="vip-on-dark" style={{ fontSize: 24, marginTop: 0 }}>{existing ? "Editar tu membresía" : "Crea tu tarjeta de membresía"}</h1>
+      <p className="vip-on-dark-muted" style={{ marginBottom: 16 }}>Para gimnasios, clubes y negocios con socios.</p>
       {err && <div className="error-box">{err}</div>}
 
-      {/* Mini preview */}
-      <div
-        style={{
-          background: cardColor,
-          color: textColor,
-          borderRadius: 16,
-          padding: "16px 18px",
-          marginBottom: 16,
-          boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
-        }}
-      >
-        <div style={{ fontSize: 13, opacity: 0.85, fontWeight: 600 }}>{name || "Tu membresía"}</div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 18, fontSize: 12, opacity: 0.85 }}>
-          <span>SOCIO</span>
-          <span>{tracksVisits ? "VISITAS" : "ESTADO"}</span>
-        </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 700 }}>
-          <span>Nombre</span>
-          <span>{tracksVisits ? `${visitLimit || 0}` : "Activo"}</span>
-        </div>
-        <div style={{ fontSize: 12, opacity: 0.85, marginTop: 14 }}>{days > 0 ? `Vence en ${days} días` : "Sin vencimiento"}</div>
+      {/* Live preview (3D tilt, like the loyalty card) */}
+      <div style={{ marginBottom: 16 }}>
+        <TiltWrap radius={16}>
+          <MembershipCardVisual
+            programName={name || "Tu membresía"}
+            cardColor={cardColor}
+            textColor={textColor}
+            rightLabel={tracksVisits ? "VISITAS" : "ESTADO"}
+            rightValue={tracksVisits ? String(visitLimit || 0) : "Activo"}
+            footer={days > 0 ? `Vence en ${days} días` : "Sin vencimiento"}
+          />
+        </TiltWrap>
       </div>
 
       <div className="card">
@@ -1012,7 +1012,7 @@ function AddMemberForm({ onAdded }: { onAdded: () => void }) {
 
   if (!open) {
     return (
-      <button className="btn btn-outline mt" style={{ width: "auto" }} onClick={() => setOpen(true)}>
+      <button className="btn mt" style={{ width: "auto", background: "rgba(255,255,255,0.14)", color: "#fff", border: "1px solid rgba(255,255,255,0.3)" }} onClick={() => setOpen(true)}>
         + Agregar socio
       </button>
     );
