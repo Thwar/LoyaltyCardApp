@@ -623,7 +623,7 @@ interface MembershipMe {
   eligible: boolean;
   program: MembershipProgram | null;
   members: Member[];
-  stats: { total: number; active: number; expired: number; expiringSoon: number; visitsTotal: number } | null;
+  stats: { total: number; active: number; expired: number; expiringSoon: number; newThisMonth: number; visitsTotal: number } | null;
 }
 
 // Date pinned to Bolivia time (server builds in UTC).
@@ -703,6 +703,7 @@ function MembershipTab({ businessName }: { businessName: string }) {
 
       <div className="stat-grid mt">
         <StatCard label="Socios activos" value={stats.active} />
+        <StatCard label="Nuevos (30 días)" value={stats.newThisMonth} />
         <StatCard label="Por vencer (7 días)" value={stats.expiringSoon} />
         <StatCard label="Vencidos" value={stats.expired} />
         <StatCard label="Visitas registradas" value={stats.visitsTotal} />

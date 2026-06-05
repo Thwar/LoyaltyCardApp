@@ -28,15 +28,18 @@ export async function GET(req: Request) {
 
     const now = Date.now();
     const SOON = 7 * 24 * 60 * 60 * 1000;
+    const MONTH = 30 * 24 * 60 * 60 * 1000;
     let active = 0;
     let expired = 0;
     let expiringSoon = 0;
     let visitsTotal = 0;
+    let newThisMonth = 0;
     for (const m of members) {
       const st = memberStatus(m, now);
       if (st === "active") active++;
       else expired++;
       if (m.expiresAt != null && m.expiresAt >= now && m.expiresAt - now <= SOON) expiringSoon++;
+      if (m.createdAt != null && now - m.createdAt <= MONTH) newThisMonth++;
       visitsTotal += m.visitsUsed || 0;
     }
 
@@ -44,7 +47,7 @@ export async function GET(req: Request) {
       eligible,
       program,
       members,
-      stats: { total: members.length, active, expired, expiringSoon, visitsTotal },
+      stats: { total: members.length, active, expired, expiringSoon, newThisMonth, visitsTotal },
     });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
