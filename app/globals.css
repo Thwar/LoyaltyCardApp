@@ -1027,6 +1027,14 @@ select.input {
 .vip-section .vip-on-dark-muted {
   color: rgba(255, 255, 255, 0.72);
 }
+/* Small uppercase section label on the VIP backdrop. */
+.vip-section .vip-label {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 700;
+  margin: 22px 0 10px;
+}
 
 /* centered feature + step cards (icon, title, text) */
 .feature-card,

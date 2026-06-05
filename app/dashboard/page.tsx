@@ -628,6 +628,7 @@ interface MembershipMe {
   program: MembershipProgram | null;
   members: Member[];
   stats: { total: number; active: number; expired: number; expiringSoon: number; newThisMonth: number; visitsTotal: number } | null;
+  visitSeries?: { label: string; count: number }[];
 }
 
 // Date pinned to Bolivia time (server builds in UTC).
@@ -670,6 +671,31 @@ function StatusBadge({ status }: { status: MemberStatus }) {
     <span style={{ background: c.bg, color: c.fg, fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>
       {MEMBER_STATUS_LABEL[status]}
     </span>
+  );
+}
+
+function MembershipVisitsChart({ series, total }: { series: { label: string; count: number }[]; total: number }) {
+  if (!series.length) return null;
+  const max = Math.max(1, ...series.map((s) => s.count));
+  return (
+    <div className="card mt">
+      <div className="row spread" style={{ alignItems: "baseline" }}>
+        <h3 style={{ margin: 0, fontSize: 15 }}>Visitas (últimos 14 días)</h3>
+        <span className="muted" style={{ fontSize: 13 }}>{total} en total</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 96, marginTop: 14 }}>
+        {series.map((s, i) => (
+          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%" }} title={`${s.label}: ${s.count} visita(s)`}>
+            <span style={{ fontSize: 9, color: "var(--text-secondary)", marginBottom: 2, minHeight: 11 }}>{s.count || ""}</span>
+            <div style={{ width: "100%", height: `${Math.max(3, (s.count / max) * 100)}%`, background: "var(--primary)", opacity: s.count ? 1 : 0.18, borderRadius: "3px 3px 0 0" }} />
+          </div>
+        ))}
+      </div>
+      <div className="row spread" style={{ fontSize: 11, color: "var(--text-secondary)", marginTop: 6 }}>
+        <span>{series[0]?.label}</span>
+        <span>{series[series.length - 1]?.label}</span>
+      </div>
+    </div>
   );
 }
 
@@ -735,20 +761,21 @@ function MembershipTab({ businessName }: { businessName: string }) {
         </button>
       </div>
 
+      <h4 className="vip-on-dark-muted vip-label">Acciones rápidas</h4>
       <MemberVerifyBox onChanged={load} />
-
       <MembershipShare programId={program.id} />
 
-      <div className="stat-grid mt">
+      <h4 className="vip-on-dark-muted vip-label">Resumen</h4>
+      <div className="stat-grid">
         <StatCard label="Socios activos" value={stats.active} />
         <StatCard label="Nuevos (30 días)" value={stats.newThisMonth} />
         <StatCard label="Por vencer (7 días)" value={stats.expiringSoon} />
         <StatCard label="Vencidos" value={stats.expired} />
-        <StatCard label="Visitas registradas" value={stats.visitsTotal} />
       </div>
+      <MembershipVisitsChart series={data.visitSeries || []} total={stats.visitsTotal} />
 
+      <h4 className="vip-on-dark-muted vip-label">Directorio de socios</h4>
       <AddMemberForm onAdded={load} />
-
       <MembersList members={members} onSelect={setSelected} />
 
       {selected && <MemberModal member={selected} program={program} onChanged={load} onClose={() => setSelected(null)} />}
@@ -1108,38 +1135,73 @@ function AddMemberForm({ onAdded }: { onAdded: () => void }) {
   );
 }
 
+const AVATAR_COLORS = ["#ef4444", "#3b82f6", "#8b5cf6", "#10b981", "#f59e0b", "#ec4899", "#14b8a6", "#6366f1"];
+function avatarColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[h % AVATAR_COLORS.length];
+}
+function initials(name: string): string {
+  const p = name.trim().split(/\s+/);
+  return ((p[0]?.[0] || "") + (p[1]?.[0] || "")).toUpperCase() || "?";
+}
+
 function MembersList({ members, onSelect }: { members: Member[]; onSelect: (m: Member) => void }) {
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<"all" | "active" | "soon" | "expired">("all");
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 10;
+  const now = Date.now();
+  const SOON = 7 * 24 * 60 * 60 * 1000;
   const term = q.trim().toLowerCase();
-  const filtered = term
-    ? members.filter((m) => [m.memberName, m.memberEmail, m.memberPhone, m.memberCode].some((v) => (v || "").toLowerCase().includes(term)))
-    : members;
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount - 1);
-  const shown = filtered.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
-  if (!members.length) return <p className="muted mt">Aún no tienes socios. Agrega el primero arriba.</p>;
+  let list = members;
+  if (filter !== "all") {
+    list = list.filter((m) => {
+      const st = memberStatus(m, now);
+      if (filter === "active") return st === "active";
+      if (filter === "expired") return st !== "active";
+      return m.expiresAt != null && m.expiresAt >= now && m.expiresAt - now <= SOON; // soon
+    });
+  }
+  if (term) list = list.filter((m) => [m.memberName, m.memberEmail, m.memberPhone, m.memberCode].some((v) => (v || "").toLowerCase().includes(term)));
+
+  const pageCount = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const shown = list.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
+
+  if (!members.length) return <p className="vip-on-dark-muted" style={{ marginTop: 4 }}>Aún no tienes socios. Agrega el primero arriba.</p>;
 
   return (
-    <div className="mt">
-      <input className="input" value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder="Buscar por nombre, correo, teléfono o código" style={{ marginBottom: 10 }} />
+    <div>
+      <div className="row" style={{ gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+        <input className="input" style={{ flex: "2 1 200px" }} value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder="Buscar por nombre, correo, teléfono o código" />
+        <select className="input" style={{ flex: "1 1 130px", maxWidth: 180 }} value={filter} onChange={(e) => { setFilter(e.target.value as typeof filter); setPage(0); }}>
+          <option value="all">Todos</option>
+          <option value="active">Activos</option>
+          <option value="soon">Por vencer</option>
+          <option value="expired">Vencidos</option>
+        </select>
+      </div>
+      {!shown.length && <p className="vip-on-dark-muted" style={{ fontSize: 14 }}>Ningún socio coincide con el filtro.</p>}
       {shown.map((m) => {
-        const st = memberStatus(m);
+        const st = memberStatus(m, now);
         const rem = visitsRemaining(m);
+        const contact = m.memberEmail || m.memberPhone || "";
         return (
-          <button key={m.id} className="list-row" onClick={() => onSelect(m)} style={{ width: "100%", textAlign: "left", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, padding: "12px 14px", border: "1px solid var(--border)", borderRadius: 10, background: "#fff", marginBottom: 8, cursor: "pointer" }}>
-            <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+          <button key={m.id} onClick={() => onSelect(m)} style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", border: "1px solid var(--border)", borderRadius: 12, background: "#fff", marginBottom: 8, cursor: "pointer" }}>
+            <span style={{ flex: "0 0 auto", width: 38, height: 38, borderRadius: "50%", background: avatarColor(m.memberName || "?"), color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {initials(m.memberName || "?")}
+            </span>
+            <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
               <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.memberName}</strong>
-              <span className="muted" style={{ fontSize: 13 }}>
-                {rem != null ? `${rem} visita(s)` : "Ilimitado"}
-                {m.expiresAt != null ? ` · vence ${fmtDay(m.expiresAt)}` : ""}
+              <span className="muted" style={{ fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {contact ? `${contact} · ` : ""}{rem != null ? `${rem} visita(s)` : "Ilimitado"}{m.expiresAt != null ? ` · vence ${fmtDay(m.expiresAt)}` : ""}
               </span>
             </span>
-            <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span className="code-pill">{m.memberCode}</span>
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flex: "0 0 auto" }}>
               <StatusBadge status={st} />
+              <span className="code-pill">{m.memberCode}</span>
             </span>
           </button>
         );

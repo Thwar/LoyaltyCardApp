@@ -43,11 +43,28 @@ export async function GET(req: Request) {
       visitsTotal += m.visitsUsed || 0;
     }
 
+    // Visits per day for the last 14 days (Bolivia time) → trend chart.
+    const DAY = 24 * 60 * 60 * 1000;
+    const since = now - 14 * DAY;
+    const vsnap = await adminDb().collection(COLLECTIONS.VISITS).where("businessId", "==", business.id).limit(3000).get();
+    const dayKey = (ts: number) => new Date(ts).toLocaleDateString("en-CA", { timeZone: "America/La_Paz" });
+    const counts: Record<string, number> = {};
+    for (const d of vsnap.docs) {
+      const ts = Number(d.data().timestamp || 0);
+      if (ts >= since) counts[dayKey(ts)] = (counts[dayKey(ts)] || 0) + 1;
+    }
+    const visitSeries = Array.from({ length: 14 }, (_, i) => {
+      const ts = now - (13 - i) * DAY;
+      const k = dayKey(ts);
+      return { label: new Date(ts).toLocaleDateString("es-ES", { day: "2-digit", timeZone: "America/La_Paz" }), count: counts[k] || 0 };
+    });
+
     return NextResponse.json({
       eligible,
       program,
       members,
       stats: { total: members.length, active, expired, expiringSoon, newThisMonth, visitsTotal },
+      visitSeries,
     });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
