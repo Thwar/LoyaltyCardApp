@@ -118,6 +118,9 @@ export default function Home() {
             <a className="nav-anchor" href="#pricing">
               Precios
             </a>
+            <a className="nav-anchor" href="#clientes">
+              Para clientes
+            </a>
             <Link className="nav-anchor" href="/ejemplo">
               Ver ejemplo
             </Link>
@@ -425,6 +428,41 @@ export default function Home() {
               <p>{f.a}</p>
             </details>
           ))}
+        </div>
+      </section>
+
+      {/* FOR CUSTOMERS — secondary, trust-oriented (customers join at the business, not here) */}
+      <section style={{ background: "var(--bg-soft)" }} id="clientes">
+        <div className="landing-section" style={{ textAlign: "center" }}>
+          <span style={{ display: "inline-block", fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", color: "var(--primary)", marginBottom: 8 }}>Para clientes</span>
+          <h2 className="section-title">¿Recibiste una tarjeta SoyCasero?</h2>
+          <p className="section-sub">Así de fácil es juntar sellos y ganar premios en tus negocios favoritos.</p>
+          <div className="grid-3" style={{ marginTop: 32 }}>
+            <div className="card lift feature-card acc-blue">
+              <span className="icon-badge">
+                <Smartphone size={24} strokeWidth={2.2} />
+              </span>
+              <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>Sin instalar nada</h3>
+              <p className="feat-text">Tu tarjeta vive en Apple Wallet o Google Wallet, en el celular que ya usas todos los días.</p>
+            </div>
+            <div className="card lift feature-card acc-violet">
+              <span className="icon-badge">
+                <QrCode size={24} strokeWidth={2.2} />
+              </span>
+              <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>Escaneas y listo</h3>
+              <p className="feat-text">Escanea el QR del negocio, llena tus datos y guarda tu tarjeta al instante.</p>
+            </div>
+            <div className="card lift feature-card acc-green">
+              <span className="icon-badge">
+                <Heart size={24} strokeWidth={2.2} />
+              </span>
+              <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>Vuelves y ganas</h3>
+              <p className="feat-text">Cada visita suma un sello. Completa tu tarjeta y reclama tu recompensa.</p>
+            </div>
+          </div>
+          <Link href="/ejemplo" className="btn btn-outline" style={{ width: "auto", display: "inline-block", marginTop: 28 }}>
+            Ver una tarjeta de ejemplo
+          </Link>
         </div>
       </section>
 
