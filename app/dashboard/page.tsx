@@ -129,8 +129,7 @@ export default function DashboardPage() {
 
       {data?.walletConfigured === false && (
         <div className="warn-box">
-          Google Wallet aún no está configurado. Las tarjetas se crean igual, pero el pase no se genera todavía.
-          Revisa <strong>SETUP.md</strong> para activarlo.
+          Google Wallet aún no está configurado. Las tarjetas se crean igual, pero el pase no se genera todavía. Revisa <strong>SETUP.md</strong> para activarlo.
         </div>
       )}
 
@@ -176,18 +175,14 @@ function BusinessSetupForm({ onSaved }: { onSaved: () => void }) {
   return (
     <div>
       <h1 style={{ fontSize: 24 }}>Configura tu negocio</h1>
-      <p className="muted" style={{ marginBottom: 18 }}>Empecemos con el nombre de tu negocio.</p>
+      <p className="muted" style={{ marginBottom: 18 }}>
+        Empecemos con el nombre de tu negocio.
+      </p>
       {err && <div className="error-box">{err}</div>}
       <div className="card">
         <div className="field">
           <label>Nombre del negocio</label>
-          <input
-            className="input"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Ej: Café Central"
-            onKeyDown={(e) => e.key === "Enter" && save()}
-          />
+          <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Café Central" onKeyDown={(e) => e.key === "Enter" && save()} />
         </div>
         <button className="btn btn-primary mt" onClick={save} disabled={saving}>
           {saving ? "Guardando…" : "Continuar"}
@@ -233,8 +228,7 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
   const [totalSlots, setTotalSlots] = useState(existing?.totalSlots ?? CARD_DEFAULTS.DEFAULT_SLOTS);
   const [rewardDescription, setRewardDescription] = useState(existing?.rewardDescription ?? CARD_DEFAULTS.DEFAULT_REWARD);
   const [welcomeMessage, setWelcomeMessage] = useState(
-    existing?.welcomeMessage ??
-      `¡Bienvenido a ${existing?.businessName || businessName || "nuestro club"}! 🎉 Colecciona sellos y gana tu recompensa.`
+    existing?.welcomeMessage ?? `¡Bienvenido a ${existing?.businessName || businessName || "nuestro club"}! 🎉 Colecciona sellos y gana tu recompensa.`,
   );
   const [cardColor, setCardColor] = useState(existing?.cardColor ?? CARD_COLOR_CHOICES[0]);
   const [textColor, setTextColor] = useState(existing?.textColor ?? "#FFFFFF");
@@ -320,185 +314,170 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
       <div className="card">
         {formTab === "tarjeta" ? (
           <>
-        <div className="field">
-          <label>Forma del sello</label>
-          {planInfo.paid ? (
-            <select className="input" value={stampShape} onChange={(e) => setStampShape(e.target.value as StampShape)}>
-              <optgroup label="Formas">
-                {STAMP_SHAPES.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </optgroup>
-              <optgroup label="Íconos">
-                {STAMP_ICONS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          ) : (
-            <>
-              <select className="input" value="circle" disabled style={{ opacity: 0.6, cursor: "not-allowed" }}>
-                <option value="circle">Círculo</option>
-              </select>
-              <p className="muted" style={{ fontSize: 12, marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <Lock size={13} aria-hidden /> Mejora al plan Café o Negocio para elegir estrella, diamante y más.
-              </p>
-            </>
-          )}
-        </div>
-
-        <div className="field">
-          <label>Código en la tarjeta</label>
-          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-            {(
-              [
-                { id: "pdf417", label: "Código de barras" },
-                { id: "qr", label: "Código QR" },
-              ] as const
-            ).map((o) => (
-              <button
-                key={o.id}
-                type="button"
-                onClick={() => setBarcodeType(o.id)}
-                className="btn"
-                style={{
-                  width: "auto",
-                  flex: "1 1 140px",
-                  background: barcodeType === o.id ? "var(--primary)" : "#fff",
-                  color: barcodeType === o.id ? "#fff" : "var(--text)",
-                  border: barcodeType === o.id ? "2px solid var(--primary)" : "1px solid var(--border)",
-                }}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
-          <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
-            Es el código que tu equipo escanea para sumar sellos. Ambos funcionan con el escáner de la app; elige el que
-            prefieras visualmente.
-          </p>
-        </div>
-
-        <div className="field">
-          <label>¿Cuántos sellos para ganar la recompensa?</label>
-          <select className="input" value={totalSlots} onChange={(e) => setTotalSlots(Number(e.target.value))}>
-            {Array.from({ length: CARD_DEFAULTS.MAX_SLOTS - CARD_DEFAULTS.MIN_SLOTS + 1 }).map((_, i) => {
-              const v = CARD_DEFAULTS.MIN_SLOTS + i;
-              return (
-                <option key={v} value={v}>
-                  {v} sellos
-                </option>
-              );
-            })}
-          </select>
-        </div>
-
-        <div className="field">
-          <label>Recompensa</label>
-          <input
-            className="input"
-            value={rewardDescription}
-            onChange={(e) => setRewardDescription(e.target.value)}
-            placeholder="Ej: Un café gratis"
-          />
-        </div>
-
-        <div className="field">
-          <label>Color de la tarjeta</label>
-          <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-            {CARD_COLOR_CHOICES.map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setCardColor(c)}
-                aria-label={c}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: c,
-                  border: cardColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "3px solid transparent",
-                  cursor: "pointer",
-                }}
-              />
-            ))}
-            <input
-              type="color"
-              value={normalizeHex(cardColor, "#E53935")}
-              onChange={(e) => setCardColor(e.target.value)}
-              aria-label="Selector de color de la tarjeta"
-              style={{ width: 42, height: 36, padding: 0, border: "none", background: "none", cursor: "pointer" }}
-            />
-            <input className="input" style={{ maxWidth: 110 }} value={cardColor} onChange={(e) => setCardColor(e.target.value)} placeholder="#E53935" />
-          </div>
-        </div>
-
-        <div className="field">
-          <label>Color del texto</label>
-          <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-            {["#FFFFFF", "#000000"].map((c) => (
-              <button
-                key={c}
-                type="button"
-                onClick={() => setTextColor(c)}
-                aria-label={c}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: "50%",
-                  background: c,
-                  border: textColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "1px solid #ccc",
-                  cursor: "pointer",
-                }}
-              />
-            ))}
-            <input
-              type="color"
-              value={normalizeHex(textColor, "#FFFFFF")}
-              onChange={(e) => setTextColor(e.target.value)}
-              aria-label="Selector de color del texto"
-              style={{ width: 42, height: 36, padding: 0, border: "none", background: "none", cursor: "pointer" }}
-            />
-            <input className="input" style={{ maxWidth: 110 }} value={textColor} onChange={(e) => setTextColor(e.target.value)} placeholder="#FFFFFF" />
-          </div>
-        </div>
-
-        <div className="field">
-          <label>Logo (opcional)</label>
-          {logo && (
-            <div className="row" style={{ alignItems: "center", gap: 10, marginBottom: 8 }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={logo} alt="logo" style={{ maxHeight: 44, maxWidth: 160, objectFit: "contain", background: "#f0f0f0", borderRadius: 8, padding: 4 }} />
-              <button type="button" className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setLogo(null)}>
-                Quitar
-              </button>
+            <div className="field">
+              <label>Forma del sello</label>
+              {planInfo.paid ? (
+                <select className="input" value={stampShape} onChange={(e) => setStampShape(e.target.value as StampShape)}>
+                  <optgroup label="Formas">
+                    {STAMP_SHAPES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Íconos">
+                    {STAMP_ICONS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+              ) : (
+                <>
+                  <select className="input" value="circle" disabled style={{ opacity: 0.6, cursor: "not-allowed" }}>
+                    <option value="circle">Círculo</option>
+                  </select>
+                  <p className="muted" style={{ fontSize: 12, marginTop: 6, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <Lock size={13} aria-hidden /> Mejora al plan Café o Negocio para elegir estrella, diamante y más.
+                  </p>
+                </>
+              )}
             </div>
-          )}
-          <input type="file" accept="image/*" onChange={onPickLogo} />
-          <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
-            Se mostrará en lugar del nombre del negocio. Para que se vea bien, usa un logo{" "}
-            <strong>horizontal</strong> (apaisado), PNG con fondo transparente, ~480 × 150 px (proporción ~3:1).
-            En Apple Wallet el logo va en una franja pequeña arriba (máx. 160 × 50 pt), así que las imágenes
-            cuadradas se verán chicas.
-          </p>
-        </div>
+
+            <div className="field">
+              <label>Código en la tarjeta</label>
+              <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                {(
+                  [
+                    { id: "pdf417", label: "Código de barras" },
+                    { id: "qr", label: "Código QR" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => setBarcodeType(o.id)}
+                    className="btn"
+                    style={{
+                      width: "auto",
+                      flex: "1 1 140px",
+                      background: barcodeType === o.id ? "var(--primary)" : "#fff",
+                      color: barcodeType === o.id ? "#fff" : "var(--text)",
+                      border: barcodeType === o.id ? "2px solid var(--primary)" : "1px solid var(--border)",
+                    }}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+                Es el código que tu equipo escanea para sumar sellos. Ambos funcionan con el escáner de la app; elige el que prefieras visualmente.
+              </p>
+            </div>
+
+            <div className="field">
+              <label>¿Cuántos sellos para ganar la recompensa?</label>
+              <select className="input" value={totalSlots} onChange={(e) => setTotalSlots(Number(e.target.value))}>
+                {Array.from({ length: CARD_DEFAULTS.MAX_SLOTS - CARD_DEFAULTS.MIN_SLOTS + 1 }).map((_, i) => {
+                  const v = CARD_DEFAULTS.MIN_SLOTS + i;
+                  return (
+                    <option key={v} value={v}>
+                      {v} sellos
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Recompensa</label>
+              <input className="input" value={rewardDescription} onChange={(e) => setRewardDescription(e.target.value)} placeholder="Ej: Un café gratis" />
+            </div>
+
+            <div className="field">
+              <label>Color de la tarjeta</label>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                {CARD_COLOR_CHOICES.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setCardColor(c)}
+                    aria-label={c}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: c,
+                      border: cardColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "3px solid transparent",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={normalizeHex(cardColor, "#E53935")}
+                  onChange={(e) => setCardColor(e.target.value)}
+                  aria-label="Selector de color de la tarjeta"
+                  style={{ width: 42, height: 36, padding: 0, border: "none", background: "none", cursor: "pointer" }}
+                />
+                <input className="input" style={{ maxWidth: 110 }} value={cardColor} onChange={(e) => setCardColor(e.target.value)} placeholder="#E53935" />
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Color del texto</label>
+              <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+                {["#FFFFFF", "#000000"].map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setTextColor(c)}
+                    aria-label={c}
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: c,
+                      border: textColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "1px solid #ccc",
+                      cursor: "pointer",
+                    }}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={normalizeHex(textColor, "#FFFFFF")}
+                  onChange={(e) => setTextColor(e.target.value)}
+                  aria-label="Selector de color del texto"
+                  style={{ width: 42, height: 36, padding: 0, border: "none", background: "none", cursor: "pointer" }}
+                />
+                <input className="input" style={{ maxWidth: 110 }} value={textColor} onChange={(e) => setTextColor(e.target.value)} placeholder="#FFFFFF" />
+              </div>
+            </div>
+
+            <div className="field">
+              <label>Logo (opcional)</label>
+              {logo && (
+                <div className="row" style={{ alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={logo} alt="logo" style={{ maxHeight: 44, maxWidth: 160, objectFit: "contain", background: "#f0f0f0", borderRadius: 8, padding: 4 }} />
+                  <button type="button" className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setLogo(null)}>
+                    Quitar
+                  </button>
+                </div>
+              )}
+              <input type="file" accept="image/*" onChange={onPickLogo} />
+              <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+                Se mostrará en lugar del nombre del negocio. Para que se vea bien, usa un logo <strong>horizontal</strong> (apaisado), PNG con fondo transparente, ~480 × 150 px (proporción ~3:1). En
+                Apple Wallet el logo va en una franja pequeña arriba (máx. 160 × 50 pt), así que las imágenes cuadradas se verán chicas.
+              </p>
+            </div>
           </>
         ) : (
           <>
             <div className="field">
               <label>Mensaje de bienvenida</label>
-              <textarea
-                className="input"
-                rows={2}
-                value={welcomeMessage}
-                onChange={(e) => setWelcomeMessage(e.target.value)}
-                placeholder="¡Bienvenido! 🎉"
-                maxLength={240}
-              />
+              <textarea className="input" rows={2} value={welcomeMessage} onChange={(e) => setWelcomeMessage(e.target.value)} placeholder="¡Bienvenido! 🎉" maxLength={240} />
               <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
                 Se le envía al casero como notificación cuando guarda tu tarjeta (Android y iPhone). Disponible en todos los planes.
               </p>
@@ -628,24 +607,9 @@ function CardManager({
       </div>
 
       {tab === "resumen" ? (
-        <ResumenTab
-          cards={cards}
-          customers={customers}
-          count={count}
-          planInfo={planInfo}
-          onChanged={onChanged}
-          onSelect={setSelected}
-          onShowQr={() => setTab("tarjetas")}
-        />
+        <ResumenTab cards={cards} customers={customers} count={count} planInfo={planInfo} onChanged={onChanged} onSelect={setSelected} onShowQr={() => setTab("tarjetas")} />
       ) : tab === "tarjetas" ? (
-        <TarjetasTab
-          cards={cards}
-          planInfo={planInfo}
-          businessLogo={business.logoPng}
-          onEdit={(c) => setEditing(c)}
-          onNew={() => setEditing("new")}
-          onChanged={onChanged}
-        />
+        <TarjetasTab cards={cards} planInfo={planInfo} businessLogo={business.logoPng} onEdit={(c) => setEditing(c)} onNew={() => setEditing("new")} onChanged={onChanged} />
       ) : tab === "comunicacion" ? (
         <ComunicacionTab business={business} planInfo={planInfo} customers={customers} cards={cards} onChanged={onChanged} />
       ) : (
@@ -654,9 +618,7 @@ function CardManager({
         </div>
       )}
 
-      {selected && (
-        <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onChanged={onChanged} onClose={() => setSelected(null)} />
-      )}
+      {selected && <ClientModal client={selected} cardsById={cardsById} plan={planInfo.id} onChanged={onChanged} onClose={() => setSelected(null)} />}
     </div>
   );
 }
@@ -706,11 +668,7 @@ function memberEventLabel(e: import("@/lib/types").MemberEvent): string {
 
 function StatusBadge({ status }: { status: MemberStatus }) {
   const c = status === "active" ? { bg: "#dcfce7", fg: "#166534" } : status === "expired" ? { bg: "#fee2e2", fg: "#991b1b" } : { bg: "#fef3c7", fg: "#92400e" };
-  return (
-    <span style={{ background: c.bg, color: c.fg, fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>
-      {MEMBER_STATUS_LABEL[status]}
-    </span>
-  );
+  return <span style={{ background: c.bg, color: c.fg, fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 999, whiteSpace: "nowrap" }}>{MEMBER_STATUS_LABEL[status]}</span>;
 }
 
 function MembershipVisitsChart({ series, total }: { series: { label: string; count: number }[]; total: number }) {
@@ -720,7 +678,9 @@ function MembershipVisitsChart({ series, total }: { series: { label: string; cou
     <div className="card mt">
       <div className="row spread" style={{ alignItems: "baseline" }}>
         <h3 style={{ margin: 0, fontSize: 15 }}>Visitas (últimos 14 días)</h3>
-        <span className="muted" style={{ fontSize: 13 }}>{total} en total</span>
+        <span className="muted" style={{ fontSize: 13 }}>
+          {total} en total
+        </span>
       </div>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 96, marginTop: 14 }}>
         {series.map((s, i) => (
@@ -811,9 +771,7 @@ function MembershipTab({ businessName }: { businessName: string }) {
       <div className="row spread" style={{ alignItems: "center" }}>
         <h3 className="vip-on-dark" style={{ margin: 0, fontSize: 19, display: "flex", alignItems: "center", gap: 10 }}>
           🎫 {program.name}
-          {program.isActive === false && (
-            <span style={{ background: "#fee2e2", color: "#991b1b", fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 999 }}>Inactiva</span>
-          )}
+          {program.isActive === false && <span style={{ background: "#fee2e2", color: "#991b1b", fontWeight: 700, fontSize: 12, padding: "3px 9px", borderRadius: 999 }}>Inactiva</span>}
         </h3>
         <button className="btn btn-sm" style={{ width: "auto", background: "rgba(255,255,255,0.14)", color: "#fff" }} onClick={() => setEditingProgram(true)}>
           Editar
@@ -838,12 +796,7 @@ function MembershipTab({ businessName }: { businessName: string }) {
       <div className="row spread" style={{ alignItems: "baseline", gap: 10 }}>
         <h4 className="vip-on-dark-muted vip-label">Directorio de socios</h4>
         {members.length > 0 && (
-          <button
-            className="btn btn-sm"
-            style={{ width: "auto", background: "rgba(255,255,255,0.14)", color: "#fff" }}
-            onClick={exportCsv}
-            disabled={exporting}
-          >
+          <button className="btn btn-sm" style={{ width: "auto", background: "rgba(255,255,255,0.14)", color: "#fff" }} onClick={exportCsv} disabled={exporting}>
             {exporting ? "Exportando…" : "Exportar CSV"}
           </button>
         )}
@@ -862,8 +815,7 @@ function MembershipUpsell() {
     <div className="card mt">
       <h3 style={{ marginTop: 0, fontSize: 18 }}>🎫 Tarjetas de membresía (VIP)</h3>
       <p className="muted" style={{ lineHeight: 1.5 }}>
-        Para gimnasios, clubes y negocios con socios: una tarjeta que identifica a tus miembros, controla su vencimiento
-        y, si quieres, sus visitas. Disponible en el <strong>plan Negocio</strong>.
+        Para gimnasios, clubes y negocios con socios: una tarjeta que identifica a tus miembros, controla su vencimiento y, si quieres, sus visitas. Disponible en el <strong>plan Negocio</strong>.
       </p>
       <a className="btn btn-primary mt" href={href} target="_blank" rel="noreferrer" style={{ width: "auto", display: "inline-block" }}>
         Activar con el plan Negocio
@@ -978,8 +930,12 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
   const days = Number(durationDays) || 0;
   return (
     <div>
-      <h1 className="vip-on-dark" style={{ fontSize: 24, marginTop: 0 }}>{existing ? "Editar tu membresía" : "Crea tu tarjeta de membresía"}</h1>
-      <p className="vip-on-dark-muted" style={{ marginBottom: 16 }}>Para gimnasios, clubes y negocios con socios.</p>
+      <h1 className="vip-on-dark" style={{ fontSize: 24, marginTop: 0 }}>
+        {existing ? "Editar tu membresía" : "Crea tu tarjeta de membresía"}
+      </h1>
+      <p className="vip-on-dark-muted" style={{ marginBottom: 16 }}>
+        Para gimnasios, clubes y negocios con socios.
+      </p>
       {err && <div className="error-box">{err}</div>}
 
       {/* Live preview (3D tilt, like the loyalty card) */}
@@ -1011,16 +967,20 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
             <input type="checkbox" checked={tracksVisits} onChange={(e) => setTracksVisits(e.target.checked)} style={{ width: 18, height: 18 }} />
             <span>Controlar visitas (descuenta una por cada registro)</span>
           </label>
-          {tracksVisits && (
-            <input className="input mt" type="number" min={1} value={visitLimit} onChange={(e) => setVisitLimit(e.target.value)} placeholder="Visitas incluidas (ej: 10)" />
+          {tracksVisits && <input className="input mt" type="number" min={1} value={visitLimit} onChange={(e) => setVisitLimit(e.target.value)} placeholder="Visitas incluidas (ej: 10)" />}
+          {!tracksVisits && (
+            <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+              Acceso ilimitado: la tarjeta solo verifica si el socio está activo.
+            </p>
           )}
-          {!tracksVisits && <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Acceso ilimitado: la tarjeta solo verifica si el socio está activo.</p>}
         </div>
 
         <div className="field">
           <label>Duración (días)</label>
           <input className="input" type="number" min={0} value={durationDays} onChange={(e) => setDurationDays(e.target.value)} placeholder="30" />
-          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>Cada socio vence después de estos días. Usa 0 para sin vencimiento.</p>
+          <p className="muted" style={{ fontSize: 12, marginTop: 6 }}>
+            Cada socio vence después de estos días. Usa 0 para sin vencimiento.
+          </p>
         </div>
 
         <div className="field">
@@ -1037,10 +997,23 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
                 type="button"
                 onClick={() => setCardColor(c)}
                 aria-label={c}
-                style={{ width: 32, height: 32, borderRadius: "50%", background: c, border: cardColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "3px solid transparent", cursor: "pointer" }}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  background: c,
+                  border: cardColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "3px solid transparent",
+                  cursor: "pointer",
+                }}
               />
             ))}
-            <input type="color" value={normalizeHex(cardColor, "#1f2937")} onChange={(e) => setCardColor(e.target.value)} aria-label="Color" style={{ width: 42, height: 36, padding: 0, border: "none", background: "none", cursor: "pointer" }} />
+            <input
+              type="color"
+              value={normalizeHex(cardColor, "#1f2937")}
+              onChange={(e) => setCardColor(e.target.value)}
+              aria-label="Color"
+              style={{ width: 42, height: 36, padding: 0, border: "none", background: "none", cursor: "pointer" }}
+            />
             <input className="input" style={{ maxWidth: 110 }} value={cardColor} onChange={(e) => setCardColor(e.target.value)} placeholder="#1f2937" />
           </div>
         </div>
@@ -1049,7 +1022,13 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
           <label>Color del texto</label>
           <div className="row" style={{ flexWrap: "wrap", gap: 8, alignItems: "center" }}>
             {["#FFFFFF", "#000000"].map((c) => (
-              <button key={c} type="button" onClick={() => setTextColor(c)} aria-label={c} style={{ width: 32, height: 32, borderRadius: "50%", background: c, border: textColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "1px solid #ccc", cursor: "pointer" }} />
+              <button
+                key={c}
+                type="button"
+                onClick={() => setTextColor(c)}
+                aria-label={c}
+                style={{ width: 32, height: 32, borderRadius: "50%", background: c, border: textColor.toLowerCase() === c.toLowerCase() ? "3px solid #2c3e50" : "1px solid #ccc", cursor: "pointer" }}
+              />
             ))}
           </div>
         </div>
@@ -1144,7 +1123,15 @@ function MemberVerifyBox({ onChanged }: { onChanged: () => void }) {
         </div>
       )}
 
-      {scanning && <BarcodeScanner onDetected={(v) => { setScanning(false); go(false, v); }} onClose={() => setScanning(false)} />}
+      {scanning && (
+        <BarcodeScanner
+          onDetected={(v) => {
+            setScanning(false);
+            go(false, v);
+          }}
+          onClose={() => setScanning(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1185,10 +1172,16 @@ function AddMemberForm({ onAdded }: { onAdded: () => void }) {
     <div className="card mt">
       <div className="row spread" style={{ alignItems: "center", marginBottom: 8 }}>
         <h3 style={{ margin: 0, fontSize: 16 }}>Agregar socio</h3>
-        <button className="modal-close" onClick={() => setOpen(false)} aria-label="Cerrar">✕</button>
+        <button className="modal-close" onClick={() => setOpen(false)} aria-label="Cerrar">
+          ✕
+        </button>
       </div>
       {err && <div className="error-box">{err}</div>}
-      {newCode && <div className="success-box">Socio agregado. Su código es <strong>{newCode}</strong>.</div>}
+      {newCode && (
+        <div className="success-box">
+          Socio agregado. Su código es <strong>{newCode}</strong>.
+        </div>
+      )}
       <div className="field">
         <label>Nombre</label>
         <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre del socio" />
@@ -1243,20 +1236,46 @@ function MembersList({ members, onSelect }: { members: Member[]; onSelect: (m: M
   const safePage = Math.min(page, pageCount - 1);
   const shown = list.slice(safePage * PAGE_SIZE, safePage * PAGE_SIZE + PAGE_SIZE);
 
-  if (!members.length) return <p className="vip-on-dark-muted" style={{ marginTop: 4 }}>Aún no tienes socios. Agrega el primero arriba.</p>;
+  if (!members.length)
+    return (
+      <p className="vip-on-dark-muted" style={{ marginTop: 4 }}>
+        Aún no tienes socios. Agrega el primero arriba.
+      </p>
+    );
 
   return (
     <div>
       <div className="row" style={{ gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-        <input className="input" style={{ flex: "2 1 200px" }} value={q} onChange={(e) => { setQ(e.target.value); setPage(0); }} placeholder="Buscar por nombre, correo, teléfono o código" />
-        <select className="input" style={{ flex: "1 1 130px", maxWidth: 180 }} value={filter} onChange={(e) => { setFilter(e.target.value as typeof filter); setPage(0); }}>
+        <input
+          className="input"
+          style={{ flex: "2 1 200px" }}
+          value={q}
+          onChange={(e) => {
+            setQ(e.target.value);
+            setPage(0);
+          }}
+          placeholder="Buscar por nombre, correo, teléfono o código"
+        />
+        <select
+          className="input"
+          style={{ flex: "1 1 130px", maxWidth: 180 }}
+          value={filter}
+          onChange={(e) => {
+            setFilter(e.target.value as typeof filter);
+            setPage(0);
+          }}
+        >
           <option value="all">Todos</option>
           <option value="active">Activos</option>
           <option value="soon">Por vencer</option>
           <option value="expired">Vencidos</option>
         </select>
       </div>
-      {!shown.length && <p className="vip-on-dark-muted" style={{ fontSize: 14 }}>Ningún socio coincide con el filtro.</p>}
+      {!shown.length && (
+        <p className="vip-on-dark-muted" style={{ fontSize: 14 }}>
+          Ningún socio coincide con el filtro.
+        </p>
+      )}
       {shown.map((m) => {
         const st = memberStatus(m, now);
         const rem = visitsRemaining(m);
@@ -1298,15 +1317,28 @@ function MembersList({ members, onSelect }: { members: Member[]; onSelect: (m: M
               cursor: "pointer",
             }}
           >
-            <span style={{ flex: "0 0 auto", width: 38, height: 38, borderRadius: "50%", background: active ? avatarColor(m.memberName || "?") : "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <span
+              style={{
+                flex: "0 0 auto",
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                background: active ? avatarColor(m.memberName || "?") : "#9ca3af",
+                color: "#fff",
+                fontWeight: 700,
+                fontSize: 14,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               {initials(m.memberName || "?")}
             </span>
             <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
               <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? undefined : "var(--text-secondary)" }}>{m.memberName}</strong>
               <span className="muted" style={{ fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {contact ? `${contact} · ` : ""}
-                {rem != null ? `${rem} visita(s)` : "Ilimitado"} ·{" "}
-                <span style={vencColor ? { color: vencColor, fontWeight: 600 } : undefined}>{venc}</span>
+                {rem != null ? `${rem} visita(s)` : "Ilimitado"} · <span style={vencColor ? { color: vencColor, fontWeight: 600 } : undefined}>{venc}</span>
               </span>
             </span>
             <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flex: "0 0 auto" }}>
@@ -1318,9 +1350,15 @@ function MembersList({ members, onSelect }: { members: Member[]; onSelect: (m: M
       })}
       {pageCount > 1 && (
         <div className="row" style={{ justifyContent: "center", gap: 12, marginTop: 6 }}>
-          <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>← Anterior</button>
-          <span className="muted" style={{ fontSize: 13 }}>{safePage + 1} / {pageCount}</span>
-          <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>Siguiente →</button>
+          <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} disabled={safePage === 0} onClick={() => setPage(safePage - 1)}>
+            ← Anterior
+          </button>
+          <span className="muted" style={{ fontSize: 13 }}>
+            {safePage + 1} / {pageCount}
+          </span>
+          <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} disabled={safePage >= pageCount - 1} onClick={() => setPage(safePage + 1)}>
+            Siguiente →
+          </button>
         </div>
       )}
     </div>
@@ -1362,7 +1400,9 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ alignItems: "flex-start", marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: 18 }}>{member.memberName}</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+            ✕
+          </button>
         </div>
 
         <div className="row" style={{ gap: 10, alignItems: "center", marginBottom: 12 }}>
@@ -1416,13 +1456,20 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
           <h4 style={{ margin: "0 0 10px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>Historial</h4>
           {(() => {
             const events = [...(member.history || [])].sort((a, b) => b.t - a.t);
-            if (!events.length) return <p className="muted" style={{ fontSize: 13, margin: 0 }}>Sin actividad todavía.</p>;
+            if (!events.length)
+              return (
+                <p className="muted" style={{ fontSize: 13, margin: 0 }}>
+                  Sin actividad todavía.
+                </p>
+              );
             return (
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {events.map((e, i) => (
                   <div key={i} className="row spread" style={{ alignItems: "baseline", gap: 12, fontSize: 13 }}>
                     <span>{memberEventLabel(e)}</span>
-                    <span className="muted" style={{ whiteSpace: "nowrap", fontSize: 12 }}>{fmtDateTime(e.t)}</span>
+                    <span className="muted" style={{ whiteSpace: "nowrap", fontSize: 12 }}>
+                      {fmtDateTime(e.t)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -1513,9 +1560,7 @@ function ResumenTab({
   const activos = clients.filter((c) => (c.lastStampDate || 0) >= since30).length;
   const inactivos = clients.length - activos;
   // A client "returned" if their lifetime stamps exceed the single welcome stamp.
-  const returned = clients.filter(
-    (c) => c.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0) * slotsOf(m) + m.currentStamps, 0) > 1
-  ).length;
+  const returned = clients.filter((c) => c.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0) * slotsOf(m) + m.currentStamps, 0) > 1).length;
   const retencion = clients.length ? Math.round((returned / clients.length) * 100) : 0;
   const aboutToWin = filtered.filter((m) => slotsOf(m) > 0 && m.currentStamps === slotsOf(m) - 1).length;
   const avgStamps = clients.length ? Math.round((stampsGiven / clients.length) * 10) / 10 : 0;
@@ -1570,9 +1615,7 @@ function ResumenTab({
       : atLimit
         ? "Alcanzaste el límite de tu plan. Los nuevos caseros no pueden inscribirse hasta que mejores tu plan."
         : `Te quedan ${limit - count} caseros en tu plan ${planInfo.label}.`;
-  const upgradeHref = `https://wa.me/59175983004?text=${encodeURIComponent(
-    "Hola, quiero mejorar mi plan de SoyCasero para tener más caseros."
-  )}`;
+  const upgradeHref = `https://wa.me/59175983004?text=${encodeURIComponent("Hola, quiero mejorar mi plan de SoyCasero para tener más caseros.")}`;
   const PAGE_SIZE = 10;
   const pageCount = Math.max(1, Math.ceil(clients.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount - 1);
@@ -1598,7 +1641,8 @@ function ResumenTab({
             <div className="progress-fill" style={{ width: `${pct}%`, background: nearLimit ? "#c62828" : undefined }} />
           </div>
           <p style={{ fontSize: 14, marginTop: 10, marginBottom: 0, color: nearLimit ? "#c62828" : "var(--text-secondary)", fontWeight: nearLimit ? 600 : 400 }}>
-            {atLimit ? "⚠️ " : ""}{remainingText}
+            {atLimit ? "⚠️ " : ""}
+            {remainingText}
           </p>
           {nearLimit && !cajero && (
             <a className="btn btn-primary mt" href={upgradeHref} target="_blank" rel="noreferrer" style={{ width: "auto" }}>
@@ -1613,7 +1657,14 @@ function ResumenTab({
       {cards.length > 1 && (
         <div className="field mt">
           <label>Tarjeta</label>
-          <select className="input" value={filterCardId} onChange={(e) => { setFilterCardId(e.target.value); setPage(0); }}>
+          <select
+            className="input"
+            value={filterCardId}
+            onChange={(e) => {
+              setFilterCardId(e.target.value);
+              setPage(0);
+            }}
+          >
             <option value="all">Todas las tarjetas</option>
             {cards.map((c) => (
               <option key={c.id} value={c.id}>
@@ -1648,21 +1699,11 @@ function ResumenTab({
               {chartMetric === "nuevos" ? "Nuevos caseros" : "Visitas recientes"}
             </h4>
             <div className="row" style={{ width: "auto", gap: 8 }}>
-              <select
-                className="input"
-                style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}
-                value={chartMetric}
-                onChange={(e) => setChartMetric(e.target.value as "nuevos" | "visitas")}
-              >
+              <select className="input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} value={chartMetric} onChange={(e) => setChartMetric(e.target.value as "nuevos" | "visitas")}>
                 <option value="nuevos">Nuevos caseros</option>
                 <option value="visitas">Visitas recientes</option>
               </select>
-              <select
-                className="input"
-                style={{ width: "auto", padding: "6px 10px", fontSize: 13 }}
-                value={chartRange}
-                onChange={(e) => setChartRange(e.target.value)}
-              >
+              <select className="input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} value={chartRange} onChange={(e) => setChartRange(e.target.value)}>
                 {CHART_RANGES.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.label}
@@ -1727,16 +1768,7 @@ function ResumenTab({
                 ))}
                 {/* hover hit areas */}
                 {series.map((s, i) => (
-                  <rect
-                    key={`hit-${i}`}
-                    x={cx(i) - band / 2}
-                    y={padTop}
-                    width={band}
-                    height={innerH}
-                    fill="transparent"
-                    style={{ cursor: "pointer" }}
-                    onMouseEnter={() => setHoverPt(i)}
-                  />
+                  <rect key={`hit-${i}`} x={cx(i) - band / 2} y={padTop} width={band} height={innerH} fill="transparent" style={{ cursor: "pointer" }} onMouseEnter={() => setHoverPt(i)} />
                 ))}
                 {/* tooltip */}
                 {hoverPt != null &&
@@ -1816,11 +1848,7 @@ function ResumenTab({
                 </button>
               ) : (
                 <span title="Mejora a un plan de pago para exportar tus caseros" style={{ display: "inline-flex" }}>
-                  <button
-                    className="btn btn-sm btn-outline"
-                    style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6, opacity: 0.6, cursor: "not-allowed" }}
-                    disabled
-                  >
+                  <button className="btn btn-sm btn-outline" style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6, opacity: 0.6, cursor: "not-allowed" }} disabled>
                     <Lock size={14} aria-hidden /> Exportar CSV
                   </button>
                 </span>
@@ -1854,13 +1882,13 @@ function ResumenTab({
                 >
                   <div>
                     <div style={{ fontWeight: 600 }}>{cl.name}</div>
-                    <div className="muted">
-                      {single ? `${single.currentStamps}/${slotsOf(single)} sellos` : `${cl.memberships.length} tarjetas`}
-                    </div>
+                    <div className="muted">{single ? `${single.currentStamps}/${slotsOf(single)} sellos` : `${cl.memberships.length} tarjetas`}</div>
                   </div>
                   <div className="row" style={{ width: "auto", gap: 10, alignItems: "center" }}>
                     {!cajero && single && <span className="code-pill">{single.cardCode}</span>}
-                    <span aria-hidden style={{ color: "var(--text-secondary)", fontSize: 20, lineHeight: 1 }}>›</span>
+                    <span aria-hidden style={{ color: "var(--text-secondary)", fontSize: 20, lineHeight: 1 }}>
+                      ›
+                    </span>
                   </div>
                 </div>
               );
@@ -1873,12 +1901,7 @@ function ResumenTab({
                 <span className="muted" style={{ fontSize: 13 }}>
                   {safePage * PAGE_SIZE + 1}–{Math.min((safePage + 1) * PAGE_SIZE, clients.length)} de {clients.length}
                 </span>
-                <button
-                  className="btn btn-sm btn-ghost"
-                  style={{ width: "auto" }}
-                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-                  disabled={safePage >= pageCount - 1}
-                >
+                <button className="btn btn-sm btn-ghost" style={{ width: "auto" }} onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))} disabled={safePage >= pageCount - 1}>
                   Siguiente →
                 </button>
               </div>
@@ -1928,23 +1951,14 @@ function TarjetasTab({
 
 function NewCardTile({ canAdd, planInfo, onNew }: { canAdd: boolean; planInfo: PlanInfo; onNew: () => void }) {
   return (
-    <button
-      className="add-card-tile mt"
-      onClick={canAdd ? onNew : undefined}
-      disabled={!canAdd}
-      title={canAdd ? "Crear otra tarjeta" : "Mejora tu plan para crear más tarjetas"}
-    >
+    <button className="add-card-tile mt" onClick={canAdd ? onNew : undefined} disabled={!canAdd} title={canAdd ? "Crear otra tarjeta" : "Mejora tu plan para crear más tarjetas"}>
       <span className="add-card-plus" aria-hidden style={{ display: "inline-flex", alignItems: "center" }}>
         {canAdd ? "＋" : <Lock size={24} />}
       </span>
       <span>
         Nueva tarjeta
         <span className="add-card-hint">
-          {canAdd
-            ? "Crea otra tarjeta de sellos"
-            : planInfo.id === "negocio"
-              ? `Alcanzaste el máximo de ${planInfo.maxCards} tarjetas`
-              : "Mejora al plan Negocio para crear más de una tarjeta"}
+          {canAdd ? "Crea otra tarjeta de sellos" : planInfo.id === "negocio" ? `Alcanzaste el máximo de ${planInfo.maxCards} tarjetas` : "Mejora al plan Negocio para crear más de una tarjeta"}
         </span>
       </span>
     </button>
@@ -1971,9 +1985,7 @@ function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyC
 
   return (
     <div>
-      <p style={{ fontSize: 15, fontWeight: 600, textAlign: "center", margin: "22px 0 12px" }}>
-        Inscribe caseros — pon este QR en tu mostrador
-      </p>
+      <p style={{ fontSize: 15, fontWeight: 600, textAlign: "center", margin: "22px 0 12px" }}>Inscribe caseros — pon este QR en tu mostrador</p>
 
       {/* Photoreal mockup: the card's branding composited onto a real blank
           table-tent photo; the overlay percentages are tuned to the tent's face. */}
@@ -1995,7 +2007,7 @@ function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyC
             overflow: "hidden",
             // Follow the tent's slight lean in the photo so the art looks printed on it
             // (the face's right side is nearer the camera, so it lifts toward us).
-            transform: "perspective(1100px) rotateY(-4deg) rotate(-0.8deg)",
+            transform: "perspective(1100px) rotateY(7deg) rotate(-0.8deg)",
             transformOrigin: "center",
           }}
         >
@@ -2006,13 +2018,13 @@ function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyC
             <div style={{ fontWeight: 800, fontSize: 18, color: card.cardColor, marginBottom: 6, lineHeight: 1.15 }}>{card.businessName}</div>
           )}
           <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 3px", color: "#111", lineHeight: 1.2 }}>¡Tranquilo, no es otra app!</p>
-          <p style={{ fontSize: 12.5, color: "#444", margin: "0 0 8px", lineHeight: 1.3, maxWidth: 250 }}>
-            Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.
-          </p>
+          <p style={{ fontSize: 12.5, color: "#444", margin: "0 0 8px", lineHeight: 1.3, maxWidth: 250 }}>Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.</p>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <QrCode value={url} size={102} />
           </div>
-          <p style={{ fontSize: 11.5, color: "#444", margin: "7px 0 8px", lineHeight: 1.3, maxWidth: 250, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+          <p
+            style={{ fontSize: 11.5, color: "#444", margin: "7px 0 8px", lineHeight: 1.3, maxWidth: 250, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+          >
             🎁 {card.rewardDescription}
           </p>
           <div style={{ display: "flex", justifyContent: "center", gap: 7, alignItems: "center" }}>
@@ -2092,11 +2104,7 @@ function CardPanel({ card, businessLogo, onEdit, onChanged }: { card: LoyaltyCar
   }
 
   async function deleteCard() {
-    if (
-      !confirm(
-        "¿Eliminar esta tarjeta? Se borrará la tarjeta y su historial, y las tarjetas de tus caseros quedarán finalizadas (en gris). Esta acción no se puede deshacer."
-      )
-    ) {
+    if (!confirm("¿Eliminar esta tarjeta? Se borrará la tarjeta y su historial, y las tarjetas de tus caseros quedarán finalizadas (en gris). Esta acción no se puede deshacer.")) {
       return;
     }
     setBusyDelete(true);
@@ -2120,11 +2128,7 @@ function CardPanel({ card, businessLogo, onEdit, onChanged }: { card: LoyaltyCar
           {card.rewardDescription || "Tarjeta"}
           {inactive && <span style={{ fontSize: 11, fontWeight: 700, color: "#c62828" }}>● Desactivada</span>}
         </h3>
-        <button
-          className="btn btn-sm btn-ghost"
-          style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
-          onClick={onEdit}
-        >
+        <button className="btn btn-sm btn-ghost" style={{ width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={onEdit}>
           <Pencil size={15} aria-hidden /> Editar
         </button>
       </div>
@@ -2179,12 +2183,7 @@ function CardPanel({ card, businessLogo, onEdit, onChanged }: { card: LoyaltyCar
             {busyActive ? "Desactivando…" : "Desactivar tarjeta"}
           </button>
         )}
-        <button
-          className="btn"
-          style={{ width: "auto", background: "#fdecea", color: "#c62828" }}
-          onClick={deleteCard}
-          disabled={busyActive || busyDelete}
-        >
+        <button className="btn" style={{ width: "auto", background: "#fdecea", color: "#c62828" }} onClick={deleteCard} disabled={busyActive || busyDelete}>
           {busyDelete ? "Eliminando…" : "Eliminar tarjeta"}
         </button>
       </div>
@@ -2253,26 +2252,12 @@ function NotifPreview({ businessName, logoPng, color, text }: { businessName: st
           </span>
         </span>
       </div>
-      <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.65)", textAlign: "center", margin: "10px 0 0" }}>
-        Así llegará la notificación al celular de tus caseros (vista aproximada).
-      </p>
+      <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.65)", textAlign: "center", margin: "10px 0 0" }}>Así llegará la notificación al celular de tus caseros (vista aproximada).</p>
     </div>
   );
 }
 
-function ComunicacionTab({
-  business,
-  planInfo,
-  customers,
-  cards,
-  onChanged,
-}: {
-  business: Business;
-  planInfo: PlanInfo;
-  customers: CustomerCard[];
-  cards: LoyaltyCard[];
-  onChanged: () => void;
-}) {
+function ComunicacionTab({ business, planInfo, customers, cards, onChanged }: { business: Business; planInfo: PlanInfo; customers: CustomerCard[]; cards: LoyaltyCard[]; onChanged: () => void }) {
   const [message, setMessage] = useState("");
   const [segment, setSegment] = useState<Segment>("all");
   const [busy, setBusy] = useState(false);
@@ -2339,21 +2324,20 @@ function ComunicacionTab({
       <h3 style={{ fontSize: 18, marginTop: 0 }}>Mensajes a tus caseros</h3>
       <p className="muted" style={{ marginTop: 0, fontSize: 13 }}>
         Envía una promoción, recordatorio o aviso al wallet de todos tus caseros.
-        {paid
-          ? ` Tu plan ${planInfo.label} permite ${planInfo.broadcastsPerDay} mensaje(s) al día${planInfo.broadcastGapHours ? `, con ${planInfo.broadcastGapHours}h entre cada uno` : ""}.`
-          : ""}
+        {paid ? ` Tu plan ${planInfo.label} permite ${planInfo.broadcastsPerDay} mensaje(s) al día${planInfo.broadcastGapHours ? `, con ${planInfo.broadcastGapHours}h entre cada uno` : ""}.` : ""}
       </p>
 
       <div style={paid ? undefined : { filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }} aria-hidden={!paid}>
         {/* Send status: progress bar + "usados/permitidos" + countdown */}
         <div style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 12, padding: "12px 14px", marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: blocked ? "var(--text-secondary)" : "#16a34a" }}>
-              {blocked ? "Próximo envío disponible" : "✓ Listo para enviar"}
-            </span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: blocked ? "var(--text-secondary)" : "#16a34a" }}>{blocked ? "Próximo envío disponible" : "✓ Listo para enviar"}</span>
             <strong style={{ fontSize: 15 }}>
               {usedToday}/{perDay}
-              <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}> hoy</span>
+              <span className="muted" style={{ fontWeight: 400, fontSize: 12 }}>
+                {" "}
+                hoy
+              </span>
             </strong>
           </div>
           <div style={{ height: 8, borderRadius: 999, background: "var(--border)", overflow: "hidden" }}>
@@ -2393,27 +2377,16 @@ function ComunicacionTab({
 
         <div className="field">
           <label>Mensaje</label>
-          <textarea
-            ref={msgRef}
-            className="input"
-            rows={3}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder="Ej: ¡Hoy 2x1 en cafés! ☕ Ven y suma sellos."
-            maxLength={160}
-          />
-          <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{message.length}/160</p>
+          <textarea ref={msgRef} className="input" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ej: ¡Hoy 2x1 en cafés! ☕ Ven y suma sellos." maxLength={160} />
+          <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
+            {message.length}/160
+          </p>
         </div>
 
         {/* Live preview: how the notification lands on the casero's phone */}
         <div className="field">
           <label>Vista previa</label>
-          <NotifPreview
-            businessName={business.name}
-            logoPng={business.logoPng || cards[0]?.logoPng}
-            color={cards[0]?.cardColor || "#E53935"}
-            text={message.trim()}
-          />
+          <NotifPreview businessName={business.name} logoPng={business.logoPng || cards[0]?.logoPng} color={cards[0]?.cardColor || "#E53935"} text={message.trim()} />
         </div>
 
         <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim() || segCount === 0}>
@@ -2546,12 +2519,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
         <button className="btn" style={{ flex: "0 0 auto", width: "auto", background: "#e53935", color: "#fff" }} onClick={() => act(false)} disabled={busy}>
           {busy ? "…" : "Sumar sello"}
         </button>
-        <button
-          className="btn btn-outline"
-          style={{ flex: "0 0 auto", width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }}
-          onClick={() => setScanning(true)}
-          disabled={busy}
-        >
+        <button className="btn btn-outline" style={{ flex: "0 0 auto", width: "auto", display: "inline-flex", alignItems: "center", gap: 6 }} onClick={() => setScanning(true)} disabled={busy}>
           <ScanLine size={16} aria-hidden /> Escanear
         </button>
       </div>
@@ -2648,10 +2616,7 @@ function ClientModal({
   const canSeeContact = paid && client.consent;
   const hasRemovedPass = client.memberships.some((m) => m.passRemovedAt);
   const totalRewards = client.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0), 0);
-  const totalStamps = client.memberships.reduce(
-    (s, m) => s + (m.rewardsRedeemed || 0) * (cardsById.get(m.loyaltyCardId)?.totalSlots ?? 0) + m.currentStamps,
-    0
-  );
+  const totalStamps = client.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0) * (cardsById.get(m.loyaltyCardId)?.totalSlots ?? 0) + m.currentStamps, 0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
 
@@ -2663,10 +2628,7 @@ function ClientModal({
 
   async function deleteClient() {
     const n = client.memberships.length;
-    const msg =
-      n > 1
-        ? `¿Eliminar a ${client.name} y sus ${n} tarjetas? Se borran sus datos. No se puede deshacer.`
-        : `¿Eliminar a ${client.name}? Se borra su tarjeta y datos. No se puede deshacer.`;
+    const msg = n > 1 ? `¿Eliminar a ${client.name} y sus ${n} tarjetas? Se borran sus datos. No se puede deshacer.` : `¿Eliminar a ${client.name}? Se borra su tarjeta y datos. No se puede deshacer.`;
     if (!confirm(msg)) return;
     setBusy(true);
     setErr("");
@@ -2695,24 +2657,20 @@ function ClientModal({
         </div>
 
         {hasRemovedPass && (
-          <div
-            className="warn-box"
-            style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}
-          >
+          <div className="warn-box" style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ fontSize: 14 }}>Este casero eliminó su pase del wallet.</span>
             {!cajero && (
-              <button
-                className="btn btn-sm"
-                style={{ width: "auto", background: "#c62828", color: "#fff", flex: "0 0 auto" }}
-                onClick={deleteClient}
-                disabled={busy}
-              >
+              <button className="btn btn-sm" style={{ width: "auto", background: "#c62828", color: "#fff", flex: "0 0 auto" }} onClick={deleteClient} disabled={busy}>
                 {busy ? "Eliminando…" : "Eliminar casero"}
               </button>
             )}
           </div>
         )}
-        {err && <div className="error-box" style={{ marginBottom: 10 }}>{err}</div>}
+        {err && (
+          <div className="error-box" style={{ marginBottom: 10 }}>
+            {err}
+          </div>
+        )}
 
         <div className="detail-list">
           <DetailRow label="Casero desde" value={fmtDate(client.createdAt)} />
@@ -2723,9 +2681,7 @@ function ClientModal({
 
         {!cajero && (
           <>
-            <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
-              Contacto
-            </h4>
+            <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>Contacto</h4>
             {canSeeContact ? (
               <div className="detail-list">
                 <DetailRow label="Correo" value={client.email || "—"} />
@@ -2743,17 +2699,13 @@ function ClientModal({
                   lineHeight: 1.5,
                 }}
               >
-                {!paid
-                  ? "🔒 Mejora a un plan Café o Negocio para ver el correo y teléfono de tus caseros."
-                  : "Este casero no autorizó compartir su contacto para fines de marketing."}
+                {!paid ? "🔒 Mejora a un plan Café o Negocio para ver el correo y teléfono de tus caseros." : "Este casero no autorizó compartir su contacto para fines de marketing."}
               </div>
             )}
           </>
         )}
 
-        <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>
-          Tarjetas ({client.memberships.length})
-        </h4>
+        <h4 style={{ margin: "16px 0 4px", fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>Tarjetas ({client.memberships.length})</h4>
         <div className="detail-list">
           {client.memberships.map((m) => {
             const card = cardsById.get(m.loyaltyCardId);
@@ -2764,9 +2716,7 @@ function ClientModal({
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontWeight: 600 }}>
                     {card?.rewardDescription || "Tarjeta"}
-                    {m.passRemovedAt ? (
-                      <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#c62828" }}>· pase eliminado</span>
-                    ) : null}
+                    {m.passRemovedAt ? <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 700, color: "#c62828" }}>· pase eliminado</span> : null}
                   </div>
                   <div className="muted" style={{ fontSize: 13 }}>
                     {m.currentStamps}/{slots} sellos · {m.rewardsRedeemed || 0} canjes · {total} acumulados
