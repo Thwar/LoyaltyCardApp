@@ -1983,6 +1983,62 @@ function fmtCountdown(ms: number): string {
   return `${s}s`;
 }
 
+// Lock-screen-style mockup of how a broadcast lands on the casero's phone:
+// icon (logo on the card color) + business name + the live message text.
+function NotifPreview({ businessName, logoPng, color, text }: { businessName: string; logoPng?: string; color: string; text: string }) {
+  const empty = !text;
+  return (
+    <div style={{ background: "linear-gradient(160deg, #1e293b, #3b4d68)", borderRadius: 14, padding: "18px 14px 12px" }}>
+      <div
+        style={{
+          background: "rgba(255,255,255,0.95)",
+          borderRadius: 14,
+          padding: "10px 12px",
+          display: "flex",
+          gap: 10,
+          alignItems: "flex-start",
+          maxWidth: 420,
+          margin: "0 auto",
+          boxShadow: "0 10px 24px rgba(0,0,0,0.3)",
+        }}
+      >
+        <span
+          style={{
+            flex: "0 0 auto",
+            width: 38,
+            height: 38,
+            borderRadius: 9,
+            background: color,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+          }}
+        >
+          {logoPng ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`data:image/png;base64,${logoPng}`} alt="" style={{ maxWidth: "84%", maxHeight: "84%", objectFit: "contain" }} />
+          ) : (
+            <span style={{ color: "#fff", fontWeight: 800, fontSize: 17 }}>{(businessName[0] || "S").toUpperCase()}</span>
+          )}
+        </span>
+        <span style={{ minWidth: 0, flex: 1 }}>
+          <span style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+            <strong style={{ fontSize: 13.5, color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{businessName}</strong>
+            <span style={{ fontSize: 11, color: "#6b7280", flex: "0 0 auto" }}>ahora</span>
+          </span>
+          <span style={{ display: "block", fontSize: 13, lineHeight: 1.35, color: empty ? "#9ca3af" : "#1f2937", wordBreak: "break-word" }}>
+            {empty ? "Escribe tu mensaje arriba para verlo aquí…" : text}
+          </span>
+        </span>
+      </div>
+      <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.65)", textAlign: "center", margin: "10px 0 0" }}>
+        Así llegará la notificación al celular de tus caseros (vista aproximada).
+      </p>
+    </div>
+  );
+}
+
 function ComunicacionTab({
   business,
   planInfo,
@@ -2116,6 +2172,17 @@ function ComunicacionTab({
             maxLength={160}
           />
           <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>{message.length}/160</p>
+        </div>
+
+        {/* Live preview: how the notification lands on the casero's phone */}
+        <div className="field">
+          <label>Vista previa</label>
+          <NotifPreview
+            businessName={business.name}
+            logoPng={business.logoPng || cards[0]?.logoPng}
+            color={cards[0]?.cardColor || "#E53935"}
+            text={message.trim()}
+          />
         </div>
 
         <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim() || segCount === 0}>
