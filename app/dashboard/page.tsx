@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { onAuthStateChanged, signOut } from "firebase/auth";
@@ -2057,6 +2057,7 @@ function ComunicacionTab({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const msgRef = useRef<HTMLTextAreaElement>(null);
   // Live clock so the countdown + progress bar tick every second.
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -2092,6 +2093,14 @@ function ComunicacionTab({
   const segCount = customers.filter((c) => inSegment(c, segment, slotsById.get(c.loyaltyCardId) ?? 0, now)).length;
 
   async function send() {
+    // Guard against accidental repeats: same text already sent in the last 24h
+    // (double-clicks and re-sends burn the daily quota).
+    const dup = recent.find((h) => h.message.trim() === message.trim());
+    if (dup) {
+      const mins = Math.max(1, Math.round((now - dup.at) / 60000));
+      const ago = mins < 60 ? `hace ${mins} min` : `hace ${Math.round(mins / 60)} h`;
+      if (!confirm(`Ya enviaste este mismo mensaje ${ago}. ¿Enviarlo de nuevo?`)) return;
+    }
     setErr("");
     setMsg("");
     setBusy(true);
@@ -2164,6 +2173,7 @@ function ComunicacionTab({
         <div className="field">
           <label>Mensaje</label>
           <textarea
+            ref={msgRef}
             className="input"
             rows={3}
             value={message}
@@ -2197,13 +2207,27 @@ function ComunicacionTab({
                 .slice()
                 .reverse()
                 .map((h) => (
-                  <li key={h.at} style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 14 }}>{h.message}</div>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                      {new Date(h.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
-                      {h.segment ? ` · ${h.segment}` : ""}
-                      {h.count != null ? ` · ${h.count} casero(s)` : ""}
-                    </div>
+                  <li key={h.at} style={{ background: "var(--bg-soft)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 12px", display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, wordBreak: "break-word" }}>{h.message}</div>
+                      <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                        {new Date(h.at).toLocaleString("es-ES", { dateStyle: "medium", timeStyle: "short" })}
+                        {h.segment ? ` · ${h.segment}` : ""}
+                        {h.count != null ? ` · ${h.count} casero(s)` : ""}
+                      </div>
+                    </span>
+                    <button
+                      className="btn btn-sm btn-ghost"
+                      style={{ width: "auto", flex: "0 0 auto" }}
+                      title="Copiar este mensaje al editor"
+                      onClick={() => {
+                        setMessage(h.message);
+                        msgRef.current?.focus();
+                        msgRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }}
+                    >
+                      Usar de nuevo
+                    </button>
                   </li>
                 ))}
             </ul>
