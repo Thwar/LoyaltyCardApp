@@ -181,26 +181,26 @@ The pivot is **mostly reuse**. Your codebase already targets web (react-native-w
 | **Gratis** (acquisition wedge) | Bs 0 | $0 | 1 stamp card, 1 location, ~50 active cards, Google + Apple Wallet, "Soy Casero" badge on pass | LoyalzClub has no free tier |
 | **Café** (entry) | **Bs 99** | **~$14** | Unlimited cards, 1 location, 1 stamp program, unlimited Google/Apple passes + stamp notifications, basic analytics | **64% under** Start ($39) |
 | **Negocio** (most popular) | **Bs 249** | **~$36** | 3 programs, 3 locations, up to 10 staff seats, referrals, customer segments, WhatsApp share tools | **60% under** Grow ($89) |
-| **Cadena** (multi-location) | **Bs 599** | **~$86** | 10 programs, 10 locations, 50 staff, automation, basic API/export | **65% under** Business ($249) |
+| **Franquicia** (multi-location; formerly "Cadena") | **Bs 599** | **~$86** | 10 programs, 10 locations, 50 staff, automation, basic API/export | **65% under** Business ($249) |
 
 **Annual:** offer ~2 months free (~17% off) to lock in cash and reduce churn-checking overhead — critical for a solo founder.
 
 **Margin protection:** at Bs 99 (~$14) with near-zero marginal cost on Google Wallet, you keep nearly all of it. If you *buy* PassKit for the iOS minority, watch per-pass fees on long-lived loyalty cards — the one line item that could erode the Café tier. Bring Apple in-house once you scale to protect this.
 
-### Future tiers & feature dimensions (roadmap — not yet built)
+### Future tiers & feature dimensions (roadmap — partially shipped; status updated 2026-06-09)
 
-Three new dimensions are planned to differentiate the upper tiers beyond raw card/client counts: **locations** (sucursales), **VIP / membership cards** (a premium pass type, distinct from the stamp-card mechanic), and **notifications per location** (a per-branch broadcast allowance, scoping today's per-business broadcast limit down to each branch).
+Three new dimensions are planned to differentiate the upper tiers beyond raw card/client counts: **locations** (sucursales), **VIP / membership cards** (a premium pass type, distinct from the stamp-card mechanic — **V1 shipped**, see below), and **notifications per location** (a per-branch broadcast allowance, scoping today's per-business broadcast limit down to each branch).
 
 | Tier | Stamp cards | Locations | VIP / membership cards | Notifications per location |
 |---|---|---|---|---|
 | **Negocio** (current top paid) | 3 | 3 | 1 | 3 |
 | **Franquicia** (future) | 10 | 10 | 3 | up to 5 |
 
-- **Franquicia** is the planned franchise / multi-location tier above Negocio (the productized evolution of the "Cadena" concept in the table above — reconcile the two names before launch). Target it at chains and franchises that need per-branch programs, branch-scoped messaging, and premium membership cards.
-- **VIP / membership cards (membresías)** are a new pass *type*, distinct from the stamp-card mechanic. A membership is a digital card that grants access to **exclusive benefits for a defined period or under set conditions** — the vehicle for **recurring / subscription revenue and VIP-club loyalty**. Typical use cases: gyms (monthly/annual access), salons/estética (treatment plans), cafés/restaurants (VIP club, member freebies/discounts), recurring services like car washes (monthly plan with N uses). Attributes to model: **expiry date, limited vs unlimited access, visit/usage control, member levels/tiers, automatic notifications, full customer registry**. Contrast with the other card types — stamps = "complete visits → earn a prize"; cashback = accrue balance/points; gift card = prepaid balance; discount = fixed/variable benefit; **membership = access to exclusive benefits/services**. Building this means a second pass template alongside the stamp card (different fields: estado de socio, vence, usos), not just a plan flag.
-- **Notifications per location** moves the broadcast rate limit from per-business to per-branch (Negocio: 3/location; Franquicia: up to 5/location).
+- **Franquicia** is the planned franchise / multi-location tier above Negocio. Naming reconciled: **"Franquicia" is the official name** (it replaces the earlier "Cadena" working title in the pricing table). Target it at chains and franchises that need per-branch programs, branch-scoped messaging, and premium membership cards. Not yet in `lib/plans.ts`.
+- **VIP / membership cards (membresías) — V1 SHIPPED (June 2026).** A second pass type alongside the stamp card, built as parallel infrastructure (`membershipPrograms`/`members`/`visits` collections, `lib/membership.ts`, "Membresías" dashboard tab with its own dark VIP theme, public enrollment at `/m/[programId]`, Apple `generic` + Google `GenericObject` passes sharing the existing Apple pass type, live visit/renewal pass updates, member audit history). **V1 scope:** active/expired member pass, offline/manual fees (owner extends expiry by hand), configurable visit tracking (unlimited OR a counting-down allowance), no member photo. Gated to **Negocio = 1 program** (`plans.maxMemberships`). **Remaining — Phase 2:** member tiers (Silver/Gold/VIP) with per-tier limits/benefits/pricing, free trials (0–30 days), Franquicia = 3 programs, revenue/MRR/LTV analytics. **Phase 3:** online recurring payments (deferred — card-on-file is uncommon in Bolivia; revisit on demand).
+- **Notifications per location** moves the broadcast rate limit from per-business to per-branch (Negocio: 3/location; Franquicia: up to 5/location). Not yet implemented.
 
-*None of this is implemented yet — `lib/plans.ts` currently ships Gratis / Café / Negocio with no location, VIP-card, or per-location notification concept. This subsection records the intended direction.*
+*Status: `lib/plans.ts` ships Gratis / Café / Negocio with `maxMemberships` (Negocio = 1) live; **locations and per-location notifications remain unimplemented**, and the Franquicia tier itself is still future work.*
 
 ### Card editor roadmap (competitor-inspired)
 
@@ -215,7 +215,7 @@ Benchmarked against Loyalz's card designer. **Shipped:** stamp **shapes** (circl
 | **Dedicated notification Icon (512×512)** vs logo | low | minor — cleaner notifications |
 | Editable field labels; show-logo / show-bg join-form toggles | low | **skip** — config sprawl; bad for concierge-onboarded SMEs |
 | Multi-step wizard (Type→Settings→Design→Info) | medium | skip *until* the editor grows (more card types) |
-| Multiple card **types** (cashback, membership/VIP, gift, discount) | high | strategic — see membership note above |
+| Multiple card **types** (cashback, membership/VIP, gift, discount) | high | **membership/VIP V1 shipped** (see above); cashback/gift/discount remain future |
 
 **Deliberate non-goals:** Loyalz exposes ~7 color pickers, field renaming, and form toggles. We intentionally keep fewer, well-chosen knobs — simplicity is a feature for low-digital-literacy merchants we hand-onboard. Icon set is curated (~15 solid glyphs by vertical), not a thousand-icon picker, because thin/complex icons don't read as a 1-bit stamp at pass size.
 
@@ -257,16 +257,18 @@ Benchmarked against Loyalz's card designer. **Shipped:** stamp **shapes** (circl
 
 Each phase has a **verification checkpoint** — don't advance until it's green.
 
-**Phase 0 — Validate (1–2 weeks).** No new code. 5–10 café conversations; secure 3 verbal pilot commitments; confirm dLocal Go covers Bolivia + the SFV/NIT path with a tax advisor; create Apple Developer ($99) and Google Cloud + Wallet Issuer accounts and **request Google publishing access immediately** (can take days–weeks — start the clock now).
+> **Status (updated 2026-06-09): Phases 1 and 2 are CODE-COMPLETE and live on www.soycasero.com** — and the build went beyond plan: Apple Wallet was brought in-house from day one (no buy-option needed), plus shipped extras the plan deferred: cajero (cashier) logins, scan-to-stamp via camera, customizable wallet notifications, segmented broadcasts, CSV export, white-label, the referral program, a real enrollable demo (`/ejemplo`), and **Membership/VIP cards V1** (§7). What remains open is **commercial**: Phase 0's café validation, confirming Google Wallet publishing access (not demo mode), billing (manual god-mode plan management for now, per §7's "collect via QR" guidance), and the Phase 2 cert-renewal reminder.
+
+**Phase 0 — Validate (1–2 weeks). _Status: the open gate — on the founder._** No new code. 5–10 café conversations; secure 3 verbal pilot commitments; confirm dLocal Go covers Bolivia + the SFV/NIT path with a tax advisor; create Apple Developer ($99) and Google Cloud + Wallet Issuer accounts and **request Google publishing access immediately** (can take days–weeks — start the clock now).
 > **Checkpoint:** ≥3 café owners say "yes, I'd pay" AND Google publishing-access request submitted. If you can't get 3 yeses, stop and rethink before building.
 
-**Phase 1 — MVP to first paying customer (3–5 weeks).** Strip RN UI; stand up Next.js dashboard reusing your Firestore services; build the customer registration page; build the **Google Wallet** issue + PATCH-update path in-house; cover iOS via **PassKit/Pass2U buy-option** (or stub it); build the staff scan PWA; move `addStamp`/`claimReward` server-side; wire dLocal Go or QR collection.
-> **Checkpoint:** A real café is live, real customers hold real Google Wallet passes, a stamp added in the PWA appears on a phone, AND at least one café has paid (even a discounted first month). The milestone that matters.
+**Phase 1 — MVP to first paying customer (3–5 weeks). _Status: DONE (except payment collection wiring — manual for now)._** Strip RN UI; stand up Next.js dashboard reusing your Firestore services; build the customer registration page; build the **Google Wallet** issue + PATCH-update path in-house; ~~cover iOS via PassKit/Pass2U buy-option~~ (superseded: Apple built in-house immediately); build the staff scan PWA; move `addStamp`/`claimReward` server-side; wire dLocal Go or QR collection.
+> **Checkpoint:** A real café is live, real customers hold real Google Wallet passes, a stamp added in the PWA appears on a phone, AND at least one café has paid (even a discounted first month). The milestone that matters — **still the open item: first paying café.**
 
-**Phase 2 — Harden + Apple in-house + first scale (4–6 weeks).** Bring **Apple Wallet in-house** (`passkit-generator` + APNs web service + image regen) to kill per-pass fees; add referrals (merchant + customer); add segmentation/basic analytics; polish onboarding so merchants can self-serve setup; set up annual cert-renewal reminders.
+**Phase 2 — Harden + Apple in-house + first scale (4–6 weeks). _Status: DONE (cert-renewal reminder still pending)._** Bring **Apple Wallet in-house** (`passkit-generator` + APNs web service + image regen) to kill per-pass fees; add referrals (merchant + customer); add segmentation/basic analytics; polish onboarding so merchants can self-serve setup; set up annual cert-renewal reminders.
 > **Checkpoint:** 5–10 paying customers; self-serve signup works without you holding their hand; both wallets update reliably on-device.
 
-**Phase 3 — Grow the business (ongoing).** Multi-location (Cadena tier), automation/scheduled push, WhatsApp deeper integration, possibly the US-LLC + Stripe route as MRR justifies it, and consider a white-label/agency angle (the lever behind LoyalzClub's multi-country footprint) for expansion beyond Bolivia.
+**Phase 3 — Grow the business (ongoing). _Status: CURRENT phase._** Multi-location (**Franquicia** tier), membership tiers + trials (§7 Phase 2), automation/scheduled push, WhatsApp deeper integration, possibly the US-LLC + Stripe route as MRR justifies it, and consider a white-label/agency angle (the lever behind LoyalzClub's multi-country footprint) for expansion beyond Bolivia.
 > **Checkpoint:** ~Bs 5,000+ MRR and churn under control (<5%/mo) before investing in expansion features.
 
 ---
@@ -289,16 +291,18 @@ Each phase has a **verification checkpoint** — don't advance until it's green.
 
 ## 11. Immediate next 7–14 day action checklist
 
-1. **Talk to 5–10 café owners** in your city. Show Sede Café/LoyalzClub as the reference. Ask the Bs 99/month question. Get ≥3 pilot commitments. *(This gates everything.)*
-2. **Enroll in the Apple Developer Program** ($99/yr) and create a **Google Cloud project + Google Wallet Issuer account.**
-3. **Submit Google "Request publishing access" now** — complete the Business Profile + payments profile + one demo Passes Class. Start the approval clock before you need it.
-4. **Contact dLocal Go** to confirm Bolivia coverage, supported methods (cards/QR/Tigo Money), fees, settlement currency. In parallel, decide a QR/bank-transfer manual fallback for the very first invoice.
-5. **Talk to a Bolivian tax advisor** about empresa unipersonal (SEPREC), NIT, 13% IVA, and mandatory SFV electronic invoicing — confirm the cheapest compliant way to bill.
-6. **Spin up the pivot repo** from the existing codebase: delete `src/screens`, `src/navigation`, `src/components`, native config/deps; keep `src/services/*`, `src/types`, `firestore.rules`, `assets`, `api/`. Confirm the web build still runs.
-7. **Rotate secrets** — the hardcoded Resend key in `send-welcome-email.js`, Sentry DSN, and any Firebase fallbacks in `config/env.ts`.
-8. **Build a Google Wallet "Hello World"**: a script that creates a LoyaltyClass + LoyaltyObject and produces a working Save-to-Wallet link you can scan with your own Android phone. Proves the core mechanic end-to-end in an afternoon and is the foundation of Phase 1.
-9. **Decide the iOS approach for launch** — Google-only at first (defensible at ~85%+ Android) vs. a quick PassKit/Pass2U buy-option for the iOS minority. Pick one; don't build in-house Apple yet.
-10. **Draft the one-page Spanish pilot offer** ("3 meses gratis, yo te lo configuro") to hand to the cafés that said yes in step 1.
+*(Status markers added 2026-06-09 — the build items are done; the remaining open items are commercial.)*
+
+1. **[OPEN — gates everything]** **Talk to 5–10 café owners** in your city. Show Sede Café/LoyalzClub as the reference. Ask the Bs 99/month question. Get ≥3 pilot commitments.
+2. **[DONE]** ~~Enroll in the Apple Developer Program ($99/yr) and create a Google Cloud project + Google Wallet Issuer account.~~ Both live — passes issue from production.
+3. **[VERIFY]** **Google "Request publishing access"** — confirm in the Google Pay & Wallet Console that the issuer is approved for public access (not demo mode). The earlier "Android won't add the card" episode pointed at issuer/test-account state; this is the one potential hard launch blocker.
+4. **[OPEN]** **Contact dLocal Go** to confirm Bolivia coverage, supported methods (cards/QR/Tigo Money), fees, settlement currency. In parallel, decide a QR/bank-transfer manual fallback for the very first invoice. *(Interim billing today: manual plan management in god mode + QR collection.)*
+5. **[OPEN]** **Talk to a Bolivian tax advisor** about empresa unipersonal (SEPREC), NIT, 13% IVA, and mandatory SFV electronic invoicing — confirm the cheapest compliant way to bill.
+6. **[DONE]** ~~Spin up the pivot repo.~~ The repo is the pivot — Next.js App Router on Vercel, RN code gone, `main` tracks production.
+7. **[DONE/VERIFY]** Secrets — the leaked Firebase service-account key was rotated; secrets live only in `.env.local`/`.certs` (gitignored). Double-check the old Resend key / Sentry DSN from the RN era are dead if those accounts still exist.
+8. **[DONE]** ~~Google Wallet "Hello World".~~ Superseded — full Google Wallet loyalty + membership integration is live in production.
+9. **[DONE]** ~~Decide the iOS approach.~~ Decided and built: Apple Wallet fully in-house (`passkit-generator` + APNs + PassKit web service) from day one; no per-pass vendor fees.
+10. **[OPEN]** **Draft the one-page Spanish pilot offer** ("3 meses gratis, yo te lo configuro") to hand to the cafés that said yes in step 1.
 
 ---
 
