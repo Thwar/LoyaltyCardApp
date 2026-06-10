@@ -90,11 +90,13 @@ export function CardPreview({
   );
 }
 
-// Real, scannable QR of the customer's code — mirrors the QR variant of the pass.
+// Real, scannable QR of the customer's code — mirrors the QR variant of the pass:
+// a compact centered white box, not a full-width strip.
 function PreviewQr({ code }: { code: string }) {
   return (
-    <div style={{ background: "#fff", borderRadius: 10, padding: 12, marginTop: 16, display: "flex", justifyContent: "center" }}>
-      <QrCode value={code} size={132} />
+    <div style={{ background: "#fff", borderRadius: 10, padding: "10px 14px 6px", margin: "16px auto 0", width: "fit-content", textAlign: "center" }}>
+      <QrCode value={code} size={116} />
+      <div style={{ fontSize: 10.5, color: "#333", paddingTop: 2, paddingBottom: 2 }}>Desarrollado por soycasero.com</div>
     </div>
   );
 }
@@ -106,11 +108,13 @@ function PreviewQr({ code }: { code: string }) {
 // actual scannable code lives on the wallet pass; this just mirrors its look on
 // the landing preview. Loaded from the canonical domain so it survives the apex.
 function PreviewBarcode() {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || "https://www.soycasero.com";
   return (
-    <div style={{ background: "#fff", borderRadius: 10, padding: "12px 18px", marginTop: 16 }}>
+    // Sized like the real Apple Wallet pass: a compact centered box (~70% width), not a full-width strip.
+    <div style={{ background: "#fff", borderRadius: 10, padding: "10px 14px 4px", margin: "16px auto 0", width: "min(280px, 78%)" }}>
+      {/* Served by this same app — a relative URL works on any host/port (localhost, previews, prod). */}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`${base}/homepage/barcode.svg`} alt="" aria-hidden="true" style={{ display: "block", width: "100%", height: "auto" }} />
+      <img src="/homepage/barcode.svg" alt="" aria-hidden="true" style={{ display: "block", width: "100%", height: "auto" }} />
+      <div style={{ fontSize: 10.5, color: "#333", textAlign: "center", paddingTop: 3, paddingBottom: 2 }}>Desarrollado por soycasero.com</div>
     </div>
   );
 }
