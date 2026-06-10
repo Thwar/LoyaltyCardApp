@@ -1970,33 +1970,47 @@ function QrCounterKit({ url, card }: { url: string; card: LoyaltyCard }) {
         Inscribe caseros — pon este QR en tu mostrador
       </p>
 
-      {/* Table-tent mockup on a "wood counter" backdrop */}
-      <div style={{ background: "linear-gradient(165deg, #9a6a45, #6b4327)", borderRadius: 14, padding: "26px 16px 14px" }}>
-        <div style={{ background: "#fff", borderRadius: 10, maxWidth: 340, margin: "0 auto", padding: "18px 18px 14px", textAlign: "center", boxShadow: "0 18px 34px rgba(0,0,0,0.4)" }}>
+      {/* Photoreal mockup: the card's branding composited onto a real blank
+          table-tent photo; the overlay percentages are tuned to the tent's face. */}
+      <div style={{ position: "relative", maxWidth: 430, margin: "0 auto", borderRadius: 12, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/physical-signage-bg.jpg" alt="Cartel en el mostrador" style={{ width: "100%", height: "auto", display: "block" }} />
+        <div
+          style={{
+            position: "absolute",
+            top: "22%",
+            left: "20%",
+            right: "12.5%",
+            bottom: "13.5%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+            overflow: "hidden",
+          }}
+        >
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={card.businessName} style={{ maxHeight: 40, maxWidth: 170, objectFit: "contain", display: "block", margin: "0 auto 8px" }} />
+            <img src={logo} alt={card.businessName} style={{ maxHeight: 30, maxWidth: 140, objectFit: "contain", display: "block", margin: "0 auto 5px" }} />
           ) : (
-            <div style={{ fontWeight: 800, fontSize: 18, color: card.cardColor, marginBottom: 6 }}>{card.businessName}</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: card.cardColor, marginBottom: 4, lineHeight: 1.15 }}>{card.businessName}</div>
           )}
-          <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 2px", color: "#111" }}>¡Tranquilo, no es otra app!</p>
-          <p style={{ fontSize: 13, color: "#444", margin: "0 0 10px" }}>
+          <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 2px", color: "#111", lineHeight: 1.2 }}>¡Tranquilo, no es otra app!</p>
+          <p style={{ fontSize: 11, color: "#444", margin: "0 0 7px", lineHeight: 1.3, maxWidth: 220 }}>
             Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.
           </p>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <QrCode value={url} size={150} />
+            <QrCode value={url} size={104} />
           </div>
-          <p style={{ fontSize: 12.5, color: "#444", margin: "8px 0 10px" }}>🎁 {card.rewardDescription}</p>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}>
+          <p style={{ fontSize: 10.5, color: "#444", margin: "6px 0 7px", lineHeight: 1.3, maxWidth: 220 }}>🎁 {card.rewardDescription}</p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 6, alignItems: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: 27, width: "auto" }} />
+            <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: 20, width: "auto" }} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={GOOGLE_WALLET_BADGE} alt="Google Wallet" style={{ height: 27, width: "auto" }} />
+            <img src={GOOGLE_WALLET_BADGE} alt="Google Wallet" style={{ height: 20, width: "auto" }} />
           </div>
         </div>
-        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.85)", fontSize: 12, margin: "12px 0 0" }}>
-          Así se vería impreso en tu mostrador
-        </p>
       </div>
 
       <button className="btn btn-primary mt" onClick={downloadQr}>
