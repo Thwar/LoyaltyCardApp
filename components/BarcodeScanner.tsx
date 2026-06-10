@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 
-// Camera barcode/QR scanner using the native BarcodeDetector API (great on
-// Android Chrome — reads the pass's PDF417/QR). Falls back to a message where
-// it's unsupported (e.g. iOS Safari), so the cashier can type the code instead.
+// Camera barcode/QR scanner. Uses the native BarcodeDetector API where available
+// (Android Chrome — fast, reads the pass's PDF417/QR) and falls back to a ZXing
+// JS decoder elsewhere (iOS Safari has no BarcodeDetector), so iPhones/iPads
+// can scan too. The ZXing bundle is imported lazily, only when needed.
 export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: string) => void; onClose: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const onDetectedRef = useRef(onDetected);
@@ -14,20 +15,23 @@ export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: str
     let stream: MediaStream | null = null;
     let raf = 0;
     let stopped = false;
+    let zxing: { stop(): void } | null = null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const BD = typeof window !== "undefined" ? (window as any).BarcodeDetector : undefined;
 
     function cleanup() {
       stopped = true;
       cancelAnimationFrame(raf);
+      zxing?.stop();
       stream?.getTracks().forEach((t) => t.stop());
     }
 
+    function found(value: string) {
+      cleanup();
+      onDetectedRef.current(value);
+    }
+
     async function start() {
-      if (!BD) {
-        setErr("Tu navegador no permite escanear aquí. Escribe el código a mano (o usa Chrome en Android).");
-        return;
-      }
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
         if (stopped) {
@@ -38,23 +42,45 @@ export function BarcodeScanner({ onDetected, onClose }: { onDetected: (code: str
         if (!v) return;
         v.srcObject = stream;
         await v.play();
-        const detector = new BD(); // detect all supported formats (PDF417, QR, etc.)
-        const tick = async () => {
-          if (stopped) return;
-          try {
-            const codes = await detector.detect(v);
-            const value = codes?.[0]?.rawValue ? String(codes[0].rawValue).trim() : "";
-            if (value) {
-              cleanup();
-              onDetectedRef.current(value);
-              return;
+
+        if (BD) {
+          const detector = new BD(); // detect all supported formats (PDF417, QR, etc.)
+          const tick = async () => {
+            if (stopped) return;
+            try {
+              const codes = await detector.detect(v);
+              const value = codes?.[0]?.rawValue ? String(codes[0].rawValue).trim() : "";
+              if (value) return found(value);
+            } catch {
+              /* transient detect error — keep scanning */
             }
-          } catch {
-            /* transient detect error — keep scanning */
-          }
+            raf = requestAnimationFrame(tick);
+          };
           raf = requestAnimationFrame(tick);
-        };
-        raf = requestAnimationFrame(tick);
+          return;
+        }
+
+        // No BarcodeDetector (iOS Safari et al.) → ZXing JS decoder.
+        const [{ BrowserMultiFormatReader }, { DecodeHintType, BarcodeFormat }] = await Promise.all([
+          import("@zxing/browser"),
+          import("@zxing/library"),
+        ]);
+        if (stopped) return;
+        const hints = new Map();
+        hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.PDF_417, BarcodeFormat.QR_CODE]);
+        hints.set(DecodeHintType.TRY_HARDER, true);
+        const reader = new BrowserMultiFormatReader(hints);
+        zxing = await reader.decodeFromStream(stream, v, (result, _error, controls) => {
+          if (stopped) {
+            controls.stop();
+            return;
+          }
+          const value = result ? String(result.getText()).trim() : "";
+          if (value) {
+            controls.stop();
+            found(value);
+          }
+        });
       } catch {
         setErr("No se pudo acceder a la cámara. Revisa los permisos del navegador.");
       }

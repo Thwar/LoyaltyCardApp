@@ -598,6 +598,7 @@ function CardManager({
           planInfo={planInfo}
           onChanged={onChanged}
           onSelect={setSelected}
+          onShowQr={() => setTab("tarjetas")}
         />
       ) : tab === "tarjetas" ? (
         <TarjetasTab
@@ -1332,6 +1333,7 @@ function ResumenTab({
   planInfo,
   onChanged,
   onSelect,
+  onShowQr,
   cajero = false,
 }: {
   cards: LoyaltyCard[];
@@ -1340,6 +1342,7 @@ function ResumenTab({
   planInfo: PlanInfo;
   onChanged: () => void;
   onSelect: (c: Client) => void;
+  onShowQr?: () => void; // owner only: jump to the Tarjetas tab (enrollment QR)
   cajero?: boolean;
 }) {
   const [sortBy, setSortBy] = useState<"recent" | "stamps" | "rewards" | "closest">("recent");
@@ -1472,17 +1475,17 @@ function ResumenTab({
         <div
           className="card"
           style={{
-            border: `1px solid ${nearLimit ? "#e0796f" : "#f3c0bd"}`,
-            background: nearLimit ? "#fbdedb" : "#fbece9",
+            // Neutral until ~80% of the cap — red is reserved for when it matters.
+            ...(nearLimit ? { border: "1px solid #e0796f", background: "#fbdedb" } : {}),
             marginTop: 14,
             marginBottom: 16,
           }}
         >
           <div className="row spread" style={{ alignItems: "center", marginBottom: 12 }}>
             <h3 style={{ fontSize: 17, margin: 0 }}>👥 Caseros activos</h3>
-            <span style={{ fontWeight: 800, fontSize: 22, color: nearLimit ? "#c62828" : "var(--primary)" }}>{limitLabel}</span>
+            <span style={{ fontWeight: 800, fontSize: 22, color: nearLimit ? "#c62828" : "inherit" }}>{limitLabel}</span>
           </div>
-          <div className="progress" style={{ background: "#fff" }}>
+          <div className="progress" style={nearLimit ? { background: "#fff" } : undefined}>
             <div className="progress-fill" style={{ width: `${pct}%`, background: nearLimit ? "#c62828" : undefined }} />
           </div>
           <p style={{ fontSize: 14, marginTop: 10, marginBottom: 0, color: nearLimit ? "#c62828" : "var(--text-secondary)", fontWeight: nearLimit ? 600 : 400 }}>
@@ -1716,7 +1719,16 @@ function ResumenTab({
           </div>
         </div>
         {clients.length === 0 ? (
-          <p className="muted mt">Aún no tienes caseros inscritos.</p>
+          <div className="mt">
+            <p className="muted" style={{ marginBottom: onShowQr ? 12 : 0 }}>
+              Aún no tienes caseros. Comparte el QR de tu tarjeta en el mostrador para inscribir al primero.
+            </p>
+            {onShowQr && (
+              <button className="btn btn-primary" style={{ width: "auto" }} onClick={onShowQr}>
+                Ver mi QR de inscripción
+              </button>
+            )}
+          </div>
         ) : (
           <div className="mt">
             {shown.map((cl) => {
@@ -2164,6 +2176,9 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [msg, setMsg] = useState<{ kind: "ok" | "err" | "full"; text: string } | null>(null);
+  // Code of a FULL card awaiting the redeem confirmation (the only moment the
+  // redeem action exists — there's no standalone redeem button to mis-tap).
+  const [pendingRedeem, setPendingRedeem] = useState<string | null>(null);
 
   async function act(redeem: boolean, override?: string) {
     if (busy) return; // guard against double-submit (Enter + click, double-tap, scan)
@@ -2171,6 +2186,7 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
     if (!cc) return setMsg({ kind: "err", text: "Ingresa el código del casero." });
     setBusy(true);
     setMsg(null);
+    if (!redeem) setPendingRedeem(null);
     const res = await authedFetch("/api/stamp", {
       method: "POST",
       body: JSON.stringify({ cardCode: cc, redeem }),
@@ -2181,10 +2197,13 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
 
     if (json.redeemed) {
       setMsg({ kind: "ok", text: `🎁 Recompensa canjeada para ${json.customerName || "el casero"}. Tarjeta reiniciada.` });
-    } else if (json.alreadyFull) {
-      setMsg({ kind: "full", text: "Esta tarjeta ya está completa. Pulsa “Canjear recompensa”." });
-    } else if (json.completed) {
-      setMsg({ kind: "full", text: `¡Tarjeta completa (${json.currentStamps}/${json.totalSlots})! Lista para canjear.` });
+      setPendingRedeem(null);
+      setCode("");
+    } else if (json.alreadyFull || json.completed) {
+      // Full card (just completed or already was) → offer the redeem in context.
+      setMsg({ kind: "full", text: `Tarjeta completa (${json.currentStamps}/${json.totalSlots}) 🎁 ¿Canjear la recompensa?` });
+      setPendingRedeem(cc);
+      setCode("");
     } else {
       setMsg({ kind: "ok", text: `✅ Sello agregado: ${json.currentStamps}/${json.totalSlots}` });
       setCode("");
@@ -2195,8 +2214,13 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
   return (
     <div className="card mt">
       <h3 style={{ fontSize: 18 }}>Sumar un sello</h3>
-      <p className="muted">Escribe el código de la tarjeta del casero, o escanéalo con la cámara.</p>
+      <p className="muted">Escribe el código de la tarjeta del casero, o escanéalo con la cámara. Si la tarjeta está llena, aquí mismo canjeas la recompensa.</p>
       {msg && <div className={msg.kind === "err" ? "error-box" : msg.kind === "full" ? "warn-box" : "success-box"}>{msg.text}</div>}
+      {pendingRedeem && (
+        <button className="btn" style={{ marginBottom: 10, background: "#15803d", color: "#fff" }} onClick={() => act(true, pendingRedeem)} disabled={busy}>
+          🎁 Canjear recompensa (código {pendingRedeem})
+        </button>
+      )}
       <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
         <input
           className="input"
@@ -2219,9 +2243,6 @@ function StampBox({ onChanged }: { onChanged: () => void }) {
           <ScanLine size={16} aria-hidden /> Escanear
         </button>
       </div>
-      <button className="btn" style={{ marginTop: 10, background: "#15803d", color: "#fff" }} onClick={() => act(true)} disabled={busy}>
-        🎁 Canjear recompensa
-      </button>
 
       {scanning && (
         <BarcodeScanner

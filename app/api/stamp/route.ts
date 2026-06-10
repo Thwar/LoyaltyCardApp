@@ -48,10 +48,15 @@ export async function POST(req: Request) {
     // at once) can't over-stamp, double-redeem, or double-pay a referral.
     type StampTx =
       | { kind: "full"; current: number }
+      | { kind: "notFull"; current: number }
       | { kind: "ok"; data: DocumentData; newStamps: number; completed: boolean; redeemed: boolean; awardReferral: boolean; eventMessage: string };
     const result = await adminDb().runTransaction<StampTx>(async (t) => {
       const d = (await t.get(docRef)).data() || {};
       if (redeem) {
+        // Only a FULL card can be redeemed — otherwise a mistaken tap would wipe
+        // the customer's progress and log a reward that never happened.
+        const current = Number(d.currentStamps || 0);
+        if (current < totalSlots) return { kind: "notFull", current };
         const eventMessage = renderNotif(tmplRedeem, 0, totalSlots);
         t.update(docRef, {
           currentStamps: 0,
@@ -94,6 +99,12 @@ export async function POST(req: Request) {
 
     if (result.kind === "full") {
       return NextResponse.json({ currentStamps: result.current, totalSlots, completed: true, alreadyFull: true });
+    }
+    if (result.kind === "notFull") {
+      return NextResponse.json(
+        { error: `La tarjeta no está completa (${result.current}/${totalSlots}). Solo se puede canjear con la tarjeta llena.` },
+        { status: 400 }
+      );
     }
 
     const { data, newStamps, completed, redeemed, eventMessage } = result;
