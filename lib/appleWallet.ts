@@ -197,7 +197,7 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
     pass.backFields.push({ key: "poweredBy", label: "Acerca de", value: "Desarrollado por SoyCasero.com" });
   }
   pass.setBarcodes({
-    format: "PKBarcodeFormatPDF417",
+    format: card.barcodeType === "qr" ? "PKBarcodeFormatQR" : "PKBarcodeFormatPDF417",
     message: customer.cardCode,
     altText: hideBranding ? `Código ${customer.cardCode}` : "Desarrollado por soycasero.com",
     messageEncoding: "iso-8859-1",

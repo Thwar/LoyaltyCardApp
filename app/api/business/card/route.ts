@@ -39,6 +39,9 @@ export async function POST(req: Request) {
     const shapeRaw = String(body.stampShape || "circle") as StampShape;
     const stampShape = paid && STAMP_SHAPE_IDS.includes(shapeRaw) ? shapeRaw : "circle";
 
+    // Scannable code on the pass: barras (PDF417, default) or QR. All plans.
+    const barcodeType = body.barcodeType === "qr" ? "qr" : "pdf417";
+
     // Custom notification templates are paid-only; free plans store none (defaults apply).
     const notif = (v: unknown) => (paid ? String(v || "").trim().slice(0, 180) : "");
     const stampMessage = notif(body.stampMessage);
@@ -82,6 +85,7 @@ export async function POST(req: Request) {
       cardColor,
       textColor,
       stampShape,
+      barcodeType,
       logoPng,
     };
 

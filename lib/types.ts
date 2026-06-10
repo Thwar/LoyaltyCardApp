@@ -49,6 +49,9 @@ export interface Business {
   createdAt?: number;
 }
 
+// The scannable code printed on the wallet pass (staff scans it to add stamps).
+export type BarcodeType = "pdf417" | "qr";
+
 export type StampShape =
   | "circle" | "square" | "star" | "diamond" | "heart" // geometric
   | "coffee" | "beer" | "wine" | "pizza" | "burger" | "icecream" | "cookie" | "bread" // food & drink
@@ -69,6 +72,7 @@ export interface LoyaltyCard {
   cardColor: string;
   textColor?: string;
   stampShape?: StampShape; // stamp icon shape (paid plans); default circle
+  barcodeType?: BarcodeType; // code on the pass: pdf417 (barras, default) or qr
   logoPng?: string; // optional business logo (base64 PNG), shown instead of the name
   isActive: boolean;
   createdAt?: number;

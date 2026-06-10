@@ -1,5 +1,6 @@
 import { stampShapeMarkup } from "@/lib/stampShapes";
-import type { StampShape } from "@/lib/types";
+import type { BarcodeType, StampShape } from "@/lib/types";
+import { QrCode } from "./QrCode";
 
 // Stamp-card preview shown in the dashboard + enrollment page.
 // (The Apple Wallet pass renders its own strip image; this is just the web preview.)
@@ -15,6 +16,7 @@ export function CardPreview({
   lastVisit = "Hoy",
   showBarcode = false,
   stampShape = "circle",
+  barcodeType = "pdf417",
 }: {
   businessName: string;
   totalSlots: number;
@@ -27,6 +29,7 @@ export function CardPreview({
   lastVisit?: string;
   showBarcode?: boolean;
   stampShape?: StampShape;
+  barcodeType?: BarcodeType;
 }) {
   const label = { fontSize: 10, letterSpacing: 1, opacity: 0.8, textTransform: "uppercase" as const };
 
@@ -82,7 +85,16 @@ export function CardPreview({
         </div>
       </div>
 
-      {showBarcode && <PreviewBarcode />}
+      {showBarcode && (barcodeType === "qr" ? <PreviewQr code={code} /> : <PreviewBarcode />)}
+    </div>
+  );
+}
+
+// Real, scannable QR of the customer's code — mirrors the QR variant of the pass.
+function PreviewQr({ code }: { code: string }) {
+  return (
+    <div style={{ background: "#fff", borderRadius: 10, padding: 12, marginTop: 16, display: "flex", justifyContent: "center" }}>
+      <QrCode value={code} size={132} />
     </div>
   );
 }

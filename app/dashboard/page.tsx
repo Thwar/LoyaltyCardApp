@@ -13,7 +13,7 @@ import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Lock, Pencil, ScanLine } from "lucide-react";
 import { BarcodeScanner } from "@/components/BarcodeScanner";
-import type { Business, CustomerCard, LoyaltyCard, StampShape, Member, MembershipProgram } from "@/lib/types";
+import type { BarcodeType, Business, CustomerCard, LoyaltyCard, StampShape, Member, MembershipProgram } from "@/lib/types";
 import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 import { NOTIF_DEFAULTS } from "@/lib/notifications";
@@ -238,6 +238,7 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
   const [cardColor, setCardColor] = useState(existing?.cardColor ?? CARD_COLOR_CHOICES[0]);
   const [textColor, setTextColor] = useState(existing?.textColor ?? "#FFFFFF");
   const [stampShape, setStampShape] = useState<StampShape>(existing?.stampShape ?? "circle");
+  const [barcodeType, setBarcodeType] = useState<BarcodeType>(existing?.barcodeType ?? "pdf417");
   const [logo, setLogo] = useState<string | null>(existing?.logoPng ? `data:image/png;base64,${existing.logoPng}` : null);
   const [stampMessage, setStampMessage] = useState(existing?.stampMessage || NOTIF_DEFAULTS.stamp);
   const [completeMessage, setCompleteMessage] = useState(existing?.completeMessage || NOTIF_DEFAULTS.complete);
@@ -262,6 +263,7 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
         cardColor,
         textColor,
         stampShape,
+        barcodeType,
         logo,
       }),
     });
@@ -300,6 +302,8 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
           textColor={textColor}
           stampShape={stampShape}
           logoUrl={logo || undefined}
+          showBarcode
+          barcodeType={barcodeType}
         />
       </div>
 
@@ -344,6 +348,38 @@ function CardForm({ existing, businessName, planInfo, onSaved }: { existing?: Lo
               </p>
             </>
           )}
+        </div>
+
+        <div className="field">
+          <label>Código en la tarjeta</label>
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            {(
+              [
+                { id: "pdf417", label: "Código de barras" },
+                { id: "qr", label: "Código QR" },
+              ] as const
+            ).map((o) => (
+              <button
+                key={o.id}
+                type="button"
+                onClick={() => setBarcodeType(o.id)}
+                className="btn"
+                style={{
+                  width: "auto",
+                  flex: "1 1 140px",
+                  background: barcodeType === o.id ? "var(--primary)" : "#fff",
+                  color: barcodeType === o.id ? "#fff" : "var(--text)",
+                  border: barcodeType === o.id ? "2px solid var(--primary)" : "1px solid var(--border)",
+                }}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          <p className="muted" style={{ fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+            Es el código que tu equipo escanea para sumar sellos. Ambos funcionan con el escáner de la app; elige el que
+            prefieras visualmente.
+          </p>
         </div>
 
         <div className="field">

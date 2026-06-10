@@ -172,7 +172,7 @@ export async function issuePass(customer: CustomerCard, card: LoyaltyCard, descr
     accountId: customer.cardCode,
     accountName: customer.customerName || "Cliente",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
-    barcode: { type: "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
+    barcode: { type: card.barcodeType === "qr" ? "QR_CODE" : "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
     heroImage: { sourceUri: { uri: stampHeroUri(card, customer.currentStamps) } },
     textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
     linksModuleData: referralLinks(customer),
@@ -221,6 +221,8 @@ export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCar
   const res = await api("PATCH", `/loyaltyObject/${id}`, {
     state: card.isActive === false ? "INACTIVE" : "ACTIVE",
     loyaltyPoints: { label: "Sellos", balance: { string: balanceText(customer.currentStamps, card.totalSlots) } },
+    // Included so an owner switching barras ↔ QR updates already-issued passes.
+    barcode: { type: card.barcodeType === "qr" ? "QR_CODE" : "PDF_417", value: customer.cardCode, alternateText: `Código ${customer.cardCode}` },
     heroImage: { sourceUri: { uri: stampHeroUri(card, customer.currentStamps) } },
     textModulesData: loyaltyTextModules(card, customer, description, hideBranding),
     linksModuleData: referralLinks(customer),
