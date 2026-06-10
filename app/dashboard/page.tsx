@@ -641,6 +641,7 @@ function CardManager({
         <TarjetasTab
           cards={cards}
           planInfo={planInfo}
+          businessLogo={business.logoPng}
           onEdit={(c) => setEditing(c)}
           onNew={() => setEditing("new")}
           onChanged={onChanged}
@@ -1902,12 +1903,14 @@ function StatCard({ label, value }: { label: string; value: number | string }) {
 function TarjetasTab({
   cards,
   planInfo,
+  businessLogo,
   onEdit,
   onNew,
   onChanged,
 }: {
   cards: LoyaltyCard[];
   planInfo: PlanInfo;
+  businessLogo?: string;
   onEdit: (c: LoyaltyCard) => void;
   onNew: () => void;
   onChanged: () => void;
@@ -1916,7 +1919,7 @@ function TarjetasTab({
   return (
     <div>
       {cards.map((card) => (
-        <CardPanel key={card.id} card={card} onEdit={() => onEdit(card)} onChanged={onChanged} />
+        <CardPanel key={card.id} card={card} businessLogo={businessLogo} onEdit={() => onEdit(card)} onChanged={onChanged} />
       ))}
       <NewCardTile canAdd={canAdd} planInfo={planInfo} onNew={onNew} />
     </div>
@@ -1950,8 +1953,10 @@ function NewCardTile({ canAdd, planInfo, onNew }: { canAdd: boolean; planInfo: P
 
 /* Counter kit: table-tent mockup of the enrollment QR (how it should look on the
    mostrador), a printable hi-res QR download, and the 3 steps to put it to work. */
-function QrCounterKit({ url, card }: { url: string; card: LoyaltyCard }) {
-  const logo = card.logoPng ? `data:image/png;base64,${card.logoPng}` : null;
+function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyCard; businessLogo?: string }) {
+  // Brand logo first (the business's own mark); the card logo is a fallback.
+  const logoB64 = businessLogo || card.logoPng;
+  const logo = logoB64 ? `data:image/png;base64,${logoB64}` : null;
 
   async function downloadQr() {
     const QRCode = (await import("qrcode")).default; // lazy: only loaded on click
@@ -1978,37 +1983,40 @@ function QrCounterKit({ url, card }: { url: string; card: LoyaltyCard }) {
         <div
           style={{
             position: "absolute",
-            top: "22%",
+            top: "20%",
             left: "20%",
             right: "12.5%",
-            bottom: "13.5%",
+            bottom: "16%",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
             textAlign: "center",
             overflow: "hidden",
+            // Follow the tent's slight lean in the photo so the art looks printed on it.
+            transform: "perspective(1100px) rotateY(4deg) rotate(0.8deg)",
+            transformOrigin: "center",
           }}
         >
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={card.businessName} style={{ maxHeight: 30, maxWidth: 140, objectFit: "contain", display: "block", margin: "0 auto 5px" }} />
+            <img src={logo} alt={card.businessName} style={{ maxHeight: 42, maxWidth: 170, objectFit: "contain", display: "block", margin: "0 auto 8px" }} />
           ) : (
-            <div style={{ fontWeight: 800, fontSize: 15, color: card.cardColor, marginBottom: 4, lineHeight: 1.15 }}>{card.businessName}</div>
+            <div style={{ fontWeight: 800, fontSize: 18, color: card.cardColor, marginBottom: 6, lineHeight: 1.15 }}>{card.businessName}</div>
           )}
-          <p style={{ fontWeight: 700, fontSize: 13, margin: "0 0 2px", color: "#111", lineHeight: 1.2 }}>¡Tranquilo, no es otra app!</p>
-          <p style={{ fontSize: 11, color: "#444", margin: "0 0 7px", lineHeight: 1.3, maxWidth: 220 }}>
+          <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 3px", color: "#111", lineHeight: 1.2 }}>¡Tranquilo, no es otra app!</p>
+          <p style={{ fontSize: 12.5, color: "#444", margin: "0 0 9px", lineHeight: 1.3, maxWidth: 250 }}>
             Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.
           </p>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <QrCode value={url} size={104} />
+            <QrCode value={url} size={122} />
           </div>
-          <p style={{ fontSize: 10.5, color: "#444", margin: "6px 0 7px", lineHeight: 1.3, maxWidth: 220 }}>🎁 {card.rewardDescription}</p>
-          <div style={{ display: "flex", justifyContent: "center", gap: 6, alignItems: "center" }}>
+          <p style={{ fontSize: 12, color: "#444", margin: "8px 0 9px", lineHeight: 1.3, maxWidth: 250 }}>🎁 {card.rewardDescription}</p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 7, alignItems: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: 20, width: "auto" }} />
+            <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: 23, width: "auto" }} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={GOOGLE_WALLET_BADGE} alt="Google Wallet" style={{ height: 20, width: "auto" }} />
+            <img src={GOOGLE_WALLET_BADGE} alt="Google Wallet" style={{ height: 23, width: "auto" }} />
           </div>
         </div>
       </div>
@@ -2017,26 +2025,41 @@ function QrCounterKit({ url, card }: { url: string; card: LoyaltyCard }) {
         ⬇ Descargar QR para imprimir (PNG)
       </button>
 
-      {/* The 3 steps to put it to work */}
-      <ol style={{ margin: "14px 0 0", paddingLeft: 22, display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5, lineHeight: 1.5 }}>
-        <li>
-          <strong>Imprime el QR</strong> y ponlo junto a tu caja (puedes copiar el diseño de arriba).
-        </li>
-        <li>
-          <strong>Tu casero lo escanea</strong> con la cámara de su celular, llena sus datos y guarda la tarjeta en su
-          wallet — sin instalar nada.
-        </li>
-        <li>
-          <strong>En cada compra</strong>, escanea su tarjeta desde “Sumar sello” y el sello le llega al celular al
-          instante.
-        </li>
+      {/* The 3 steps to put it to work (styled like /ejemplo) */}
+      <ol style={{ listStyle: "none", padding: 0, margin: "18px 0 0", display: "flex", flexDirection: "column", gap: 16 }}>
+        {[
+          "🖨️ Imprime el QR y ponlo junto a tu caja (puedes copiar el diseño de arriba).",
+          "📲 Tu casero lo escanea, llena sus datos y guarda la tarjeta en su wallet — sin instalar nada.",
+          "✅ En cada compra, escanea su tarjeta desde “Sumar sello” y el sello le llega al instante.",
+        ].map((step, i) => (
+          <li key={i} style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span
+              style={{
+                flex: "0 0 auto",
+                width: 34,
+                height: 34,
+                borderRadius: "50%",
+                background: "var(--primary)",
+                color: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: 17,
+              }}
+            >
+              {i + 1}
+            </span>
+            <span style={{ fontSize: 16, lineHeight: 1.4 }}>{step}</span>
+          </li>
+        ))}
       </ol>
     </div>
   );
 }
 
 /* One card: preview, edit, its own enrollment QR, and activate/deactivate. */
-function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () => void; onChanged: () => void }) {
+function CardPanel({ card, businessLogo, onEdit, onChanged }: { card: LoyaltyCard; businessLogo?: string; onEdit: () => void; onChanged: () => void }) {
   const [joinUrl, setJoinUrl] = useState("");
   const [copied, setCopied] = useState(false);
   const [busyActive, setBusyActive] = useState(false);
@@ -2113,7 +2136,7 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
         />
       </div>
 
-      {joinUrl && <QrCounterKit url={joinUrl} card={card} />}
+      {joinUrl && <QrCounterKit url={joinUrl} card={card} businessLogo={businessLogo} />}
       <div className="row mt" style={{ gap: 8 }}>
         <input className="input" readOnly value={joinUrl} onFocus={(e) => e.currentTarget.select()} />
         <button
