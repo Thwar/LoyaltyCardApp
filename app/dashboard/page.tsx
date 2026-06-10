@@ -1993,25 +1993,28 @@ function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyC
             justifyContent: "center",
             textAlign: "center",
             overflow: "hidden",
-            // Follow the tent's slight lean in the photo so the art looks printed on it.
-            transform: "perspective(1100px) rotateY(4deg) rotate(0.8deg)",
+            // Follow the tent's slight lean in the photo so the art looks printed on it
+            // (the face's right side is nearer the camera, so it lifts toward us).
+            transform: "perspective(1100px) rotateY(-4deg) rotate(-0.8deg)",
             transformOrigin: "center",
           }}
         >
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={card.businessName} style={{ maxHeight: 42, maxWidth: 170, objectFit: "contain", display: "block", margin: "0 auto 8px" }} />
+            <img src={logo} alt={card.businessName} style={{ maxHeight: 38, maxWidth: 165, objectFit: "contain", display: "block", margin: "0 auto 7px" }} />
           ) : (
             <div style={{ fontWeight: 800, fontSize: 18, color: card.cardColor, marginBottom: 6, lineHeight: 1.15 }}>{card.businessName}</div>
           )}
           <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 3px", color: "#111", lineHeight: 1.2 }}>¡Tranquilo, no es otra app!</p>
-          <p style={{ fontSize: 12.5, color: "#444", margin: "0 0 9px", lineHeight: 1.3, maxWidth: 250 }}>
+          <p style={{ fontSize: 12.5, color: "#444", margin: "0 0 8px", lineHeight: 1.3, maxWidth: 250 }}>
             Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.
           </p>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <QrCode value={url} size={122} />
+            <QrCode value={url} size={102} />
           </div>
-          <p style={{ fontSize: 12, color: "#444", margin: "8px 0 9px", lineHeight: 1.3, maxWidth: 250 }}>🎁 {card.rewardDescription}</p>
+          <p style={{ fontSize: 11.5, color: "#444", margin: "7px 0 8px", lineHeight: 1.3, maxWidth: 250, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
+            🎁 {card.rewardDescription}
+          </p>
           <div style={{ display: "flex", justifyContent: "center", gap: 7, alignItems: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: 23, width: "auto" }} />
@@ -2020,6 +2023,9 @@ function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyC
           </div>
         </div>
       </div>
+      <p className="muted" style={{ fontSize: 12, textAlign: "center", margin: "8px 0 0" }}>
+        Imagen referencial — un ejemplo de cómo se vería tu QR impreso en el mostrador.
+      </p>
 
       <button className="btn btn-primary mt" onClick={downloadQr}>
         ⬇ Descargar QR para imprimir (PNG)
