@@ -34,12 +34,14 @@ export async function GET(req: Request) {
     let expiringSoon = 0;
     let visitsTotal = 0;
     let newThisMonth = 0;
+    let churned30 = 0; // memberships that lapsed within the last 30 days (win-back list)
     for (const m of members) {
       const st = memberStatus(m, now);
       if (st === "active") active++;
       else expired++;
       if (m.expiresAt != null && m.expiresAt >= now && m.expiresAt - now <= SOON) expiringSoon++;
       if (m.createdAt != null && now - m.createdAt <= MONTH) newThisMonth++;
+      if (m.expiresAt != null && m.expiresAt < now && now - m.expiresAt <= MONTH) churned30++;
       visitsTotal += m.visitsUsed || 0;
     }
 
@@ -49,9 +51,11 @@ export async function GET(req: Request) {
     const vsnap = await adminDb().collection(COLLECTIONS.VISITS).where("businessId", "==", business.id).limit(3000).get();
     const dayKey = (ts: number) => new Date(ts).toLocaleDateString("en-CA", { timeZone: "America/La_Paz" });
     const counts: Record<string, number> = {};
+    let visits30 = 0;
     for (const d of vsnap.docs) {
       const ts = Number(d.data().timestamp || 0);
       if (ts >= since) counts[dayKey(ts)] = (counts[dayKey(ts)] || 0) + 1;
+      if (ts >= now - MONTH) visits30++;
     }
     const visitSeries = Array.from({ length: 14 }, (_, i) => {
       const ts = now - (13 - i) * DAY;
@@ -63,7 +67,7 @@ export async function GET(req: Request) {
       eligible,
       program,
       members,
-      stats: { total: members.length, active, expired, expiringSoon, newThisMonth, visitsTotal },
+      stats: { total: members.length, active, expired, expiringSoon, newThisMonth, churned30, visits30, visitsTotal },
       visitSeries,
     });
   } catch (e: unknown) {

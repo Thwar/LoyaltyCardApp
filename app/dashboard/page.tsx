@@ -628,7 +628,7 @@ interface MembershipMe {
   eligible: boolean;
   program: MembershipProgram | null;
   members: Member[];
-  stats: { total: number; active: number; expired: number; expiringSoon: number; newThisMonth: number; visitsTotal: number } | null;
+  stats: { total: number; active: number; expired: number; expiringSoon: number; newThisMonth: number; churned30: number; visits30: number; visitsTotal: number } | null;
   visitSeries?: { label: string; count: number }[];
 }
 
@@ -705,6 +705,26 @@ function MembershipTab({ businessName }: { businessName: string }) {
   const [loading, setLoading] = useState(true);
   const [editingProgram, setEditingProgram] = useState(false);
   const [selected, setSelected] = useState<Member | null>(null);
+  const [exporting, setExporting] = useState(false);
+
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const res = await authedFetch("/api/membership/export");
+      if (!res.ok) return;
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "socios.csv";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const load = useCallback(async () => {
     const res = await authedFetch("/api/membership/me");
@@ -772,10 +792,24 @@ function MembershipTab({ businessName }: { businessName: string }) {
         <StatCard label="Nuevos (30 días)" value={stats.newThisMonth} />
         <StatCard label="Por vencer (7 días)" value={stats.expiringSoon} />
         <StatCard label="Vencidos" value={stats.expired} />
+        <StatCard label="Bajas (30 días)" value={stats.churned30} />
+        <StatCard label="Visitas (30 días)" value={stats.visits30} />
       </div>
       <MembershipVisitsChart series={data.visitSeries || []} total={stats.visitsTotal} />
 
-      <h4 className="vip-on-dark-muted vip-label">Directorio de socios</h4>
+      <div className="row spread" style={{ alignItems: "baseline", gap: 10 }}>
+        <h4 className="vip-on-dark-muted vip-label">Directorio de socios</h4>
+        {members.length > 0 && (
+          <button
+            className="btn btn-sm"
+            style={{ width: "auto", background: "rgba(255,255,255,0.14)", color: "#fff" }}
+            onClick={exportCsv}
+            disabled={exporting}
+          >
+            {exporting ? "Exportando…" : "Exportar CSV"}
+          </button>
+        )}
+      </div>
       <AddMemberForm onAdded={load} />
       <MembersList members={members} onSelect={setSelected} />
 
@@ -1189,15 +1223,52 @@ function MembersList({ members, onSelect }: { members: Member[]; onSelect: (m: M
         const st = memberStatus(m, now);
         const rem = visitsRemaining(m);
         const contact = m.memberEmail || m.memberPhone || "";
+        const active = st === "active";
+        const DAY = 24 * 60 * 60 * 1000;
+        const expSoon = active && m.expiresAt != null && m.expiresAt - now <= SOON;
+        // Status accent: green = active, amber = expiring soon, red = lapsed/no visits.
+        const accent = !active ? "#dc2626" : expSoon ? "#d97706" : "#16a34a";
+        let venc = "Sin vencimiento";
+        let vencColor: string | undefined;
+        if (m.expiresAt != null) {
+          if (m.expiresAt < now) {
+            const d = Math.max(1, Math.ceil((now - m.expiresAt) / DAY));
+            venc = `Venció hace ${d} día${d === 1 ? "" : "s"}`;
+            vencColor = "#dc2626";
+          } else {
+            const d = Math.max(1, Math.ceil((m.expiresAt - now) / DAY));
+            venc = `Vence en ${d} día${d === 1 ? "" : "s"}`;
+            if (expSoon) vencColor = "#d97706";
+          }
+        }
         return (
-          <button key={m.id} onClick={() => onSelect(m)} style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, padding: "11px 14px", border: "1px solid var(--border)", borderRadius: 12, background: "#fff", marginBottom: 8, cursor: "pointer" }}>
-            <span style={{ flex: "0 0 auto", width: 38, height: 38, borderRadius: "50%", background: avatarColor(m.memberName || "?"), color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <button
+            key={m.id}
+            onClick={() => onSelect(m)}
+            style={{
+              width: "100%",
+              textAlign: "left",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
+              padding: "11px 14px",
+              border: "1px solid var(--border)",
+              borderLeft: `4px solid ${accent}`,
+              borderRadius: 12,
+              background: active ? "#fff" : "#f3f4f6",
+              marginBottom: 8,
+              cursor: "pointer",
+            }}
+          >
+            <span style={{ flex: "0 0 auto", width: 38, height: 38, borderRadius: "50%", background: active ? avatarColor(m.memberName || "?") : "#9ca3af", color: "#fff", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
               {initials(m.memberName || "?")}
             </span>
             <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0, flex: 1 }}>
-              <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.memberName}</strong>
+              <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: active ? undefined : "var(--text-secondary)" }}>{m.memberName}</strong>
               <span className="muted" style={{ fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {contact ? `${contact} · ` : ""}{rem != null ? `${rem} visita(s)` : "Ilimitado"}{m.expiresAt != null ? ` · vence ${fmtDay(m.expiresAt)}` : ""}
+                {contact ? `${contact} · ` : ""}
+                {rem != null ? `${rem} visita(s)` : "Ilimitado"} ·{" "}
+                <span style={vencColor ? { color: vencColor, fontWeight: 600 } : undefined}>{venc}</span>
               </span>
             </span>
             <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flex: "0 0 auto" }}>
