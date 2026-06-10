@@ -17,6 +17,7 @@ import type { BarcodeType, Business, CustomerCard, LoyaltyCard, StampShape, Memb
 import { STAMP_SHAPES, STAMP_ICONS } from "@/lib/stampShapes";
 import { SEGMENTS, inSegment, type Segment } from "@/lib/segments";
 import { NOTIF_DEFAULTS } from "@/lib/notifications";
+import { APPLE_WALLET_BADGE, GOOGLE_WALLET_BADGE } from "@/lib/walletBadges";
 import { memberStatus, visitsRemaining, MEMBER_STATUS_LABEL, type MemberStatus } from "@/lib/membership";
 import { MembershipCardVisual } from "@/components/MembershipCardVisual";
 import { TiltWrap } from "@/components/TiltWrap";
@@ -1947,6 +1948,79 @@ function NewCardTile({ canAdd, planInfo, onNew }: { canAdd: boolean; planInfo: P
   );
 }
 
+/* Counter kit: table-tent mockup of the enrollment QR (how it should look on the
+   mostrador), a printable hi-res QR download, and the 3 steps to put it to work. */
+function QrCounterKit({ url, card }: { url: string; card: LoyaltyCard }) {
+  const logo = card.logoPng ? `data:image/png;base64,${card.logoPng}` : null;
+
+  async function downloadQr() {
+    const QRCode = (await import("qrcode")).default; // lazy: only loaded on click
+    const dataUrl = await QRCode.toDataURL(url, { width: 1024, margin: 2 });
+    const a = document.createElement("a");
+    a.href = dataUrl;
+    a.download = `qr_${(card.businessName || "tarjeta").replace(/[^a-z0-9]/gi, "_")}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  return (
+    <div>
+      <p style={{ fontSize: 15, fontWeight: 600, textAlign: "center", margin: "22px 0 12px" }}>
+        Inscribe caseros — pon este QR en tu mostrador
+      </p>
+
+      {/* Table-tent mockup on a "wood counter" backdrop */}
+      <div style={{ background: "linear-gradient(165deg, #9a6a45, #6b4327)", borderRadius: 14, padding: "26px 16px 14px" }}>
+        <div style={{ background: "#fff", borderRadius: 10, maxWidth: 340, margin: "0 auto", padding: "18px 18px 14px", textAlign: "center", boxShadow: "0 18px 34px rgba(0,0,0,0.4)" }}>
+          {logo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logo} alt={card.businessName} style={{ maxHeight: 40, maxWidth: 170, objectFit: "contain", display: "block", margin: "0 auto 8px" }} />
+          ) : (
+            <div style={{ fontWeight: 800, fontSize: 18, color: card.cardColor, marginBottom: 6 }}>{card.businessName}</div>
+          )}
+          <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 2px", color: "#111" }}>¡Tranquilo, no es otra app!</p>
+          <p style={{ fontSize: 13, color: "#444", margin: "0 0 10px" }}>
+            Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center" }}>
+            <QrCode value={url} size={150} />
+          </div>
+          <p style={{ fontSize: 12.5, color: "#444", margin: "8px 0 10px" }}>🎁 {card.rewardDescription}</p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: 27, width: "auto" }} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={GOOGLE_WALLET_BADGE} alt="Google Wallet" style={{ height: 27, width: "auto" }} />
+          </div>
+        </div>
+        <p style={{ textAlign: "center", color: "rgba(255,255,255,0.85)", fontSize: 12, margin: "12px 0 0" }}>
+          Así se vería impreso en tu mostrador
+        </p>
+      </div>
+
+      <button className="btn btn-primary mt" onClick={downloadQr}>
+        ⬇ Descargar QR para imprimir (PNG)
+      </button>
+
+      {/* The 3 steps to put it to work */}
+      <ol style={{ margin: "14px 0 0", paddingLeft: 22, display: "flex", flexDirection: "column", gap: 8, fontSize: 13.5, lineHeight: 1.5 }}>
+        <li>
+          <strong>Imprime el QR</strong> y ponlo junto a tu caja (puedes copiar el diseño de arriba).
+        </li>
+        <li>
+          <strong>Tu casero lo escanea</strong> con la cámara de su celular, llena sus datos y guarda la tarjeta en su
+          wallet — sin instalar nada.
+        </li>
+        <li>
+          <strong>En cada compra</strong>, escanea su tarjeta desde “Sumar sello” y el sello le llega al celular al
+          instante.
+        </li>
+      </ol>
+    </div>
+  );
+}
+
 /* One card: preview, edit, its own enrollment QR, and activate/deactivate. */
 function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () => void; onChanged: () => void }) {
   const [joinUrl, setJoinUrl] = useState("");
@@ -2025,10 +2099,7 @@ function CardPanel({ card, onEdit, onChanged }: { card: LoyaltyCard; onEdit: () 
         />
       </div>
 
-      <p style={{ fontSize: 15, fontWeight: 600, textAlign: "center", margin: "22px 0 12px" }}>
-        Inscribe caseros — imprime este QR para tu mostrador
-      </p>
-      <div className="center">{joinUrl && <QrCode value={joinUrl} size={200} />}</div>
+      {joinUrl && <QrCounterKit url={joinUrl} card={card} />}
       <div className="row mt" style={{ gap: 8 }}>
         <input className="input" readOnly value={joinUrl} onFocus={(e) => e.currentTarget.select()} />
         <button
