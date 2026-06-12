@@ -1,26 +1,22 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { Smartphone, Wallet, QrCode, Bell, Palette, Megaphone, Repeat, TrendingUp, Heart, UserPlus, Hand, Users, ScanLine, Eye, Check, X, ArrowRight } from "lucide-react";
+import { Wallet, QrCode, Bell, Megaphone, Repeat, TrendingUp, Heart, UserPlus, Hand, Eye, Check, X, ArrowRight } from "lucide-react";
 import { CardPreview } from "@/components/CardPreview";
 import { WhatsAppButton } from "@/components/WhatsAppButton";
 
 // Why a business needs this (the persuasion: retention → sales).
 const WHY = [
-  { Icon: Repeat, acc: "acc-blue", title: "Vuelven más seguido", desc: "La tarjeta de sellos les da un motivo para volver a ti, no a la competencia de al lado." },
-  { Icon: TrendingUp, acc: "acc-green", title: "Más ventas por casero", desc: "Retener cuesta mucho menos que conseguir caseros nuevos — y los caseros fieles gastan más." },
-  { Icon: Heart, acc: "acc-orange", title: "Una relación que dura", desc: "Cada visita suma. Conviertes una compra suelta en un casero que vuelve y te recomienda." },
+  { Icon: Repeat, acc: "acc-blue", title: "Más visitas", desc: "Premia la fidelidad y dale a tu casero una razón para volver a ti, no a la competencia de al lado." },
+  { Icon: TrendingUp, acc: "acc-green", title: "Más ventas", desc: "Los caseros frecuentes compran más y con más confianza — y retenerlos cuesta mucho menos que conseguir clientes nuevos." },
+  { Icon: Heart, acc: "acc-orange", title: "Más recordación", desc: "Mantén tu negocio presente entre visita y visita, directo en su celular." },
 ];
 
+// Four consolidated benefits (details live in pricing + FAQ, not here).
 const FEATURES = [
-  { Icon: Smartphone, acc: "acc-blue", title: "No es otra app", desc: "Tus caseros no descargan nada. La tarjeta vive en el wallet que ya usan todos los días." },
-  { Icon: Wallet, acc: "acc-violet", title: "Apple & Google Wallet", desc: "Funciona en iPhone y Android. Un mismo QR sirve para los dos." },
-  { Icon: ScanLine, acc: "acc-teal", title: "Sellos en un toque", desc: "Escanea el código del casero con la cámara o escríbelo, y el sello aparece al instante en su celular." },
-  { Icon: Bell, acc: "acc-amber", title: "Notificaciones que hacen volver", desc: "El casero recibe un aviso con cada sello y al inscribirse. Le recuerdas tu negocio, sin costo." },
-  { Icon: Megaphone, acc: "acc-orange", title: "Promociones a tus caseros", desc: "Envía promos y recordatorios a todos —o por segmento: los que se alejaron, los que casi completan, tus VIP— y llena tu local en días lentos (planes de pago)." },
-  { Icon: Palette, acc: "acc-green", title: "Con tu marca y tus íconos", desc: "Tu logo, tus colores y hasta el ícono del sello (☕ 🍕 ✂️). Se ve como tu negocio, no como una app genérica." },
-  { Icon: UserPlus, acc: "acc-blue", title: "Programa de referidos", desc: "Cada casero invita a sus amigos con un link. Cuando el amigo se une y recibe su primer sello, premias a quien lo trajo. En todos los planes." },
-  { Icon: TrendingUp, acc: "acc-violet", title: "Datos y analíticas", desc: "Mira quién vuelve, quién se aleja y quién está por ganar su premio. Exporta tus caseros a CSV cuando quieras (planes de pago)." },
-  { Icon: Users, acc: "acc-amber", title: "Suma con tu equipo", desc: "Da acceso a hasta 5 cajeros para que sumen sellos —sin ver contactos ni tocar tu configuración (plan Negocio)." },
+  { Icon: Wallet, acc: "acc-blue", title: "Tarjeta de sellos digital", desc: "Vive en Apple Wallet y Google Wallet con tu logo, tus colores y tu ícono — sin que tus caseros descarguen nada." },
+  { Icon: Megaphone, acc: "acc-orange", title: "Promociones que llenan tu local", desc: "Envía ofertas a todos o por segmento, y deja que tus caseros inviten a sus amigos con el programa de referidos." },
+  { Icon: Bell, acc: "acc-amber", title: "Notificaciones automáticas", desc: "Cada sello, bienvenida y recompensa llega como aviso a su pantalla. Le recuerdas tu negocio sin costo." },
+  { Icon: TrendingUp, acc: "acc-violet", title: "Conoce a tus caseros", desc: "Mira quién vuelve, quién se aleja y quién está por ganar su premio. Exporta tus datos cuando quieras." },
 ];
 
 const STEPS = [
@@ -62,10 +58,10 @@ const PLANS = [
     features: [
       { t: "Todo lo del plan Gratis", ok: true },
       { t: "Caseros ilimitados", ok: true },
-      { t: "Formas e íconos de sello personalizados", ok: true },
       { t: "Mensajes promocionales (3/día)", ok: true },
-      { t: "Ver y exportar datos de caseros", ok: true },
       { t: "Analíticas avanzadas", ok: true },
+      { t: "Ver y exportar datos de caseros", ok: true },
+      { t: "Formas e íconos de sello personalizados", ok: true },
     ],
   },
   {
@@ -80,26 +76,22 @@ const PLANS = [
     features: [
       { t: "Todo lo del plan Café", ok: true },
       { t: "3 tarjetas / programas", ok: true },
-      { t: "Mensajes promocionales (6/día)", ok: true },
-      { t: "Mensajes por segmento de caseros", ok: true },
       { t: "Tarjeta de membresía (socios VIP)", ok: true },
-      { t: 'Sin marca "SoyCasero"', ok: true },
+      { t: "Mensajes por segmento (6/día)", ok: true },
       { t: "Hasta 5 cajeros", ok: true },
+      { t: 'Sin marca "SoyCasero"', ok: true },
     ],
   },
 ];
 
+// Six questions max — the rest of the detail lives in pricing and the dashboard.
 const FAQS = [
   { q: "¿Mis caseros necesitan descargar una app?", a: "No. La tarjeta se guarda directamente en Apple Wallet o Google Wallet, que ya tienen en su celular." },
   { q: "¿Funciona en iPhone y Android?", a: "Sí, en ambos. Un mismo QR sirve para los dos sistemas." },
-  { q: "¿Cómo sumo un sello?", a: "Escribes el código del casero en tu panel y el sello aparece al instante en su celular, sin que tengan que hacer nada." },
-  { q: "¿Puedo enviar promociones a mis caseros?", a: "Sí. Con los planes de pago envías notificaciones de promociones, recordatorios o avisos a todos tus caseros desde tu panel, con un límite diario para no saturar. En el plan Negocio puedes enviarlos por segmento (por ejemplo, solo a quienes se alejaron o a quienes están por ganar su premio)." },
-  { q: "¿Cómo funciona el programa de referidos?", a: "Cada casero recibe un link para invitar a sus amigos. Cuando un amigo se une a tu tarjeta y recibe su primer sello, le das un sello de premio a quien lo trajo. Así tus propios caseros te consiguen caseros nuevos. Está incluido en todos los planes, incluso el gratis." },
-  { q: "¿Puede mi equipo sumar sellos por mí?", a: "Sí. En el plan Negocio creas hasta 5 cajeros, cada uno con su propio acceso para sumar sellos. Los cajeros no ven los datos de contacto de tus caseros ni pueden cambiar tu configuración." },
-  { q: "¿Tienen tarjetas de membresía para gimnasios o clubes?", a: "Sí. En el plan Negocio puedes crear una tarjeta de membresía (socios VIP): identifica a tus socios, controla su vencimiento y, si quieres, sus visitas (ideal para gimnasios, clubes y negocios con socios). El socio la guarda en Apple o Google Wallet y tu equipo registra visitas escaneando su código." },
-  { q: "¿Puedo personalizar la tarjeta?", a: "Sí. Eliges tu logo, tus colores y la forma o el ícono del sello (café, pizza, tijeras y más). Los íconos están disponibles en los planes de pago." },
   { q: "¿Necesito un lector o equipo especial?", a: "No. Solo tu celular o computadora con internet. Pones el QR en el mostrador y listo. Para sumar sellos puedes escanear el código del casero con la cámara o escribirlo." },
   { q: "¿Cuánto cuesta?", a: "Hay un plan gratis para siempre. Los planes de pago arrancan en Bs 99/mes, sin contratos." },
+  { q: "¿Puedo enviar promociones a mis caseros?", a: "Sí. Con los planes de pago envías promociones, recordatorios o avisos al celular de todos tus caseros, con un límite diario para no saturar. En el plan Negocio puedes enviarlos por segmento (por ejemplo, solo a quienes se alejaron). Y con el programa de referidos —incluido en todos los planes— tus caseros invitan a sus amigos y ganan un sello." },
+  { q: "¿Tienen tarjetas de membresía para gimnasios o clubes?", a: "Sí. En el plan Negocio puedes crear una tarjeta de membresía (socios VIP): identifica a tus socios, controla su vencimiento y, si quieres, sus visitas. El socio la guarda en su wallet y tu equipo registra visitas escaneando su código." },
 ];
 
 export default function Home() {
@@ -134,10 +126,10 @@ export default function Home() {
           <div className="hero-left">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.png" alt="SoyCasero" style={{ height: 80, marginBottom: 22, filter: "brightness(0) invert(1)" }} />
-            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>Tus caseros vuelven más. Tú vendes más.</h1>
+            <h1 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.12 }}>Convierte clientes ocasionales en caseros.</h1>
             <p style={{ fontSize: 18, opacity: 0.95, margin: "0 0 24px", maxWidth: 520, lineHeight: 1.55 }}>
-              La tarjeta de sellos digital que premia a tus caseros y los hace volver. <strong style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>No es otra app que descargar</strong> — la guardan en
-              Apple&nbsp;Wallet o Google&nbsp;Wallet escaneando un QR. Tú sumas sellos con un toque.
+              Premia su fidelidad con una tarjeta de sellos digital que vive en su Apple&nbsp;Wallet o Google&nbsp;Wallet —{" "}
+              <strong style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}>sin que descarguen otra app</strong>. Tú sumas sellos con un toque y ellos vuelven una y otra vez.
             </p>
             <div className="cta-row">
               <Link href="/signup" className="btn-hero-white">
@@ -241,52 +233,52 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FEATURES */}
-      <section className="landing-section" id="features">
-        <h2 className="section-title">Todo lo que necesitas para fidelizar</h2>
-        <p className="section-sub">Una plataforma simple, sin apps que descargar, hecha para negocios de Bolivia.</p>
-        <div className="grid-3" style={{ marginTop: 38 }}>
-          {FEATURES.map((f) => {
-            const Icon = f.Icon;
+      {/* HOW IT WORKS — above the features: it explains the product fastest */}
+      <section className="landing-section">
+        <h2 className="section-title">Listo en 3 pasos</h2>
+        <p className="section-sub">Del registro al primer sello en minutos.</p>
+        <div className="steps-flow">
+          {STEPS.map((s, i) => {
+            const Icon = s.Icon;
             return (
-              <div key={f.title} className={`card lift feature-card ${f.acc}`}>
-                <span className="icon-badge">
-                  <Icon size={24} strokeWidth={2.2} />
-                </span>
-                <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>{f.title}</h3>
-                <p className="feat-text">{f.desc}</p>
-              </div>
+              <Fragment key={s.n}>
+                <div className={`card lift step-card ${s.acc}`}>
+                  <div className="step-head">
+                    <span className="step-num">{s.n}</span>
+                    <span className="icon-badge">
+                      <Icon size={22} strokeWidth={2.2} />
+                    </span>
+                  </div>
+                  <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>{s.title}</h3>
+                  <p className="feat-text">{s.desc}</p>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <span className="step-arrow" aria-hidden="true">
+                    <ArrowRight size={26} strokeWidth={2.5} />
+                  </span>
+                )}
+              </Fragment>
             );
           })}
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section style={{ background: "var(--bg-soft)" }}>
+      {/* FEATURES — four consolidated benefits */}
+      <section style={{ background: "var(--bg-soft)" }} id="features">
         <div className="landing-section">
-          <h2 className="section-title">Listo en 3 pasos</h2>
-          <p className="section-sub">Del registro al primer sello en minutos.</p>
-          <div className="steps-flow">
-            {STEPS.map((s, i) => {
-              const Icon = s.Icon;
+          <h2 className="section-title">Todo lo que necesitas para fidelizar</h2>
+          <p className="section-sub">Sin apps que descargar, sin equipos especiales — hecho para negocios de Bolivia.</p>
+          <div className="grid-4" style={{ marginTop: 38 }}>
+            {FEATURES.map((f) => {
+              const Icon = f.Icon;
               return (
-                <Fragment key={s.n}>
-                  <div className={`card lift step-card ${s.acc}`}>
-                    <div className="step-head">
-                      <span className="step-num">{s.n}</span>
-                      <span className="icon-badge">
-                        <Icon size={22} strokeWidth={2.2} />
-                      </span>
-                    </div>
-                    <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>{s.title}</h3>
-                    <p className="feat-text">{s.desc}</p>
-                  </div>
-                  {i < STEPS.length - 1 && (
-                    <span className="step-arrow" aria-hidden="true">
-                      <ArrowRight size={26} strokeWidth={2.5} />
-                    </span>
-                  )}
-                </Fragment>
+                <div key={f.title} className={`card lift feature-card ${f.acc}`}>
+                  <span className="icon-badge">
+                    <Icon size={24} strokeWidth={2.2} />
+                  </span>
+                  <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>{f.title}</h3>
+                  <p className="feat-text">{f.desc}</p>
+                </div>
               );
             })}
           </div>
@@ -351,7 +343,7 @@ export default function Home() {
           </div>
           <div style={{ flex: "1 1 320px", minWidth: 280 }}>
             <h2 className="section-title" style={{ textAlign: "left" }}>
-              Aparece en su pantalla, no en una app
+              Tu negocio en su bolsillo
             </h2>
             <p className="section-sub" style={{ textAlign: "left", margin: "12px 0 20px" }}>
               Cada sello, tarjeta completa y recompensa llega como notificación al celular del casero —sin que abran nada
@@ -398,14 +390,28 @@ export default function Home() {
                   <span style={{ fontSize: 34, fontWeight: 800 }}>{p.price}</span>
                   <span className="muted"> {p.period}</span>
                 </div>
+                {/* Top 5 visible; the rest behind "ver más" so the columns scan fast. */}
                 <ul className="plan-list">
-                  {p.features.map((feat, i) => (
+                  {p.features.slice(0, 5).map((feat, i) => (
                     <li key={i} className={feat.ok ? "" : "plan-off"}>
                       {feat.ok ? <Check size={18} /> : <X size={18} />}
                       <span>{feat.t}</span>
                     </li>
                   ))}
                 </ul>
+                {p.features.length > 5 && (
+                  <details style={{ marginBottom: 8 }}>
+                    <summary className="muted" style={{ fontSize: 13, cursor: "pointer" }}>Ver todo lo incluido</summary>
+                    <ul className="plan-list" style={{ marginTop: 8 }}>
+                      {p.features.slice(5).map((feat, i) => (
+                        <li key={i} className={feat.ok ? "" : "plan-off"}>
+                          {feat.ok ? <Check size={18} /> : <X size={18} />}
+                          <span>{feat.t}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
                 <Link href="/signup" className="btn btn-primary" style={{ marginTop: "auto", textAlign: "center" }}>
                   {p.cta}
                 </Link>
@@ -431,36 +437,16 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FOR CUSTOMERS — secondary, trust-oriented (customers join at the business, not here) */}
+      {/* FOR CUSTOMERS — one slim trust strip (customers join at the business, not here) */}
       <section style={{ background: "var(--bg-soft)" }} id="clientes">
-        <div className="landing-section" style={{ textAlign: "center" }}>
+        <div className="landing-section" style={{ textAlign: "center", paddingTop: 36, paddingBottom: 36 }}>
           <span style={{ display: "inline-block", fontSize: 12, fontWeight: 800, letterSpacing: 1, textTransform: "uppercase", color: "var(--primary)", marginBottom: 8 }}>Para clientes</span>
-          <h2 className="section-title">¿Recibiste una tarjeta SoyCasero?</h2>
-          <p className="section-sub">Así de fácil es juntar sellos y ganar premios en tus negocios favoritos.</p>
-          <div className="grid-3" style={{ marginTop: 32 }}>
-            <div className="card lift feature-card acc-blue">
-              <span className="icon-badge">
-                <Smartphone size={24} strokeWidth={2.2} />
-              </span>
-              <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>Sin instalar nada</h3>
-              <p className="feat-text">Tu tarjeta vive en Apple Wallet o Google Wallet, en el celular que ya usas todos los días.</p>
-            </div>
-            <div className="card lift feature-card acc-violet">
-              <span className="icon-badge">
-                <QrCode size={24} strokeWidth={2.2} />
-              </span>
-              <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>Escaneas y listo</h3>
-              <p className="feat-text">Escanea el QR del negocio, llena tus datos y guarda tu tarjeta al instante.</p>
-            </div>
-            <div className="card lift feature-card acc-green">
-              <span className="icon-badge">
-                <Heart size={24} strokeWidth={2.2} />
-              </span>
-              <h3 style={{ fontSize: 18, margin: "14px 0 6px" }}>Vuelves y ganas</h3>
-              <p className="feat-text">Cada visita suma un sello. Completa tu tarjeta y reclama tu recompensa.</p>
-            </div>
-          </div>
-          <Link href="/ejemplo" className="btn btn-outline" style={{ width: "auto", display: "inline-block", marginTop: 28 }}>
+          <h2 style={{ fontSize: 22, margin: "0 0 8px" }}>¿Recibiste una tarjeta SoyCasero?</h2>
+          <p className="muted" style={{ maxWidth: 560, margin: "0 auto 18px", lineHeight: 1.5 }}>
+            No necesitas instalar nada: escaneas el QR del negocio, tu tarjeta se guarda en tu wallet y cada visita suma
+            un sello hacia tu premio.
+          </p>
+          <Link href="/ejemplo" className="btn btn-outline" style={{ width: "auto", display: "inline-block" }}>
             Ver una tarjeta de ejemplo
           </Link>
         </div>

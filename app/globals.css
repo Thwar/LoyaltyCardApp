@@ -549,6 +549,22 @@ select.input {
     grid-template-columns: 1fr;
   }
 }
+/* 4-up feature row: 4 → 2x2 → 1 as the viewport narrows */
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+@media (max-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 640px) {
+  .grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* hover lift for cards */
 .lift {
