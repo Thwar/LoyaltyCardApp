@@ -1989,7 +1989,9 @@ function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyC
 
       {/* Photoreal mockup: the card's branding composited onto a real blank
           table-tent photo; the overlay percentages are tuned to the tent's face. */}
-      <div style={{ position: "relative", maxWidth: 430, margin: "0 auto", borderRadius: 12, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+      {/* containerType lets the overlay size everything in cqw, so the art scales
+          with the photo (no fixed px overflowing the tent face on small screens). */}
+      <div style={{ position: "relative", maxWidth: 430, margin: "0 auto", borderRadius: 12, overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.18)", containerType: "inline-size" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/physical-signage-bg.jpg" alt="Cartel en el mostrador" style={{ width: "100%", height: "auto", display: "block" }} />
         <div
@@ -2013,25 +2015,25 @@ function QrCounterKit({ url, card, businessLogo }: { url: string; card: LoyaltyC
         >
           {logo ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={logo} alt={card.businessName} style={{ maxHeight: 38, maxWidth: 165, objectFit: "contain", display: "block", margin: "0 auto 7px" }} />
+            <img src={logo} alt={card.businessName} style={{ maxHeight: "8.8cqw", maxWidth: "38cqw", objectFit: "contain", display: "block", margin: "0 auto 1.6cqw" }} />
           ) : (
-            <div style={{ fontWeight: 800, fontSize: 18, color: card.cardColor, marginBottom: 6, lineHeight: 1.15 }}>{card.businessName}</div>
+            <div style={{ fontWeight: 800, fontSize: "4.2cqw", color: card.cardColor, marginBottom: "1.4cqw", lineHeight: 1.15 }}>{card.businessName}</div>
           )}
-          <p style={{ fontWeight: 700, fontSize: 15, margin: "0 0 3px", color: "#111", lineHeight: 1.2 }}>¡Tranquilo, no es otra app!</p>
-          <p style={{ fontSize: 12.5, color: "#444", margin: "0 0 8px", lineHeight: 1.3, maxWidth: 250 }}>Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.</p>
+          <p style={{ fontWeight: 700, fontSize: "3.5cqw", margin: "0 0 0.7cqw", color: "#111", lineHeight: 1.2 }}>¡Tranquilo, no es otra app!</p>
+          <p style={{ fontSize: "2.9cqw", color: "#444", margin: "0 0 1.9cqw", lineHeight: 1.3, maxWidth: "58cqw" }}>Escanea y guarda tu tarjeta de {card.businessName} en tu wallet.</p>
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <QrCode value={url} size={102} />
+            <QrCode value={url} size={102} imgStyle={{ width: "23.7cqw", height: "auto", display: "block" }} />
           </div>
           <p
-            style={{ fontSize: 11.5, color: "#444", margin: "7px 0 8px", lineHeight: 1.3, maxWidth: 250, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
+            style={{ fontSize: "2.7cqw", color: "#444", margin: "1.6cqw 0 1.9cqw", lineHeight: 1.3, maxWidth: "58cqw", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}
           >
             🎁 {card.rewardDescription}
           </p>
-          <div style={{ display: "flex", justifyContent: "center", gap: 7, alignItems: "center" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: "1.6cqw", alignItems: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: 23, width: "auto" }} />
+            <img src={APPLE_WALLET_BADGE} alt="Apple Wallet" style={{ height: "5.3cqw", width: "auto" }} />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={GOOGLE_WALLET_BADGE} alt="Google Wallet" style={{ height: 23, width: "auto" }} />
+            <img src={GOOGLE_WALLET_BADGE} alt="Google Wallet" style={{ height: "5.3cqw", width: "auto" }} />
           </div>
         </div>
       </div>

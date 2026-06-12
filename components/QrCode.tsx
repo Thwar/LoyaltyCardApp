@@ -1,8 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import QRCode from "qrcode";
 
-export function QrCode({ value, size = 200 }: { value: string; size?: number }) {
+// `size` sets the generation resolution (and default display size); pass
+// `imgStyle` (e.g. width 100%) to let CSS scale the rendered image instead.
+export function QrCode({ value, size = 200, imgStyle }: { value: string; size?: number; imgStyle?: CSSProperties }) {
   const [src, setSrc] = useState("");
   useEffect(() => {
     let active = true;
@@ -14,7 +16,7 @@ export function QrCode({ value, size = 200 }: { value: string; size?: number }) 
     };
   }, [value, size]);
 
-  if (!src) return <div style={{ width: size, height: size, background: "#f0f0f0", borderRadius: 8 }} />;
+  if (!src) return <div style={{ width: size, height: size, background: "#f0f0f0", borderRadius: 8, ...imgStyle }} />;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="QR" width={size} height={size} style={{ borderRadius: 8 }} />;
+  return <img src={src} alt="QR" width={size} height={size} style={{ borderRadius: 8, ...imgStyle }} />;
 }
