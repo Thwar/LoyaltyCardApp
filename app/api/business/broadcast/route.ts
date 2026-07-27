@@ -64,10 +64,13 @@ export async function POST(req: Request) {
     const cardMap = new Map(cards.map((c) => [c.id, { ...c, logoPng: c.logoPng || business.logoPng }]));
     const slotsOf = (cid: string) => cardMap.get(cid)?.totalSlots ?? 0;
 
-    // Filter the audience to the chosen segment.
+    // Filter the audience to the chosen segment. Holders of a deleted card are
+    // excluded outright — their pass is already finalized, and they'd otherwise be
+    // counted as recipients while being segmented against a totalSlots of 0.
     const snap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).where("businessId", "==", business.id).get();
     const targets = snap.docs.filter((d) => {
       const c = d.data() as CustomerCard;
+      if (!cardMap.has(c.loyaltyCardId)) return false;
       return inSegment(c, segment, slotsOf(c.loyaltyCardId), now);
     });
 
@@ -94,6 +97,8 @@ export async function POST(req: Request) {
     }
 
     // Google: per-object message, only to targets with a Google pass (chunked for timeout safety).
+    let googleAttempted = 0;
+    let googleDelivered = 0;
     if (walletConfigured()) {
       const gTargets = targets.filter((d) => (d.data() as CustomerCard).googleObjectId);
       const CHUNK = 15;
@@ -101,17 +106,26 @@ export async function POST(req: Request) {
         await Promise.all(
           gTargets.slice(i, i + CHUNK).map((d) => {
             const c: CustomerCard = { id: d.id, ...(d.data() as Omit<CustomerCard, "id">) };
-            const card = cardMap.get(c.loyaltyCardId) || cards[0];
+            // Resolve the customer's OWN card. Never fall back to cards[0]: the
+            // audience query includes holders of soft-deleted cards, and syncing
+            // them against a different card would un-void their pass and show a
+            // balance they never earned.
+            const card = cardMap.get(c.loyaltyCardId);
             if (!card) return Promise.resolve();
-            return syncLoyaltyObject(c, card, message, business.description, plan.removeBranding).catch((e) =>
-              console.error("[broadcast] google:", c.id, e)
-            );
+            googleAttempted++;
+            return syncLoyaltyObject(c, card, message, business.description, plan.removeBranding, true)
+              .then(() => {
+                googleDelivered++;
+              })
+              .catch((e) => console.error("[broadcast] google:", c.id, e));
           })
         );
       }
     }
 
-    return NextResponse.json({ ok: true, recipients: targets.length });
+    // Report what actually shipped, not just who was targeted — a wholesale Google
+    // failure used to be invisible behind an unconditional ok:true.
+    return NextResponse.json({ ok: true, recipients: targets.length, googleAttempted, googleDelivered });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }

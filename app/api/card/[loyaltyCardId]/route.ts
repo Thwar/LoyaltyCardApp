@@ -19,19 +19,35 @@ export async function GET(_req: Request, ctx: { params: Promise<{ loyaltyCardId:
     const maxClients = business ? effectivePlan(business).maxClients : null;
     if (maxClients != null) full = (await countClients(card.businessId)) >= maxClients;
 
-    return NextResponse.json({
-      full,
-      card: {
-        id: card.id,
-        businessName: card.businessName,
-        totalSlots: card.totalSlots,
-        rewardDescription: card.rewardDescription,
-        cardColor: card.cardColor,
-        textColor: card.textColor || "#FFFFFF",
-        stampShape: card.stampShape || "circle",
-        logoPng: card.logoPng || "",
+    // Scan-time display data changes rarely, but every QR scan used to cost two
+    // sequential Firestore round trips. A short shared cache lets the CDN serve the
+    // burst of scans that follows one person putting the table tent out, and
+    // stale-while-revalidate means nobody ever waits on the refresh.
+    //
+    // `full` can be up to 30s stale — deliberately fine, because /api/enroll
+    // re-checks the cap authoritatively before creating anything (see below).
+    return NextResponse.json(
+      {
+        full,
+        card: {
+          id: card.id,
+          businessName: card.businessName,
+          totalSlots: card.totalSlots,
+          rewardDescription: card.rewardDescription,
+          cardColor: card.cardColor,
+          textColor: card.textColor || "#FFFFFF",
+          stampShape: card.stampShape || "circle",
+          // A URL, not the base64 bytes. Inlining logoPng made this response ~85KB,
+          // of which >99% was the logo, re-downloaded on every scan. The /logo route
+          // serves the same image with immutable caching, and the browser fetches it
+          // in parallel instead of the form waiting behind it. The /logo route falls
+          // back to the business logo, so offer the URL whenever either exists; null
+          // keeps the client from requesting a guaranteed 404.
+          logoUrl: card.logoPng || business?.logoPng ? `/api/card/${card.id}/logo` : null,
+        },
       },
-    });
+      { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300" } }
+    );
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }

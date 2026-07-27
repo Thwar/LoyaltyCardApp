@@ -7,12 +7,14 @@ import { generateUniqueCardCode } from "@/lib/cardCode";
 import { walletConfigured, issueMembershipPass } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { allowRequest, clientIp } from "@/lib/rateLimit";
+import { nameMatches } from "@/lib/identity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DAY = 24 * 60 * 60 * 1000;
+
 
 // Public: a person enrolls in a membership from /m/[programId].
 export async function POST(req: Request) {
@@ -32,6 +34,7 @@ export async function POST(req: Request) {
     if (!email) return NextResponse.json({ error: "El correo electrónico es obligatorio." }, { status: 400 });
     if (!EMAIL_RE.test(email)) return NextResponse.json({ error: "Ingresa un correo válido." }, { status: 400 });
 
+    if (!programId) return NextResponse.json({ error: "Membresía no encontrada." }, { status: 404 });
     const program = await getMembershipProgram(programId);
     if (!program || program.isActive === false || program.deletedAt) {
       return NextResponse.json({ error: "Membresía no encontrada." }, { status: 404 });
@@ -39,11 +42,27 @@ export async function POST(req: Request) {
 
     const membersCol = adminDb().collection(COLLECTIONS.MEMBERS);
 
-    // Same email at this business = same person. Return their existing membership.
-    const dup = await membersCol.where("businessId", "==", program.businessId).where("memberEmail", "==", email).limit(1).get();
+    // Same email in THIS program = same person. Scoped by programId, not just
+    // businessId: a business with two programs would otherwise hand back the
+    // member's card for the wrong one.
+    const dup = await membersCol
+      .where("businessId", "==", program.businessId)
+      .where("programId", "==", program.id)
+      .where("memberEmail", "==", email)
+      .limit(1)
+      .get();
     if (!dup.empty) {
       const d = dup.docs[0];
       const member: Member = { id: d.id, ...(d.data() as Omit<Member, "id">) };
+      // Public endpoint returning memberCode — the credential staff scan at the door.
+      // Require the name to match too, so an email address alone can't pull someone
+      // else's membership. Same rule as /api/enroll.
+      if (!nameMatches(name, member.memberName || "")) {
+        return NextResponse.json(
+          { error: "Ya hay una membresía registrada con este correo. Si es tuya, pídesela al negocio." },
+          { status: 409 }
+        );
+      }
       return NextResponse.json({ memberId: member.id, memberCode: member.memberCode, existing: true, appleConfigured: appleConfigured() });
     }
 

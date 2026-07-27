@@ -42,9 +42,16 @@ export async function POST(req: Request) {
 
     const membersCol = adminDb().collection(COLLECTIONS.MEMBERS);
 
-    // Same email at this business = same person; return the existing member.
+    // Same email in THIS program = same person; return the existing member. Scoped by
+    // programId to agree with /api/membership/enroll — matching on businessId alone
+    // could hand back a member of a different (or soft-deleted) program.
     if (email) {
-      const dup = await membersCol.where("businessId", "==", business.id).where("memberEmail", "==", email).limit(1).get();
+      const dup = await membersCol
+        .where("businessId", "==", business.id)
+        .where("programId", "==", program.id)
+        .where("memberEmail", "==", email)
+        .limit(1)
+        .get();
       if (!dup.empty) {
         const d = dup.docs[0];
         return NextResponse.json({ member: { id: d.id, ...(d.data() as Omit<Member, "id">) }, existing: true });
@@ -123,7 +130,8 @@ export async function PATCH(req: Request) {
 
     await adminDb().collection(COLLECTIONS.MEMBERS).doc(memberId).update(update);
     const updated = { ...member, ...update, history: [...(member.history || []), ...events] } as Member;
-    await pushMemberPass(updated, msg || undefined); // best-effort pass refresh
+    // Renewed / deactivated / visits reset — the member isn't watching, so notify.
+    await pushMemberPass(updated, msg || undefined, !!msg); // best-effort pass refresh
     return NextResponse.json({ member: updated });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });

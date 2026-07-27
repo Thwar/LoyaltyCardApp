@@ -21,6 +21,7 @@ import { APPLE_WALLET_BADGE, GOOGLE_WALLET_BADGE } from "@/lib/walletBadges";
 import { memberStatus, visitsRemaining, MEMBER_STATUS_LABEL, type MemberStatus } from "@/lib/membership";
 import { MembershipCardVisual } from "@/components/MembershipCardVisual";
 import { TiltWrap } from "@/components/TiltWrap";
+import { ConfirmBar } from "@/components/ConfirmBar";
 
 interface MeResponse {
   role?: "owner" | "cajero";
@@ -874,6 +875,7 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
   const [logo, setLogo] = useState<string | null>(existing?.logoPng ? `data:image/png;base64,${existing.logoPng}` : null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
+  const [confirmDel, setConfirmDel] = useState(false);
 
   async function save() {
     setErr("");
@@ -918,13 +920,19 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
     onSaved();
   }
   async function del() {
-    if (!confirm("¿Eliminar esta membresía? Las tarjetas de tus socios dejarán de funcionar.")) return;
     setErr("");
     setSaving(true);
-    const res = await authedFetch("/api/membership/program", { method: "DELETE", body: JSON.stringify({ programId: existing?.id }) });
-    setSaving(false);
-    if (!res.ok) return setErr((await res.json()).error || "No se pudo eliminar.");
-    onSaved();
+    setConfirmDel(false);
+    try {
+      const res = await authedFetch("/api/membership/program", { method: "DELETE", body: JSON.stringify({ programId: existing?.id }) });
+      const json = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) return setErr(json.error || `No se pudo eliminar (${res.status}).`);
+      onSaved();
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   const days = Number(durationDays) || 0;
@@ -1053,17 +1061,29 @@ function MembershipForm({ existing, businessName, onSaved }: { existing?: Member
 
         {existing && (
           <div style={{ borderTop: "1px solid var(--border)", marginTop: 18, paddingTop: 16 }}>
-            <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-              <button className="btn btn-outline" style={{ width: "auto" }} disabled={saving} onClick={() => setActive(existing.isActive === false)}>
-                {existing.isActive === false ? "Reactivar membresía" : "Desactivar membresía"}
-              </button>
-              <button className="btn btn-ghost" style={{ width: "auto", color: "#c62828" }} disabled={saving} onClick={del}>
-                Eliminar membresía
-              </button>
-            </div>
-            <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
-              Desactivar pausa la membresía (las tarjetas quedan inactivas). Eliminar la quita por completo.
-            </p>
+            {confirmDel ? (
+              <ConfirmBar
+                message="¿Eliminar esta membresía? Las tarjetas de tus socios dejarán de funcionar. Esta acción no se puede deshacer."
+                confirmLabel="Sí, eliminar"
+                onConfirm={del}
+                onCancel={() => setConfirmDel(false)}
+                busy={saving}
+              />
+            ) : (
+              <>
+                <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                  <button className="btn btn-outline" style={{ width: "auto" }} disabled={saving} onClick={() => setActive(existing.isActive === false)}>
+                    {existing.isActive === false ? "Reactivar membresía" : "Desactivar membresía"}
+                  </button>
+                  <button className="btn btn-ghost" style={{ width: "auto", color: "#c62828" }} disabled={saving} onClick={() => setConfirmDel(true)}>
+                    Eliminar membresía
+                  </button>
+                </div>
+                <p className="muted" style={{ fontSize: 12, marginTop: 8 }}>
+                  Desactivar pausa la membresía (las tarjetas quedan inactivas). Eliminar la quita por completo.
+                </p>
+              </>
+            )}
           </div>
         )}
       </div>
@@ -1368,6 +1388,7 @@ function MembersList({ members, onSelect }: { members: Member[]; onSelect: (m: M
 function MemberModal({ member, program, onChanged, onClose }: { member: Member; program: MembershipProgram; onChanged: () => void; onClose: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [confirmDel, setConfirmDel] = useState(false);
   const [days, setDays] = useState("30");
   const st = memberStatus(member);
   const rem = visitsRemaining(member);
@@ -1375,24 +1396,34 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
     setErr("");
-    const res = await authedFetch("/api/membership/member", { method: "PATCH", body: JSON.stringify({ memberId: member.id, ...body }) });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) return setErr(json.error || "No se pudo actualizar.");
-    onChanged();
-    onClose();
+    try {
+      const res = await authedFetch("/api/membership/member", { method: "PATCH", body: JSON.stringify({ memberId: member.id, ...body }) });
+      const json = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) return setErr(json.error || `No se pudo actualizar (${res.status}).`);
+      onChanged();
+      onClose();
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function remove() {
-    if (!confirm(`¿Eliminar a ${member.memberName}?`)) return;
     setBusy(true);
     setErr("");
-    const res = await authedFetch("/api/membership/member", { method: "DELETE", body: JSON.stringify({ memberId: member.id }) });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) return setErr(json.error || "No se pudo eliminar.");
-    onChanged();
-    onClose();
+    setConfirmDel(false);
+    try {
+      const res = await authedFetch("/api/membership/member", { method: "DELETE", body: JSON.stringify({ memberId: member.id }) });
+      const json = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) return setErr(json.error || `No se pudo eliminar (${res.status}).`);
+      onChanged();
+      onClose();
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -1441,16 +1472,26 @@ function MemberModal({ member, program, onChanged, onClose }: { member: Member; 
           </a>
         </div>
 
-        <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-          {st !== "expired" && (
-            <button className="btn btn-outline" style={{ flex: "1 1 120px" }} disabled={busy} onClick={() => patch({ deactivate: true })}>
-              Desactivar
+        {confirmDel ? (
+          <ConfirmBar
+            message={`¿Eliminar a ${member.memberName}? Su tarjeta dejará de funcionar. Esta acción no se puede deshacer.`}
+            confirmLabel="Sí, eliminar"
+            onConfirm={remove}
+            onCancel={() => setConfirmDel(false)}
+            busy={busy}
+          />
+        ) : (
+          <div className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+            {st !== "expired" && (
+              <button className="btn btn-outline" style={{ flex: "1 1 120px" }} disabled={busy} onClick={() => patch({ deactivate: true })}>
+                Desactivar
+              </button>
+            )}
+            <button className="btn btn-ghost" style={{ flex: "1 1 120px", color: "#c62828" }} disabled={busy} onClick={() => setConfirmDel(true)}>
+              Eliminar
             </button>
-          )}
-          <button className="btn btn-ghost" style={{ flex: "1 1 120px", color: "#c62828" }} disabled={busy} onClick={remove}>
-            Eliminar
-          </button>
-        </div>
+          </div>
+        )}
 
         <div style={{ marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
           <h4 style={{ margin: "0 0 10px", fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)" }}>Historial</h4>
@@ -2084,6 +2125,11 @@ function CardPanel({ card, businessLogo, onEdit, onChanged }: { card: LoyaltyCar
   const [copied, setCopied] = useState(false);
   const [busyActive, setBusyActive] = useState(false);
   const [busyDelete, setBusyDelete] = useState(false);
+  const [err, setErr] = useState("");
+  // In-page confirmation instead of window.confirm(): Safari lets the user mute a
+  // page's dialogs for the rest of the session, after which confirm() returns false
+  // silently and these buttons look dead.
+  const [confirming, setConfirming] = useState<"deactivate" | "delete" | null>(null);
 
   useEffect(() => {
     // Prefer the canonical domain so QR links never point customers at the
@@ -2093,35 +2139,55 @@ function CardPanel({ card, businessLogo, onEdit, onChanged }: { card: LoyaltyCar
   }, [card.id]);
 
   async function setActive(active: boolean) {
+    setErr("");
+    setConfirming(null);
     setBusyActive(true);
     try {
       const res = await authedFetch("/api/business/deactivate", {
         method: "POST",
         body: JSON.stringify({ cardId: card.id, active }),
       });
-      if (res.ok) onChanged();
+      const json = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        setErr(json.error || `No se pudo actualizar la tarjeta (${res.status}).`);
+        onChanged(); // resync — the server may have applied part of the change
+        return;
+      }
+      onChanged();
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
     } finally {
       setBusyActive(false);
     }
   }
 
   async function deleteCard() {
-    if (!confirm("¿Eliminar esta tarjeta? Se borrará la tarjeta y su historial, y las tarjetas de tus caseros quedarán finalizadas (en gris). Esta acción no se puede deshacer.")) {
-      return;
-    }
+    setErr("");
+    setConfirming(null);
     setBusyDelete(true);
     try {
       const res = await authedFetch("/api/business/card/delete", {
         method: "POST",
         body: JSON.stringify({ cardId: card.id }),
       });
-      if (res.ok) onChanged();
+      const json = await res.json().catch(() => ({} as { error?: string }));
+      if (!res.ok) {
+        setErr(json.error || `No se pudo eliminar la tarjeta (${res.status}).`);
+        // The route voids the card before clearing its ledgers, so a failure here
+        // can still have changed the card — never leave a stale panel on screen.
+        onChanged();
+        return;
+      }
+      onChanged();
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
     } finally {
       setBusyDelete(false);
     }
   }
 
   const inactive = card.isActive === false;
+  const busy = busyActive || busyDelete;
 
   return (
     <div className="card mt">
@@ -2166,28 +2232,53 @@ function CardPanel({ card, businessLogo, onEdit, onChanged }: { card: LoyaltyCar
         </button>
       </div>
 
-      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-        {inactive ? (
-          <button className="btn btn-primary" style={{ width: "auto" }} onClick={() => setActive(true)} disabled={busyActive || busyDelete}>
-            {busyActive ? "Reactivando…" : "Reactivar tarjeta"}
-          </button>
+      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12, marginTop: 14 }}>
+        {err && <div className="error-box" style={{ marginBottom: 10 }}>{err}</div>}
+
+        {confirming ? (
+          <ConfirmBar
+            message={
+              confirming === "delete"
+                ? "¿Eliminar esta tarjeta? Las tarjetas de tus caseros quedarán finalizadas (en gris) y se borrará su historial de sellos. Esta acción no se puede deshacer."
+                : "¿Desactivar esta tarjeta? Las tarjetas de tus caseros se verán en gris (finalizadas). Puedes reactivarla cuando quieras."
+            }
+            confirmLabel={confirming === "delete" ? "Sí, eliminar" : "Sí, desactivar"}
+            onConfirm={() => (confirming === "delete" ? deleteCard() : setActive(false))}
+            onCancel={() => setConfirming(null)}
+            busy={busy}
+          />
         ) : (
-          <button
-            className="btn btn-outline"
-            style={{ width: "auto" }}
-            onClick={() => {
-              if (confirm("¿Desactivar esta tarjeta? Las tarjetas de tus caseros se verán en gris (finalizadas).")) {
-                setActive(false);
-              }
-            }}
-            disabled={busyActive || busyDelete}
-          >
-            {busyActive ? "Desactivando…" : "Desactivar tarjeta"}
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {inactive ? (
+              <button className="btn btn-primary" style={{ width: "auto" }} onClick={() => setActive(true)} disabled={busy}>
+                {busyActive ? "Reactivando…" : "Reactivar tarjeta"}
+              </button>
+            ) : (
+              <button
+                className="btn btn-outline"
+                style={{ width: "auto" }}
+                onClick={() => {
+                  setErr("");
+                  setConfirming("deactivate");
+                }}
+                disabled={busy}
+              >
+                {busyActive ? "Desactivando…" : "Desactivar tarjeta"}
+              </button>
+            )}
+            <button
+              className="btn"
+              style={{ width: "auto", background: "#fdecea", color: "#c62828" }}
+              onClick={() => {
+                setErr("");
+                setConfirming("delete");
+              }}
+              disabled={busy}
+            >
+              {busyDelete ? "Eliminando…" : "Eliminar tarjeta"}
+            </button>
+          </div>
         )}
-        <button className="btn" style={{ width: "auto", background: "#fdecea", color: "#c62828" }} onClick={deleteCard} disabled={busyActive || busyDelete}>
-          {busyDelete ? "Eliminando…" : "Eliminar tarjeta"}
-        </button>
       </div>
     </div>
   );
@@ -2265,6 +2356,7 @@ function ComunicacionTab({ business, planInfo, customers, cards, onChanged }: { 
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [confirmDup, setConfirmDup] = useState(false);
   const msgRef = useRef<HTMLTextAreaElement>(null);
   // Live clock so the countdown + progress bar tick every second.
   const [now, setNow] = useState(() => Date.now());
@@ -2300,25 +2392,32 @@ function ComunicacionTab({ business, planInfo, customers, cards, onChanged }: { 
   const slotsById = new Map(cards.map((c) => [c.id, c.totalSlots]));
   const segCount = customers.filter((c) => inSegment(c, segment, slotsById.get(c.loyaltyCardId) ?? 0, now)).length;
 
-  async function send() {
-    // Guard against accidental repeats: same text already sent in the last 24h
-    // (double-clicks and re-sends burn the daily quota).
-    const dup = recent.find((h) => h.message.trim() === message.trim());
-    if (dup) {
-      const mins = Math.max(1, Math.round((now - dup.at) / 60000));
-      const ago = mins < 60 ? `hace ${mins} min` : `hace ${Math.round(mins / 60)} h`;
-      if (!confirm(`Ya enviaste este mismo mensaje ${ago}. ¿Enviarlo de nuevo?`)) return;
-    }
+  // Guard against accidental repeats: same text already sent in the last 24h
+  // (double-clicks and re-sends burn the daily quota).
+  const dup = recent.find((h) => h.message.trim() === message.trim());
+  const dupAgo = dup ? (() => {
+    const mins = Math.max(1, Math.round((now - dup.at) / 60000));
+    return mins < 60 ? `hace ${mins} min` : `hace ${Math.round(mins / 60)} h`;
+  })() : "";
+
+  async function send({ skipDupCheck = false } = {}) {
+    if (dup && !skipDupCheck) return setConfirmDup(true);
+    setConfirmDup(false);
     setErr("");
     setMsg("");
     setBusy(true);
-    const res = await authedFetch("/api/business/broadcast", { method: "POST", body: JSON.stringify({ message: message.trim(), segment }) });
-    const json = await res.json();
-    setBusy(false);
-    if (!res.ok) return setErr(json.error || "No se pudo enviar.");
-    setMsg(`Enviado a ${json.recipients} casero(s).`);
-    setMessage("");
-    onChanged();
+    try {
+      const res = await authedFetch("/api/business/broadcast", { method: "POST", body: JSON.stringify({ message: message.trim(), segment }) });
+      const json = await res.json().catch(() => ({} as { error?: string; recipients?: number }));
+      if (!res.ok) return setErr(json.error || `No se pudo enviar (${res.status}).`);
+      setMsg(`Enviado a ${json.recipients} casero(s).`);
+      setMessage("");
+      onChanged();
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -2391,9 +2490,19 @@ function ComunicacionTab({ business, planInfo, customers, cards, onChanged }: { 
           <NotifPreview businessName={business.name} logoPng={business.logoPng || cards[0]?.logoPng} color={cards[0]?.cardColor || "#E53935"} text={message.trim()} />
         </div>
 
-        <button className="btn btn-primary" onClick={send} disabled={busy || blocked || !message.trim() || segCount === 0}>
-          {busy ? "Enviando…" : segCount === 0 ? "Sin caseros en este grupo" : `Enviar a ${segCount} casero(s)`}
-        </button>
+        {confirmDup ? (
+          <ConfirmBar
+            message={`Ya enviaste este mismo mensaje ${dupAgo}. Enviarlo de nuevo consume otro de tus envíos del día.`}
+            confirmLabel="Enviar de nuevo"
+            onConfirm={() => send({ skipDupCheck: true })}
+            onCancel={() => setConfirmDup(false)}
+            busy={busy}
+          />
+        ) : (
+          <button className="btn btn-primary" onClick={() => send()} disabled={busy || blocked || !message.trim() || segCount === 0}>
+            {busy ? "Enviando…" : segCount === 0 ? "Sin caseros en este grupo" : `Enviar a ${segCount} casero(s)`}
+          </button>
+        )}
 
         {history.length > 0 && (
           <div style={{ marginTop: 24 }}>
@@ -2621,6 +2730,7 @@ function ClientModal({
   const totalStamps = client.memberships.reduce((s, m) => s + (m.rewardsRedeemed || 0) * (cardsById.get(m.loyaltyCardId)?.totalSlots ?? 0) + m.currentStamps, 0);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+  const [confirmDel, setConfirmDel] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -2628,23 +2738,32 @@ function ClientModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
+  const nCards = client.memberships.length;
+  const deleteMsg =
+    nCards > 1
+      ? `¿Eliminar a ${client.name} y sus ${nCards} tarjetas? Se borran sus datos. No se puede deshacer.`
+      : `¿Eliminar a ${client.name}? Se borra su tarjeta y datos. No se puede deshacer.`;
+
   async function deleteClient() {
-    const n = client.memberships.length;
-    const msg = n > 1 ? `¿Eliminar a ${client.name} y sus ${n} tarjetas? Se borran sus datos. No se puede deshacer.` : `¿Eliminar a ${client.name}? Se borra su tarjeta y datos. No se puede deshacer.`;
-    if (!confirm(msg)) return;
     setBusy(true);
     setErr("");
-    const res = await authedFetch("/api/business/customer", {
-      method: "DELETE",
-      body: JSON.stringify({ customerCardIds: client.memberships.map((m) => m.id) }),
-    });
-    setBusy(false);
-    if (res.ok) {
-      onChanged();
-      onClose();
-    } else {
-      const j = await res.json().catch(() => ({}));
-      setErr(j.error || "No se pudo eliminar.");
+    setConfirmDel(false);
+    try {
+      const res = await authedFetch("/api/business/customer", {
+        method: "DELETE",
+        body: JSON.stringify({ customerCardIds: client.memberships.map((m) => m.id) }),
+      });
+      if (res.ok) {
+        onChanged();
+        onClose();
+        return;
+      }
+      const j = await res.json().catch(() => ({} as { error?: string }));
+      setErr(j.error || `No se pudo eliminar (${res.status}).`);
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -2658,14 +2777,19 @@ function ClientModal({
           </button>
         </div>
 
-        {hasRemovedPass && (
+        {hasRemovedPass && !confirmDel && (
           <div className="warn-box" style={{ marginBottom: 10, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
             <span style={{ fontSize: 14 }}>Este casero eliminó su pase del wallet.</span>
             {!cajero && (
-              <button className="btn btn-sm" style={{ width: "auto", background: "#c62828", color: "#fff", flex: "0 0 auto" }} onClick={deleteClient} disabled={busy}>
+              <button className="btn btn-sm" style={{ width: "auto", background: "#c62828", color: "#fff", flex: "0 0 auto" }} onClick={() => setConfirmDel(true)} disabled={busy}>
                 {busy ? "Eliminando…" : "Eliminar casero"}
               </button>
             )}
+          </div>
+        )}
+        {confirmDel && (
+          <div style={{ marginBottom: 10 }}>
+            <ConfirmBar message={deleteMsg} confirmLabel="Sí, eliminar" onConfirm={deleteClient} onCancel={() => setConfirmDel(false)} busy={busy} />
           </div>
         )}
         {err && (

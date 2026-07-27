@@ -75,9 +75,21 @@ export async function getLoyaltyCardsByBusiness(businessId: string): Promise<Loy
 
 // Distinct clients (caseros) of a business — one person can hold several cards but
 // counts once (shared customerId). Used to enforce the free plan's client cap.
-export async function countClients(businessId: string): Promise<number> {
+//
+// Only clients of LIVE cards count. Deleting a card keeps its customer docs (so the
+// greyed passes keep serving) but must free the slot, exactly as it frees a maxCards
+// slot — otherwise a free café that deletes a full card can never enrol again, while
+// the dashboard (which applies the same filter) shows it zero clients.
+// `liveCardIds` may be passed in by a caller that already fetched the business's
+// cards, so the enroll hot path doesn't pay for the same query twice.
+export async function countClients(businessId: string, liveCardIds?: Set<string>): Promise<number> {
+  const live = liveCardIds ?? new Set((await getLoyaltyCardsByBusiness(businessId)).map((c) => c.id));
   const snap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).where("businessId", "==", businessId).get();
-  const ids = new Set(snap.docs.map((d) => (d.data().customerId as string) || d.id));
+  const ids = new Set(
+    snap.docs
+      .filter((d) => live.has(d.data().loyaltyCardId as string))
+      .map((d) => (d.data().customerId as string) || d.id)
+  );
   return ids.size;
 }
 

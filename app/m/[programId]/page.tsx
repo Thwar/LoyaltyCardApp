@@ -11,7 +11,7 @@ interface PublicProgram {
   description: string;
   cardColor: string;
   textColor?: string;
-  logoPng?: string;
+  logoUrl?: string | null;
   tracksVisits: boolean;
   defaultVisitLimit?: number | null;
   defaultDurationDays?: number | null;
@@ -92,7 +92,7 @@ export default function MembershipJoinPage() {
           programName={program.name}
           cardColor={program.cardColor}
           textColor={program.textColor}
-          logoPng={program.logoPng || undefined}
+          logoPng={program.logoUrl || undefined}
           rightLabel={rightLabel}
           rightValue={rightValue}
           footer={footer}

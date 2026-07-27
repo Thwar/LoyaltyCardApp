@@ -14,7 +14,7 @@ interface PublicCard {
   cardColor: string;
   textColor?: string;
   stampShape?: StampShape;
-  logoPng?: string;
+  logoUrl?: string | null;
 }
 
 interface EnrollResult {
@@ -129,7 +129,7 @@ export default function JoinPage() {
           cardColor={card.cardColor}
           textColor={card.textColor}
           stampShape={card.stampShape}
-          logoUrl={card.logoPng ? `data:image/png;base64,${card.logoPng}` : undefined}
+          logoUrl={card.logoUrl || undefined}
         />
 
         <div className="card mt center">
@@ -222,7 +222,7 @@ export default function JoinPage() {
         cardColor={card.cardColor}
         textColor={card.textColor}
         stampShape={card.stampShape}
-        logoUrl={card.logoPng ? `data:image/png;base64,${card.logoPng}` : undefined}
+        logoUrl={card.logoUrl || undefined}
       />
 
       <h1 style={{ fontSize: 22, marginTop: 22 }}>Únete al club de {card.businessName}</h1>

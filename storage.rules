@@ -1,50 +1,19 @@
 rules_version = '2';
 
+// SoyCasero — Cloud Storage is not used.
+//
+// Logos are resized client-side, posted through our /api routes and stored as
+// base64 on the Firestore doc (LoyaltyCard.logoPng / Business.logoPng); nothing in
+// the client bundle imports `firebase/storage`. The previous ruleset kept
+// world-readable, owner-writable buckets for business-logos/, user-profiles/ and
+// loyalty-card-backgrounds/ — paths no code writes to, but any signed-up account
+// could still have used them as unmetered public file hosting.
+//
+// Deny everything. Re-open a specific prefix only if a feature actually needs it.
 service firebase.storage {
   match /b/{bucket}/o {
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isBusinessOwner(businessId) {
-      return isSignedIn() &&
-        firestore.exists(/databases/(default)/documents/businesses/$(businessId)) &&
-        firestore.get(/databases/(default)/documents/businesses/$(businessId)).data.ownerId == request.auth.uid;
-    }
-
-    function isImage() {
-      return request.resource.contentType.matches('image/.*');
-    }
-
-    // Public read for assets used in the app (optional). Writes are restricted below.
-    match /business-logos/{businessId}/{fileName} {
-      allow read: if true;
-      // Now using proper ownership check with correct Firebase Storage syntax
-      allow write: if isBusinessOwner(businessId) && isImage();
-      allow delete: if isBusinessOwner(businessId);
-    }
-
-    match /user-profiles/{uid}/{fileName} {
-      allow read: if true;
-      allow write: if isSignedIn() && request.auth.uid == uid && isImage();
-      allow delete: if isSignedIn() && request.auth.uid == uid;
-    }
-
-    match /loyalty-card-backgrounds/{loyaltyCardId}/{fileName} {
-      allow read: if true;
-      // Only owner of the business that owns the loyalty card can write/delete
-      allow write: if isSignedIn() &&
-                   firestore.exists(/databases/(default)/documents/loyaltyCards/$(loyaltyCardId)) &&
-                   isBusinessOwner(firestore.get(/databases/(default)/documents/loyaltyCards/$(loyaltyCardId)).data.businessId) && isImage();
-      allow delete: if isSignedIn() &&
-                    firestore.exists(/databases/(default)/documents/loyaltyCards/$(loyaltyCardId)) &&
-                    isBusinessOwner(firestore.get(/databases/(default)/documents/loyaltyCards/$(loyaltyCardId)).data.businessId);
-    }
-
-    // Default rule - deny all other access
     match /{allPaths=**} {
-      allow read: if false;
-      allow write: if false;
+      allow read, write: if false;
     }
   }
 }

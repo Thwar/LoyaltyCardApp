@@ -97,7 +97,7 @@ export async function POST(req: Request) {
       }
       await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).doc(cardId).update(fields);
       await notifyAllCustomerPasses(business.id); // Apple: push the change to current customers' passes
-      await syncAllGooglePasses(business.id); // Google: PATCH the class + each customer object
+      await syncAllGooglePasses(business.id, cardId); // Google: PATCH the class + each customer object
       return NextResponse.json({ card: { ...existing, ...fields } });
     }
 

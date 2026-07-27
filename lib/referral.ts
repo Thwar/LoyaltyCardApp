@@ -34,7 +34,8 @@ export async function awardReferralStamp(referrerId: string, card: LoyaltyCard, 
     try {
       const updated: CustomerCard = { ...ref, id: snap.id, currentStamps: next };
       const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
-      await syncLoyaltyObject(updated, cardForPass, "🎉 ¡Ganaste un sello por invitar a un amigo!", business?.description, business ? effectivePlan(business).removeBranding : false);
+      // Worth a notification — the referrer isn't at the counter to see it happen.
+      await syncLoyaltyObject(updated, cardForPass, "🎉 ¡Ganaste un sello por invitar a un amigo!", business?.description, business ? effectivePlan(business).removeBranding : false, true);
     } catch (e) {
       console.error("[referral] google:", e);
     }

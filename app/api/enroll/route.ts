@@ -2,25 +2,28 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import type { DocumentReference } from "firebase-admin/firestore";
 import { adminDb } from "@/lib/firebaseAdmin";
-import { COLLECTIONS, type CustomerCard, type LoyaltyCard } from "@/lib/types";
-import { getLoyaltyCard, getBusinessById, countClients } from "@/lib/serverData";
+import { COLLECTIONS, type Business, type CustomerCard, type LoyaltyCard } from "@/lib/types";
+import { getLoyaltyCard, getBusinessById, countClients, getLoyaltyCardsByBusiness } from "@/lib/serverData";
 import { generateUniqueCardCode } from "@/lib/cardCode";
 import { walletConfigured, issuePass } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { effectivePlan } from "@/lib/plans";
 import { allowRequest, clientIp } from "@/lib/rateLimit";
+import { nameMatches } from "@/lib/identity";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+
 // Issue the wallet pass (best-effort) and build the enrollment response.
-async function cardResponse(ref: DocumentReference, customer: CustomerCard, card: LoyaltyCard, existing: boolean) {
+// `business` is passed in — the caller has already read it for the plan check, and
+// re-reading it here cost another Firestore round trip on every enrollment.
+async function cardResponse(ref: DocumentReference, customer: CustomerCard, card: LoyaltyCard, existing: boolean, business: Business | null) {
   let saveUrl: string | null = null;
   if (walletConfigured()) {
     try {
-      const business = await getBusinessById(card.businessId);
       const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
       const issued = await issuePass(customer, cardForPass, business?.description, business ? effectivePlan(business).removeBranding : false);
       saveUrl = issued.saveUrl;
@@ -79,10 +82,13 @@ export async function POST(req: Request) {
     // All of this email's cards at this business belong to ONE client (the same
     // person can hold multiple cards), linked by a shared customerId + identity —
     // re-enrolling never creates a duplicate client.
-    const clientSnap = await cardsCol
-      .where("businessId", "==", card.businessId)
-      .where("customerEmail", "==", email)
-      .get();
+    //
+    // Fetched together with the business: they're independent, and running them
+    // back to back added a whole Firestore round trip to every enrollment.
+    const [clientSnap, business] = await Promise.all([
+      cardsCol.where("businessId", "==", card.businessId).where("customerEmail", "==", email).get(),
+      getBusinessById(card.businessId),
+    ]);
 
     // Resolve the client: reuse their existing id/identity, or mint a new one.
     let customerId: string = randomUUID();
@@ -91,6 +97,19 @@ export async function POST(req: Request) {
     let clientConsent = marketingConsent;
     if (!clientSnap.empty) {
       const first = clientSnap.docs[0].data() as CustomerCard;
+
+      // This endpoint is public and unauthenticated, and the response below carries
+      // the customer's cardCode — the credential a cashier redeems against. Knowing
+      // an email address alone must not be enough to pull someone else's card, so
+      // the name has to match the one on record too. Legitimate re-enrollment (lost
+      // phone, adding a second card) is unaffected: they know their own name.
+      if (!nameMatches(name, first.customerName || "")) {
+        return NextResponse.json(
+          { error: "Ya hay una tarjeta registrada con este correo. Si es tuya, pídesela al negocio." },
+          { status: 409 }
+        );
+      }
+
       customerId = first.customerId || customerId;
       clientName = first.customerName || name;
       clientPhone = first.customerPhone || phone;
@@ -103,17 +122,26 @@ export async function POST(req: Request) {
           await sameCard.ref.update({ marketingConsent: true });
         }
         const customer: CustomerCard = { id: sameCard.id, ...(sameCard.data() as Omit<CustomerCard, "id">) };
-        return cardResponse(sameCard.ref, customer, card, true);
+        return cardResponse(sameCard.ref, customer, card, true, business);
       }
     }
 
     // Enforce the plan's client cap, but ONLY for genuinely new clients — an existing
     // casero re-opening or adding another card must never be turned away. Free plans
     // cap at maxClients; paid plans have maxClients = null (unlimited).
-    if (clientSnap.empty) {
-      const business = await getBusinessById(card.businessId);
-      const maxClients = business ? effectivePlan(business).maxClients : null;
-      if (maxClients != null && (await countClients(card.businessId)) >= maxClients) {
+    //
+    // Everything here is skipped entirely on paid plans: resolving the business's live
+    // cards costs a Firestore query, and this runs on the enrollment hot path (someone
+    // standing at a counter with their phone out).
+    const maxClients = business ? effectivePlan(business).maxClients : null;
+    if (maxClients != null) {
+      // "Existing" means they hold a card that still counts, i.e. one of the
+      // business's LIVE cards — the same rule countClients() applies. Skipping the cap
+      // for anyone who ever enrolled would let an owner delete a full card and then
+      // re-admit every past customer past the limit countClients had just reset.
+      const liveCardIds = new Set((await getLoyaltyCardsByBusiness(card.businessId)).map((c) => c.id));
+      const countsAlready = clientSnap.docs.some((d) => liveCardIds.has((d.data() as CustomerCard).loyaltyCardId));
+      if (!countsAlready && (await countClients(card.businessId, liveCardIds)) >= maxClients) {
         return NextResponse.json(
           { error: "Esta promoción alcanzó su límite de caseros por ahora. Vuelve a intentarlo más tarde.", full: true },
           { status: 403 }
@@ -147,7 +175,7 @@ export async function POST(req: Request) {
     // customer earns their first real stamp (see /api/stamp) — prevents bogus-email farming.
     const newRef = await cardsCol.add(data);
     const customer: CustomerCard = { id: newRef.id, ...data };
-    return cardResponse(newRef, customer, card, false);
+    return cardResponse(newRef, customer, card, false, business);
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }

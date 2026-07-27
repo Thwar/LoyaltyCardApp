@@ -132,7 +132,10 @@ export async function POST(req: Request) {
           rewardsRedeemed: redeemed ? Number(data.rewardsRedeemed || 0) + 1 : Number(data.rewardsRedeemed || 0),
         };
         const cardForPass = { ...loyalty, logoPng: loyalty.logoPng || business.logoPng };
-        await syncLoyaltyObject(updated, cardForPass, eventMessage, business.description, effectivePlan(business).removeBranding);
+        // Google caps notifying messages at 3 per pass per day, so only the events
+        // worth interrupting someone for get one — a routine stamp just updates the
+        // pass face (the customer is standing at the counter watching it happen).
+        await syncLoyaltyObject(updated, cardForPass, eventMessage, business.description, effectivePlan(business).removeBranding, completed || redeemed);
       } catch (we) {
         console.error("Wallet update error:", we);
       }

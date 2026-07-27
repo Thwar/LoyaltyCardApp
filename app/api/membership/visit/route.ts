@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     if (memberStatus(member) !== "active") return result(member, false);
 
     // Atomic: re-check status inside the tx so concurrent scans can't overshoot a limit.
-    const txData = await adminDb().runTransaction<Member | null>(async (t) => {
+    const tx = await adminDb().runTransaction<{ member: Member; eventMessage: string; lastVisit: boolean } | null>(async (t) => {
       const snap = await t.get(docRef);
       const d = { id: docRef.id, ...(snap.data() as Omit<Member, "id">) };
       if (memberStatus(d) !== "active") return null; // expired / no visits since pre-read
@@ -62,12 +62,17 @@ export async function POST(req: Request) {
       const eventMessage = d.visitLimit != null ? `Visita registrada. Te ${last ? "queda 0" : `quedan ${remaining! - 1}`}.` : "Visita registrada. ¡Gracias por venir!";
       t.update(docRef, { visitsUsed: FieldValue.increment(1), lastVisitDate: now, appleUpdatedTag: now, lastEvent: eventMessage });
       t.set(adminDb().collection(COLLECTIONS.VISITS).doc(), { memberId: docRef.id, businessId: business.id, programId: d.programId, timestamp: now, by: session.uid });
-      return { ...d, visitsUsed: (d.visitsUsed || 0) + 1, lastVisitDate: now };
+      // Carry the message out explicitly. Spreading `d` would keep the PREVIOUS
+      // event's lastEvent, so every visit notification lagged one behind (visit #1
+      // sent nothing, visit #2 announced visit #1's remaining count).
+      return { member: { ...d, visitsUsed: (d.visitsUsed || 0) + 1, lastVisitDate: now, lastEvent: eventMessage }, eventMessage, lastVisit: last };
     });
 
-    if (!txData) return result(member, false); // lost the race; report current state
-    await pushMemberPass(txData, txData.lastEvent); // best-effort wallet update + notification
-    return result(txData, true);
+    if (!tx) return result(member, false); // lost the race; report current state
+    // Only the final visit notifies — the member is standing at the door for the
+    // rest, and Google only allows 3 notifying messages per pass per day.
+    await pushMemberPass(tx.member, tx.eventMessage, tx.lastVisit); // best-effort wallet update
+    return result(tx.member, true);
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }

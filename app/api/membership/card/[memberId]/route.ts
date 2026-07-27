@@ -45,7 +45,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ memberId: stri
       memberCode: member.memberCode,
       cardColor: program.cardColor,
       textColor: program.textColor || "#FFFFFF",
-      logoPng: program.logoPng || "",
+      // URL, not base64 — see the note in /api/card/[id]. This one is fetched
+      // every time a member opens their card link.
+      logoUrl: program.logoPng ? `/api/membership/${program.id}/logo` : null,
       saveUrl,
       appleConfigured: appleConfigured(),
     });

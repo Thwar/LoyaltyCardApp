@@ -16,7 +16,7 @@ interface CardInfo {
   memberCode: string;
   cardColor: string;
   textColor: string;
-  logoPng: string;
+  logoUrl?: string | null;
   saveUrl: string | null;
   appleConfigured: boolean;
 }
@@ -86,7 +86,7 @@ export default function MembershipCardPage() {
           programName={info.programName}
           cardColor={info.cardColor}
           textColor={info.textColor}
-          logoPng={info.logoPng || undefined}
+          logoPng={info.logoUrl || undefined}
           memberName={info.memberName}
           rightLabel={rightLabel}
           rightValue={rightValue}
