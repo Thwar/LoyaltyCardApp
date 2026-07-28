@@ -63,3 +63,34 @@ export function StatCard({ label, value }: { label: string; value: number | stri
     </div>
   );
 }
+
+// <input type="color"> needs a valid #rrggbb; fall back while the user types a partial value.
+export function normalizeHex(v: string, fallback: string): string {
+  return /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
+}
+
+// Read an image file and downscale it to a small PNG data URL (keeps uploads tiny).
+export function fileToResizedPng(file: File, maxW = 480, maxH = 150): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const scale = Math.min(maxW / img.width, maxH / img.height, 1);
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      URL.revokeObjectURL(url);
+      if (!ctx) return reject(new Error("no canvas"));
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("bad image"));
+    };
+    img.src = url;
+  });
+}
