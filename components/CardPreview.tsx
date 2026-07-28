@@ -8,6 +8,7 @@ export function CardPreview({
   businessName,
   totalSlots,
   currentStamps = 0,
+  pendingStamps = 0,
   rewardDescription,
   cardColor,
   textColor = "#FFFFFF",
@@ -21,6 +22,8 @@ export function CardPreview({
   businessName: string;
   totalSlots: number;
   currentStamps?: number;
+  /** Sellos about to be given, previewed on the card but not yet earned. */
+  pendingStamps?: number;
   rewardDescription: string;
   cardColor: string;
   textColor?: string;
@@ -32,6 +35,8 @@ export function CardPreview({
   barcodeType?: BarcodeType;
 }) {
   const label = { fontSize: 10, letterSpacing: 1, opacity: 0.8, textTransform: "uppercase" as const };
+  const earned = Math.min(currentStamps, totalSlots);
+  const pending = Math.max(0, Math.min(pendingStamps, totalSlots - earned));
 
   return (
     <div style={{ background: cardColor, color: textColor, borderRadius: 18, padding: 20, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -46,31 +51,37 @@ export function CardPreview({
         <div style={{ textAlign: "right", flex: "0 0 auto" }}>
           <div style={label}>Sellos</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>
-            {Math.min(currentStamps, totalSlots)}/{totalSlots}
+            {earned}
+            {pending > 0 && <span style={{ opacity: 0.75 }}>+{pending}</span>}/{totalSlots}
           </div>
         </div>
       </div>
 
-      {/* stamps: the chosen shape, solid when earned and faint outline when not */}
+      {/* stamps: solid when earned, half-lit for sellos about to be given (so the
+          card fills as the counter picks a quantity, without pretending they're
+          already banked), faint outline when empty. */}
       <div className="stamp-grid" style={{ margin: "16px 0" }}>
-        {Array.from({ length: totalSlots }).map((_, i) => (
-          <div
-            key={i}
-            className="stamp"
-            style={{ border: "none", borderRadius: 0, background: "transparent" }}
-            dangerouslySetInnerHTML={{
-              __html: `<svg viewBox="0 0 100 100" width="100%" height="100%">${stampShapeMarkup(
-                stampShape,
-                50,
-                50,
-                42,
-                i < currentStamps,
-                textColor,
-                7
-              )}</svg>`,
-            }}
-          />
-        ))}
+        {Array.from({ length: totalSlots }).map((_, i) => {
+          const isPending = i >= earned && i < earned + pending;
+          return (
+            <div
+              key={i}
+              className="stamp"
+              style={{ border: "none", borderRadius: 0, background: "transparent", opacity: isPending ? 0.5 : 1, transition: "opacity 0.15s ease" }}
+              dangerouslySetInnerHTML={{
+                __html: `<svg viewBox="0 0 100 100" width="100%" height="100%">${stampShapeMarkup(
+                  stampShape,
+                  50,
+                  50,
+                  42,
+                  i < earned + pending,
+                  textColor,
+                  7
+                )}</svg>`,
+              }}
+            />
+          );
+        })}
       </div>
 
       {/* fields: reward + code */}

@@ -187,6 +187,7 @@ function StampModal({ lookup, onClose, onDone }: { lookup: CardLookup; onClose: 
             businessName={lookup.businessName}
             totalSlots={lookup.totalSlots}
             currentStamps={state.currentStamps}
+            pendingStamps={full ? 0 : qty}
             rewardDescription={lookup.rewardDescription}
             cardColor={lookup.cardColor}
             textColor={lookup.textColor}
