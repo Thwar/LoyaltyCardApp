@@ -74,6 +74,11 @@ export async function POST(req: Request) {
       return inSegment(c, segment, slotsOf(c.loyaltyCardId), now);
     });
 
+    // Nobody to send to — don't burn one of the plan's daily sends on it.
+    if (!targets.length) {
+      return NextResponse.json({ error: "No hay caseros en este grupo." }, { status: 400 });
+    }
+
     // Log the send (with audience + count) on the business; this is also the rate-limit source.
     const segLabel = SEGMENTS.find((s) => s.id === segment)?.label ?? "Todos los clientes";
     await adminDb()

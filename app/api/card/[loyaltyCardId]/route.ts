@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getLoyaltyCard, getBusinessById, countClients } from "@/lib/serverData";
 import { effectivePlan } from "@/lib/plans";
+import { logoVersion } from "@/lib/logo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +19,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ loyaltyCardId:
     const business = await getBusinessById(card.businessId);
     const maxClients = business ? effectivePlan(business).maxClients : null;
     if (maxClients != null) full = (await countClients(card.businessId)) >= maxClients;
+
+    // Exactly what /api/card/[id]/logo will serve (see its own fallback order).
+    const logoSrc = card.logoPng || business?.logoPng;
 
     // Scan-time display data changes rarely, but every QR scan used to cost two
     // sequential Firestore round trips. A short shared cache lets the CDN serve the
@@ -40,10 +44,13 @@ export async function GET(_req: Request, ctx: { params: Promise<{ loyaltyCardId:
           // A URL, not the base64 bytes. Inlining logoPng made this response ~85KB,
           // of which >99% was the logo, re-downloaded on every scan. The /logo route
           // serves the same image with immutable caching, and the browser fetches it
-          // in parallel instead of the form waiting behind it. The /logo route falls
-          // back to the business logo, so offer the URL whenever either exists; null
-          // keeps the client from requesting a guaranteed 404.
-          logoUrl: card.logoPng || business?.logoPng ? `/api/card/${card.id}/logo` : null,
+          // in parallel instead of the form waiting behind it.
+          //
+          // ?v= is required, not decoration: /logo is immutable for a year and its
+          // URL is content-independent (editing a logo overwrites logoPng on the same
+          // doc id), so without it a rebrand would never reach customers. Hash the
+          // same source /logo resolves — card logo first, then the business logo.
+          logoUrl: logoSrc ? `/api/card/${card.id}/logo?v=${logoVersion(logoSrc)}` : null,
         },
       },
       { headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=300" } }

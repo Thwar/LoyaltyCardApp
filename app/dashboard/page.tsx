@@ -2463,7 +2463,7 @@ function ComunicacionTab({ business, planInfo, customers, cards, onChanged }: { 
 
         <div className="field">
           <label>Enviar a</label>
-          <select className="input" value={segment} onChange={(e) => setSegment(e.target.value as Segment)}>
+          <select className="input" value={segment} onChange={(e) => { setConfirmDup(false); setSegment(e.target.value as Segment); }}>
             {SEGMENTS.map((s) => (
               <option key={s.id} value={s.id} disabled={!planInfo.segments && s.id !== "all"}>
                 {s.label}
@@ -2478,7 +2478,7 @@ function ComunicacionTab({ business, planInfo, customers, cards, onChanged }: { 
 
         <div className="field">
           <label>Mensaje</label>
-          <textarea ref={msgRef} className="input" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Ej: ¡Hoy 2x1 en cafés! ☕ Ven y suma sellos." maxLength={160} />
+          <textarea ref={msgRef} className="input" rows={3} value={message} onChange={(e) => { setConfirmDup(false); setMessage(e.target.value); }} placeholder="Ej: ¡Hoy 2x1 en cafés! ☕ Ven y suma sellos." maxLength={160} />
           <p className="muted" style={{ fontSize: 12, marginTop: 4, marginBottom: 0 }}>
             {message.length}/160
           </p>

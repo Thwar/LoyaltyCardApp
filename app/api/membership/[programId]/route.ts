@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMembershipProgram } from "@/lib/serverData";
+import { logoVersion } from "@/lib/logo";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ programId: str
         // A URL rather than the base64 bytes — see the note in /api/card/[id].
         // The /logo route caches immutably; inlining made this response ~85KB of
         // logo on every enrollment scan.
-        logoUrl: program.logoPng ? `/api/membership/${program.id}/logo` : null,
+        logoUrl: program.logoPng ? `/api/membership/${program.id}/logo?v=${logoVersion(program.logoPng)}` : null,
         tracksVisits: program.tracksVisits,
         defaultVisitLimit: program.defaultVisitLimit ?? null,
         defaultDurationDays: program.defaultDurationDays ?? null,
