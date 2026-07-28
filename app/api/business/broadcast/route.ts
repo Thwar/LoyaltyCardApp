@@ -103,7 +103,8 @@ export async function POST(req: Request) {
 
     // Google: per-object message, only to targets with a Google pass (chunked for timeout safety).
     let googleAttempted = 0;
-    let googleDelivered = 0;
+    let googleNotified = 0; // Android phones that actually buzzed
+    let googleSilent = 0;   // message landed on the pass, but out of Google's 3/24h budget
     if (walletConfigured()) {
       const gTargets = targets.filter((d) => (d.data() as CustomerCard).googleObjectId);
       const CHUNK = 15;
@@ -119,8 +120,9 @@ export async function POST(req: Request) {
             if (!card) return Promise.resolve();
             googleAttempted++;
             return syncLoyaltyObject(c, card, message, business.description, plan.removeBranding, true)
-              .then(() => {
-                googleDelivered++;
+              .then((r) => {
+                if (r.notified) googleNotified++;
+                else googleSilent++;
               })
               .catch((e) => console.error("[broadcast] google:", c.id, e));
           })
@@ -128,9 +130,11 @@ export async function POST(req: Request) {
       }
     }
 
-    // Report what actually shipped, not just who was targeted — a wholesale Google
-    // failure used to be invisible behind an unconditional ok:true.
-    return NextResponse.json({ ok: true, recipients: targets.length, googleAttempted, googleDelivered });
+    // Report what actually shipped, not just who was targeted. googleSilent is the
+    // honest number: those caseros got the message on their pass but no notification,
+    // because Google allows only 3 notifying messages per pass per rolling 24h and
+    // that budget is shared with card-completion and reward events.
+    return NextResponse.json({ ok: true, recipients: targets.length, googleAttempted, googleNotified, googleSilent });
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : "Error del servidor" }, { status: 500 });
   }

@@ -134,9 +134,19 @@ export function ComunicacionTab({ business, planInfo, customers, cards, onChange
     setBusy(true);
     try {
       const res = await authedFetch("/api/business/broadcast", { method: "POST", body: JSON.stringify({ message: message.trim(), segment }) });
-      const json = await res.json().catch(() => ({} as { error?: string; recipients?: number }));
+      const json = await res.json().catch(() => ({} as { error?: string; recipients?: number; googleNotified?: number; googleSilent?: number }));
       if (!res.ok) return setErr(json.error || `No se pudo enviar (${res.status}).`);
-      setMsg(`Enviado a ${json.recipients} casero(s).`);
+      // Report what actually reached a phone. Google allows only 3 notifications per
+      // pass per day, shared with sellos completados y canjes — so some caseros get
+      // the message on their tarjeta without it sounding, and the owner should know
+      // that rather than assume every send buzzed.
+      const silent = json.googleSilent ?? 0;
+      setMsg(
+        `Enviado a ${json.recipients} casero(s).` +
+          (silent > 0
+            ? ` ${silent} con Android lo verán en su tarjeta, pero sin notificación: Google permite solo 3 avisos por tarjeta al día.`
+            : "")
+      );
       setMessage("");
       onChanged();
     } catch {
@@ -153,6 +163,17 @@ export function ComunicacionTab({ business, planInfo, customers, cards, onChange
         Envía una promoción, recordatorio o aviso al wallet de todos tus caseros.
         {paid ? ` Tu plan ${planInfo.label} permite ${planInfo.broadcastsPerDay} mensaje(s) al día${planInfo.broadcastGapHours ? `, con ${planInfo.broadcastGapHours}h entre cada uno` : ""}.` : ""}
       </p>
+      {/* Google's cap is on their side, not ours, and it's shared with the avisos a
+          casero gets for completing or canjeando a card — so on a busy day a message
+          can land on the tarjeta without sounding. Say so up front instead of letting
+          the owner assume every send buzzes. */}
+      {paid && planInfo.broadcastsPerDay > 3 && (
+        <p className="muted" style={{ marginTop: -4, fontSize: 12 }}>
+          En Android, Google permite hasta 3 avisos sonoros por tarjeta al día (compartidos con los de tarjeta
+          completa y canje). Los demás mensajes igual llegan a la tarjeta, solo que sin sonar. En iPhone no hay
+          ese límite. Te decimos cuántos sonaron después de cada envío.
+        </p>
+      )}
 
       <div style={paid ? undefined : { filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }} aria-hidden={!paid}>
         {/* Send status: progress bar + "usados/permitidos" + countdown */}

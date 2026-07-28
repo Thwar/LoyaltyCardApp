@@ -119,7 +119,10 @@ export async function PATCH(req: Request) {
 
     // A short message for the wallet notification, based on what changed.
     const msg = body.deactivate === true ? "Tu membresía fue desactivada." : body.resetVisits === true ? "¡Tus visitas se reiniciaron!" : update.expiresAt !== undefined ? "¡Tu membresía fue renovada!" : "";
-    if (msg) update.lastEvent = msg;
+    if (msg) {
+      update.lastEvent = msg;
+      update.lastEventNotify = true; // renewed / deactivated / visits reset
+    }
 
     // Audit-log entries for what changed.
     const events: MemberEvent[] = [];

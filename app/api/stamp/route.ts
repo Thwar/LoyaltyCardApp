@@ -3,7 +3,7 @@ import { FieldValue, type DocumentData } from "firebase-admin/firestore";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
-import { getBusinessForUser, getLoyaltyCard } from "@/lib/serverData";
+import { getBusinessForUser, getLoyaltyCard, getLoyaltyCardLite } from "@/lib/serverData";
 import { walletConfigured, syncLoyaltyObject } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { sendApplePassPush } from "@/lib/apns";
@@ -38,7 +38,10 @@ export async function POST(req: Request) {
     if (pre.empty) return NextResponse.json({ error: "Código no encontrado." }, { status: 404 });
     const docRef = pre.docs[0].ref;
 
-    const loyalty = await getLoyaltyCard(pre.docs[0].data().loyaltyCardId);
+    // The lookup only renders the card; the write path also feeds the wallet pass
+    // builders, which need the logo. Reading the lite version here halves the query
+    // (the logo is ~85KB of base64 living inside the document).
+    const loyalty = await (lookupOnly ? getLoyaltyCardLite : getLoyaltyCard)(pre.docs[0].data().loyaltyCardId);
     if (!loyalty) return NextResponse.json({ error: "Tarjeta de lealtad no encontrada." }, { status: 404 });
     const totalSlots = loyalty.totalSlots;
 
@@ -96,6 +99,7 @@ export async function POST(req: Request) {
           lastStampDate: Date.now(),
           appleUpdatedTag: Date.now(),
           lastEvent: eventMessage,
+          lastEventNotify: true, // redeeming is worth a buzz
         });
         t.set(adminDb().collection(COLLECTIONS.REWARDS).doc(), {
           customerCardId: docRef.id,
@@ -121,6 +125,10 @@ export async function POST(req: Request) {
         lastStampDate: now,
         appleUpdatedTag: now,
         lastEvent: eventMessage,
+        // Only completing the card interrupts them. A routine sello happens while
+        // the casero is standing at the counter watching it — same policy Google
+        // gets, so an iPhone and an Android user see the same thing.
+        lastEventNotify: completed,
         ...(awardReferral ? { referralRewarded: true } : {}),
       });
       // One ledger row per stamp, so the existing per-stamp analytics stay honest.

@@ -22,11 +22,17 @@ export async function awardReferralStamp(referrerId: string, card: LoyaltyCard, 
   if (current >= card.totalSlots) return; // card already complete
 
   const next = Math.min(current + 1, card.totalSlots);
+  const referralMessage = "🎉 ¡Ganaste un sello por invitar a un amigo!";
   await snap.ref.update({
     currentStamps: next,
     lastStampDate: Date.now(),
     referralCount: FieldValue.increment(1),
     appleUpdatedTag: Date.now(),
+    // Without these the Apple pass gained a stamp with no explanation — the Google
+    // message below was the only notice, so iPhone referrers were told nothing.
+    // Worth a buzz on both: the referrer isn't at the counter to see it happen.
+    lastEvent: referralMessage,
+    lastEventNotify: true,
   });
 
   const business = await getBusinessById(card.businessId);
@@ -34,8 +40,7 @@ export async function awardReferralStamp(referrerId: string, card: LoyaltyCard, 
     try {
       const updated: CustomerCard = { ...ref, id: snap.id, currentStamps: next };
       const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
-      // Worth a notification — the referrer isn't at the counter to see it happen.
-      await syncLoyaltyObject(updated, cardForPass, "🎉 ¡Ganaste un sello por invitar a un amigo!", business?.description, business ? effectivePlan(business).removeBranding : false, true);
+      await syncLoyaltyObject(updated, cardForPass, referralMessage, business?.description, business ? effectivePlan(business).removeBranding : false, true);
     } catch (e) {
       console.error("[referral] google:", e);
     }

@@ -150,7 +150,11 @@ async function api(method: string, path: string, body?: unknown): Promise<Respon
 // Best-effort: the message is already on the pass from the PATCH, so a failure here
 // (including Google's cap of 3 notifying messages per object per rolling 24h, which
 // answers QuotaExceededException) costs the notification, not the content.
-async function addNotifyingMessage(kind: "loyaltyObject" | "genericObject", objectId: string, header: string, body: string): Promise<void> {
+// Returns whether the notification actually went out. Google caps notifying
+// messages at 3 per object per rolling 24h and that budget is SHARED with card
+// completions, redeems and referral rewards — so a broadcast can legitimately land
+// on the pass without buzzing, and the caller should not report it as delivered.
+async function addNotifyingMessage(kind: "loyaltyObject" | "genericObject", objectId: string, header: string, body: string): Promise<boolean> {
   try {
     const res = await api("POST", `/${kind}/${objectId}/addMessage`, {
       // Unique id per event. Google warns message ids "could possibly duplicate",
@@ -159,11 +163,14 @@ async function addNotifyingMessage(kind: "loyaltyObject" | "genericObject", obje
       // stays bounded because the PATCH above replaced it, not because of the id.
       message: { id: `evt-notify-${Date.now()}`, header, body, messageType: "TEXT_AND_NOTIFY" },
     });
-    if (res.status !== 200 && res.status !== 404) {
+    if (res.status === 200) return true;
+    if (res.status !== 404) {
       console.error(`[google notify] ${kind}/${objectId} -> ${res.status}: ${await res.text()}`);
     }
+    return false;
   } catch (e) {
     console.error("[google notify] error:", objectId, e);
+    return false;
   }
 }
 
@@ -275,7 +282,7 @@ export async function syncLoyaltyClass(card: LoyaltyCard): Promise<void> {
 // bounding the list; the addNotifyingMessage one is what actually buzzes the phone.
 // Don't remove the PATCH copy — addMessage only appends, and Google caps
 // messages[] at 10, so notifying alone would brick the pass within a card cycle.
-export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCard, message?: string, description?: string, hideBranding?: boolean, notify = false): Promise<void> {
+export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCard, message?: string, description?: string, hideBranding?: boolean, notify = false): Promise<{ notified: boolean }> {
   const id = objectIdFor(customer.id);
   const header = card.businessName || "SoyCasero";
   const res = await api("PATCH", `/loyaltyObject/${id}`, {
@@ -289,12 +296,13 @@ export async function syncLoyaltyObject(customer: CustomerCard, card: LoyaltyCar
     // Resets the list to just this event (or clears it) — see eventMessagePatch.
     ...eventMessagePatch(header, message),
   });
-  if (res.status === 404) return; // no Google pass issued for this customer
+  if (res.status === 404) return { notified: false }; // no Google pass issued for this customer
   if (res.status !== 200) {
     throw new Error(`Error actualizando objeto de Wallet (${res.status}): ${await res.text()}`);
   }
   // The PATCH above put the text on the pass; this is what makes the phone buzz.
-  if (message && notify) await addNotifyingMessage("loyaltyObject", id, header, message);
+  if (message && notify) return { notified: await addNotifyingMessage("loyaltyObject", id, header, message) };
+  return { notified: false };
 }
 
 function buildSaveUrl(objectId: string): string {

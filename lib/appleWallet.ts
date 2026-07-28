@@ -152,11 +152,15 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
   // total across completed cards (each redemption clears a full card of totalSlots).
   const totalStamps = (customer.rewardsRedeemed || 0) * card.totalSlots + customer.currentStamps;
   pass.backFields.push({ key: "reward", label: "Recompensa", value: card.rewardDescription });
-  // Latest stamp/complete/redeem message. Its changeMessage fires the lock-screen
-  // notification when the value changes (set per event in /api/stamp), so completing
-  // a card and redeeming a reward each show their own message — not a generic one.
+  // Latest stamp/complete/redeem message. Apple fires a lock-screen notification
+  // when a field's value changes AND that field carries a changeMessage — so the
+  // changeMessage is attached only for events worth interrupting someone for
+  // (card completed, reward redeemed), matching what Google gets. A routine sello
+  // still updates the pass, silently: the casero is at the counter watching it.
+  // Undefined on older docs, which predate the flag — treat those as notifying.
   if (customer.lastEvent) {
-    pass.backFields.push({ key: "activity", label: "Actividad", value: customer.lastEvent, changeMessage: "%@" });
+    const notify = customer.lastEventNotify !== false;
+    pass.backFields.push({ key: "activity", label: "Actividad", value: customer.lastEvent, ...(notify ? { changeMessage: "%@" } : {}) });
   }
   // Rendered (with a changeMessage) only after the device registers, so adding the
   // pass fires a one-time welcome notification — see the registration endpoint.
@@ -258,8 +262,12 @@ export async function buildMembershipPkpass(member: Member, program: MembershipP
   }
 
   if (program.description) pass.backFields.push({ key: "benefits", label: "Beneficios", value: program.description });
-  // Notification driver (same pattern as loyalty): a field whose changeMessage fires.
-  if (member.lastEvent) pass.backFields.push({ key: "activity", label: "Actividad", value: member.lastEvent, changeMessage: "%@" });
+  // Notification driver (same pattern as loyalty): the changeMessage is attached
+  // only when the event warrants a buzz — a routine check-in updates silently.
+  if (member.lastEvent) {
+    const notify = member.lastEventNotify !== false;
+    pass.backFields.push({ key: "activity", label: "Actividad", value: member.lastEvent, ...(notify ? { changeMessage: "%@" } : {}) });
+  }
   if (program.welcomeMessage && member.welcomeNotified) pass.backFields.push({ key: "welcome", label: "Bienvenida", value: program.welcomeMessage, changeMessage: "%@" });
   pass.backFields.push({ key: "code", label: "Tu código", value: member.memberCode });
   pass.backFields.push({ key: "statusBack", label: "Estado", value: MEMBER_STATUS_LABEL[status] });

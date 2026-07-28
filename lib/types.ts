@@ -104,6 +104,7 @@ export interface CustomerCard {
   referralCount?: number; // how many new customers this customer has referred
   broadcastMessage?: string; // latest marketing broadcast targeted at THIS customer (rendered on the pass)
   lastEvent?: string; // latest stamp/complete/redeem notification text (drives the Apple Wallet lock-screen message)
+  lastEventNotify?: boolean; // whether that event is worth interrupting for; false = show on the pass, don't buzz
 }
 
 // ---------- Memberships (VIP / club cards) — V1: simple member pass ----------
@@ -151,6 +152,7 @@ export interface Member {
   passRemovedAt?: number | null;
   welcomeNotified?: boolean; // Apple: welcome notification sent on first device registration
   lastEvent?: string; // latest notification text (drives the Apple lock-screen message)
+  lastEventNotify?: boolean; // see CustomerCard.lastEventNotify
   lastVisitDate?: number;
   marketingConsent?: boolean;
   createdAt?: number;

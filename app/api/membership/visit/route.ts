@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       const remaining = visitsRemaining(d);
       const last = remaining != null && remaining <= 1; // this visit uses the final one
       const eventMessage = d.visitLimit != null ? `Visita registrada. Te ${last ? "queda 0" : `quedan ${remaining! - 1}`}.` : "Visita registrada. ¡Gracias por venir!";
-      t.update(docRef, { visitsUsed: FieldValue.increment(1), lastVisitDate: now, appleUpdatedTag: now, lastEvent: eventMessage });
+      t.update(docRef, { visitsUsed: FieldValue.increment(1), lastVisitDate: now, appleUpdatedTag: now, lastEvent: eventMessage, lastEventNotify: last });
       t.set(adminDb().collection(COLLECTIONS.VISITS).doc(), { memberId: docRef.id, businessId: business.id, programId: d.programId, timestamp: now, by: session.uid });
       // Carry the message out explicitly. Spreading `d` would keep the PREVIOUS
       // event's lastEvent, so every visit notification lagged one behind (visit #1
