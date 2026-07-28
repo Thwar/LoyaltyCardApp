@@ -37,6 +37,10 @@ export function StampBox({ onChanged }: { onChanged: () => void }) {
   // The scanned/typed card, resolved but untouched. Scanning no longer stamps on
   // its own: the counter confirms who it is (and how many sellos) first.
   const [lookup, setLookup] = useState<CardLookup | null>(null);
+  // The code we're resolving. Set the instant the counter hits Buscar/scans, so the
+  // modal opens immediately with a skeleton instead of the button sitting on "…"
+  // for the ~600ms the three Firestore reads take.
+  const [openFor, setOpenFor] = useState<string | null>(null);
 
   async function openCard(override?: string) {
     if (busy) return; // guard against double-submit (Enter + click, double-tap, scan)
@@ -44,17 +48,29 @@ export function StampBox({ onChanged }: { onChanged: () => void }) {
     if (!cc) return setMsg({ kind: "err", text: "Ingresa el código del casero." });
     setBusy(true);
     setMsg(null);
+    setLookup(null);
+    setOpenFor(cc); // modal appears now; contents stream in below
     try {
       const res = await authedFetch("/api/stamp", { method: "POST", body: JSON.stringify({ cardCode: cc, lookupOnly: true }) });
       const json = await res.json().catch(() => ({} as { error?: string }));
-      if (!res.ok) return setMsg({ kind: "err", text: json.error || `No se pudo leer la tarjeta (${res.status}).` });
+      if (!res.ok) {
+        setOpenFor(null);
+        return setMsg({ kind: "err", text: json.error || `No se pudo leer la tarjeta (${res.status}).` });
+      }
       setLookup(json as CardLookup);
       setCode("");
     } catch {
+      setOpenFor(null);
       setMsg({ kind: "err", text: "No se pudo conectar. Revisa tu conexión e inténtalo de nuevo." });
     } finally {
       setBusy(false);
     }
+  }
+
+  function closeModal(wrote: boolean) {
+    setOpenFor(null);
+    setLookup(null);
+    if (wrote) onChanged();
   }
 
   return (
@@ -91,25 +107,55 @@ export function StampBox({ onChanged }: { onChanged: () => void }) {
         />
       )}
 
-      {lookup && (
-        <StampModal
-          // Keyed by code so looking up a second casero can never inherit the
-          // previous one's quantity or card state.
-          key={lookup.cardCode}
-          lookup={lookup}
-          // `wrote` is true when sellos were already added and the counter closed
-          // instead of redeeming — the dashboard behind us is stale either way.
-          onClose={(wrote) => {
-            setLookup(null);
-            if (wrote) onChanged();
-          }}
-          onDone={(text, kind) => {
-            setMsg({ kind, text });
-            setLookup(null);
-            onChanged();
-          }}
+      {openFor &&
+        (lookup ? (
+          <StampModal
+            // Keyed by code so looking up a second casero can never inherit the
+            // previous one's quantity or card state.
+            key={lookup.cardCode}
+            lookup={lookup}
+            // `wrote` is true when sellos were already added and the counter closed
+            // instead of redeeming — the dashboard behind us is stale either way.
+            onClose={closeModal}
+            onDone={(text, kind) => {
+              setMsg({ kind, text });
+              closeModal(false);
+              onChanged();
+            }}
+          />
+        ) : (
+          <LoadingCard code={openFor} onClose={() => closeModal(false)} />
+        ))}
+    </div>
+  );
+}
+
+/* Shown for the moment between "Buscar" and the card arriving. Same frame and
+   heading position as the real modal, so nothing jumps when the data lands. */
+function LoadingCard({ code, onClose }: { code: string; onClose: () => void }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+        <div className="row spread" style={{ alignItems: "flex-start", marginBottom: 8 }}>
+          <h3 style={{ margin: 0, fontSize: 20 }} className="muted">
+            Buscando…
+          </h3>
+          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+            ✕
+          </button>
+        </div>
+        <div className="row" style={{ gap: 10, alignItems: "center", marginBottom: 14 }}>
+          <span className="code-pill">{code}</span>
+        </div>
+        {/* placeholder the same height as the card preview, so the modal doesn't resize */}
+        <div
+          aria-hidden
+          style={{ height: 190, borderRadius: 18, background: "var(--bg-soft)", border: "1px solid var(--border)" }}
         />
-      )}
+        <p className="muted" style={{ fontSize: 13, marginTop: 14, marginBottom: 0 }} aria-live="polite">
+          Cargando la tarjeta del casero…
+        </p>
+      </div>
     </div>
   );
 }
