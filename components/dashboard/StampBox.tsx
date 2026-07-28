@@ -93,8 +93,16 @@ export function StampBox({ onChanged }: { onChanged: () => void }) {
 
       {lookup && (
         <StampModal
+          // Keyed by code so looking up a second casero can never inherit the
+          // previous one's quantity or card state.
+          key={lookup.cardCode}
           lookup={lookup}
-          onClose={() => setLookup(null)}
+          // `wrote` is true when sellos were already added and the counter closed
+          // instead of redeeming — the dashboard behind us is stale either way.
+          onClose={(wrote) => {
+            setLookup(null);
+            if (wrote) onChanged();
+          }}
           onDone={(text, kind) => {
             setMsg({ kind, text });
             setLookup(null);
@@ -109,13 +117,16 @@ export function StampBox({ onChanged }: { onChanged: () => void }) {
 /* Scanned card: who it is, where they're at, and how many sellos to give.
    A full card offers the redeem instead — the two actions are never both live,
    so there's no standalone redeem button to mis-tap. */
-function StampModal({ lookup, onClose, onDone }: { lookup: CardLookup; onClose: () => void; onDone: (text: string, kind: "ok" | "full") => void }) {
+function StampModal({ lookup, onClose, onDone }: { lookup: CardLookup; onClose: (wrote: boolean) => void; onDone: (text: string, kind: "ok" | "full") => void }) {
   const [qty, setQty] = useState(1);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   // Live view of the card: after adding sellos we stay open showing the new
   // total, so a card that just filled up can be redeemed without re-scanning.
   const [state, setState] = useState({ currentStamps: lookup.currentStamps, rewardsRedeemed: lookup.rewardsRedeemed });
+  // Sellos already committed in this modal. Closing after that must refresh the
+  // dashboard behind it, or the counter sees a stale balance.
+  const [wrote, setWrote] = useState(false);
 
   const remaining = Math.max(0, lookup.totalSlots - state.currentStamps);
   const full = remaining === 0;
@@ -123,10 +134,10 @@ function StampModal({ lookup, onClose, onDone }: { lookup: CardLookup; onClose: 
   const step = (d: number) => setQty((q) => Math.min(maxQty, Math.max(1, q + d)));
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose(wrote);
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, [onClose, wrote]);
 
   // Keep the stepper inside what the card can still take.
   useEffect(() => {
@@ -150,6 +161,7 @@ function StampModal({ lookup, onClose, onDone }: { lookup: CardLookup; onClose: 
         return;
       }
       // Stay open on the updated card so a now-full card can be redeemed here.
+      setWrote(true);
       setState({ currentStamps: json.currentStamps, rewardsRedeemed: state.rewardsRedeemed });
       setQty(1);
       if (json.completed) {
@@ -166,11 +178,11 @@ function StampModal({ lookup, onClose, onDone }: { lookup: CardLookup; onClose: 
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={() => onClose(wrote)}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
         <div className="row spread" style={{ alignItems: "flex-start", marginBottom: 8 }}>
           <h3 style={{ margin: 0, fontSize: 20 }}>{lookup.customerName || "Casero"}</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Cerrar">
+          <button className="modal-close" onClick={() => onClose(wrote)} aria-label="Cerrar">
             ✕
           </button>
         </div>

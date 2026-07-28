@@ -50,16 +50,24 @@ export function CardPreview({
         )}
         <div style={{ textAlign: "right", flex: "0 0 auto" }}>
           <div style={label}>Sellos</div>
+          {/* The balance stays the primary number; the pending delta trails it with
+              a gap so "3 +2" can't be scanned as a single figure. */}
           <div style={{ fontSize: 16, fontWeight: 700 }}>
-            {earned}
-            {pending > 0 && <span style={{ opacity: 0.75 }}>+{pending}</span>}/{totalSlots}
+            {earned}/{totalSlots}
+            {pending > 0 && <span style={{ opacity: 0.75, marginLeft: 5, fontWeight: 600 }}>+{pending}</span>}
           </div>
         </div>
       </div>
 
-      {/* stamps: solid when earned, half-lit for sellos about to be given (so the
-          card fills as the counter picks a quantity, without pretending they're
-          already banked), faint outline when empty. */}
+      {/* stamps: solid when earned, dashed ring + dimmed for sellos the counter is
+          about to give, faint glyph when empty.
+          The dashed ring matters — it is the only channel that separates pending
+          from empty on the 14 icon shapes, which draw empty as the same glyph at
+          0.28 alpha. Opacity alone put pending a hair above that, invisible on the
+          lighter card colours and unreadable for a low-vision user.
+          No transition on purpose: the glyph flips to its filled form in the same
+          frame, so easing the opacity down would render it fully solid — i.e.
+          already earned — for the length of the animation. */}
       <div className="stamp-grid" style={{ margin: "16px 0" }}>
         {Array.from({ length: totalSlots }).map((_, i) => {
           const isPending = i >= earned && i < earned + pending;
@@ -67,7 +75,14 @@ export function CardPreview({
             <div
               key={i}
               className="stamp"
-              style={{ border: "none", borderRadius: 0, background: "transparent", opacity: isPending ? 0.5 : 1, transition: "opacity 0.15s ease" }}
+              style={{
+                border: "none",
+                background: "transparent",
+                borderRadius: isPending ? "50%" : 0,
+                outline: isPending ? `1.5px dashed ${textColor}` : "none",
+                outlineOffset: -2,
+                opacity: isPending ? 0.7 : 1,
+              }}
               dangerouslySetInnerHTML={{
                 __html: `<svg viewBox="0 0 100 100" width="100%" height="100%">${stampShapeMarkup(
                   stampShape,
