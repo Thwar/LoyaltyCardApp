@@ -45,3 +45,6 @@ gcp-key*.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# stray Python bytecode from tooling
+__pycache__/
