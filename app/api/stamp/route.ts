@@ -125,10 +125,11 @@ export async function POST(req: Request) {
         lastStampDate: now,
         appleUpdatedTag: now,
         lastEvent: eventMessage,
-        // Only completing the card interrupts them. A routine sello happens while
-        // the casero is standing at the counter watching it — same policy Google
-        // gets, so an iPhone and an Android user see the same thing.
-        lastEventNotify: completed,
+        // Read only by the Apple pass builder — Google's notify is decided separately
+        // below. iPhones buzz on every sello: Apple has no notification cap. Android
+        // stays silent on routine sellos, because Google allows 3 notifying messages
+        // per pass per day, shared with completions, rewards and broadcasts.
+        lastEventNotify: true,
         ...(awardReferral ? { referralRewarded: true } : {}),
       });
       // One ledger row per stamp, so the existing per-stamp analytics stay honest.
