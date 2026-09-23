@@ -1,0 +1,11 @@
+name = "soycasero-proxy"
+main = "soycasero-proxy.js"
+compatibility_date = "2026-08-30"
+
+# Routes only fire on PROXIED (orange-cloud) DNS records. The record contents
+# no longer matter — the Worker intercepts before any origin fetch and calls
+# caseroapp.com itself.
+routes = [
+  { pattern = "www.soycasero.com/*", zone_name = "soycasero.com" },
+  { pattern = "soycasero.com/*", zone_name = "soycasero.com" },
+]
