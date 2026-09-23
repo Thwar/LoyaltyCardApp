@@ -15,7 +15,7 @@ const WHY = [
 const FEATURES = [
   { Icon: Wallet, acc: "acc-blue", title: "Tarjeta de sellos digital", desc: "Vive en Apple Wallet y Google Wallet con tu logo, tus colores y tu ícono — sin que tus caseros descarguen nada." },
   { Icon: Megaphone, acc: "acc-orange", title: "Promociones que llenan tu local", desc: "Envía ofertas a todos o por segmento, y deja que tus caseros inviten a sus amigos con el programa de referidos." },
-  { Icon: Bell, acc: "acc-amber", title: "Notificaciones automáticas", desc: "Cada sello, bienvenida y recompensa llega como aviso a su pantalla. Le recuerdas tu negocio sin costo." },
+  { Icon: Bell, acc: "acc-amber", title: "Notificaciones automáticas", desc: "Cada sello se ve al instante en su tarjeta, y la bienvenida, la tarjeta completa y el premio le llegan como aviso a su pantalla. Le recuerdas tu negocio sin costo." },
   { Icon: TrendingUp, acc: "acc-violet", title: "Conoce a tus caseros", desc: "Mira quién vuelve, quién se aleja y quién está por ganar su premio. Exporta tus datos cuando quieras." },
 ];
 
@@ -37,10 +37,10 @@ const PLANS = [
     cta: "Crear cuenta gratis",
     features: [
       { t: "1 tarjeta de sellos", ok: true },
-      { t: "Hasta 50 caseros activos", ok: true },
+      { t: "Hasta 50 caseros", ok: true },
       { t: "Apple & Google Wallet", ok: true },
       { t: "Logo y colores personalizados", ok: true },
-      { t: "Notificaciones de sellos y bienvenida", ok: true },
+      { t: "Avisos de bienvenida y de premio", ok: true },
       { t: "Programa de referidos", ok: true },
       { t: "Mensajes promocionales", ok: false },
     ],
@@ -346,13 +346,13 @@ export default function Home() {
               Tu negocio en su bolsillo
             </h2>
             <p className="section-sub" style={{ textAlign: "left", margin: "12px 0 20px" }}>
-              Cada sello, tarjeta completa y recompensa llega como notificación al celular del casero —sin que abran nada
-              y sin que tú pagues SMS.
+              Cada sello se ve al instante en su tarjeta, y la bienvenida, la tarjeta completa y cada recompensa le llegan
+              como notificación al celular —sin que abran nada y sin que tú pagues SMS.
             </p>
             <ul className="plan-list">
               <li>
                 <Check size={18} />
-                <span>Avisos de cada sello, bienvenida y recompensa</span>
+                <span>Avisos de bienvenida, tarjeta completa y recompensa</span>
               </li>
               <li>
                 <Check size={18} />
@@ -360,7 +360,7 @@ export default function Home() {
               </li>
               <li>
                 <Check size={18} />
-                <span>Recupera caseros dormidos con un “¡Te extrañamos!”</span>
+                <span>Recupera caseros dormidos con un “¡Te extrañamos!” (plan Negocio)</span>
               </li>
             </ul>
           </div>
@@ -419,7 +419,9 @@ export default function Home() {
             ))}
           </div>
           <p className="center" style={{ marginTop: 18, fontSize: 13, color: "rgba(255,255,255,0.6)" }}>
-            El plan Gratis incluye 1 tarjeta y hasta 50 caseros activos, con logo y colores personalizados y notificaciones de sellos.
+            El plan Gratis incluye 1 tarjeta y hasta 50 caseros, con logo y colores personalizados y avisos de bienvenida y
+            de premio. Los planes de pago se activan por WhatsApp. En Android, Google muestra como notificación hasta 3
+            mensajes por tarjeta al día; los demás quedan guardados en la tarjeta del casero.
           </p>
         </div>
       </section>

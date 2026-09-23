@@ -178,7 +178,7 @@ export default function AccountPage() {
       ? planExpiresAt
         ? `Tu plan se renueva / vence el ${fmtDate(planExpiresAt)}.`
         : "Plan activo, sin fecha de vencimiento."
-      : "Plan gratuito — hasta 50 caseros activos.";
+      : "Plan gratuito — hasta 50 caseros.";
 
   return (
     <div className="container">
