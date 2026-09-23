@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Lock } from "lucide-react";
 import { authedFetch } from "@/lib/clientApi";
 import { StampBox } from "@/components/dashboard/StampBox";
@@ -38,6 +38,31 @@ export function ResumenTab({
   const [chartRange, setChartRange] = useState<string>("6m");
   const [chartMetric, setChartMetric] = useState<"nuevos" | "visitas">("nuevos");
   const [hoverPt, setHoverPt] = useState<number | null>(null);
+  // Per-card visit timestamps from the stamp ledger, loaded only while the Visitas
+  // chart is showing. null = not loaded yet.
+  const [visitData, setVisitData] = useState<Record<string, number[]> | null>(null);
+  const [visitErr, setVisitErr] = useState("");
+
+  // Re-runs when the dashboard reloads its customers (after a stamp), so the chart
+  // picks up the visit that was just logged.
+  useEffect(() => {
+    if (chartMetric !== "visitas" || !planInfo.paid) return;
+    let cancelled = false;
+    setVisitErr("");
+    authedFetch("/api/business/visits")
+      .then((r) => r.json().then((j) => ({ ok: r.ok, j })))
+      .then(({ ok, j }) => {
+        if (cancelled) return;
+        if (!ok) setVisitErr(j.error || "No se pudieron cargar las visitas.");
+        else setVisitData(j.visits || {});
+      })
+      .catch(() => {
+        if (!cancelled) setVisitErr("No se pudieron cargar las visitas.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [chartMetric, customers, planInfo.paid]);
 
   async function exportCsv() {
     setExporting(true);
@@ -122,8 +147,12 @@ export function ResumenTab({
             return { key: monKey(d), label: m.charAt(0).toUpperCase() + m.slice(1), full: full.charAt(0).toUpperCase() + full.slice(1), count: 0 };
           });
     const idx = new Map(buckets.map((b, i) => [b.key, i]));
-    for (const c of clients) {
-      const ts = chartMetric === "nuevos" ? c.createdAt : c.lastStampDate;
+    // "nuevos": one point per casero, at signup. "visitas": every stamping visit from
+    // the ledger — each casero's lastStampDate counted a regular once, this month only.
+    const visitTimes =
+      visitData == null ? [] : filterCardId === "all" ? Object.values(visitData).flat() : visitData[filterCardId] ?? [];
+    const times = chartMetric === "nuevos" ? clients.map((c) => c.createdAt) : visitTimes;
+    for (const ts of times) {
       if (!ts) continue;
       const d = new Date(ts);
       const i = idx.get(range.unit === "day" ? dayKey(d) : monKey(d));
@@ -226,12 +255,12 @@ export function ResumenTab({
 
           <div className="row spread" style={{ alignItems: "center", margin: "20px 0 6px", flexWrap: "wrap", gap: 8 }}>
             <h4 style={{ fontSize: 13, textTransform: "uppercase", letterSpacing: 0.5, color: "var(--text-secondary)", margin: 0 }}>
-              {chartMetric === "nuevos" ? "Nuevos caseros" : "Visitas recientes"}
+              {chartMetric === "nuevos" ? "Nuevos caseros" : "Visitas"}
             </h4>
             <div className="row" style={{ width: "auto", gap: 8 }}>
               <select className="input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} value={chartMetric} onChange={(e) => setChartMetric(e.target.value as "nuevos" | "visitas")}>
                 <option value="nuevos">Nuevos caseros</option>
-                <option value="visitas">Visitas recientes</option>
+                <option value="visitas">Visitas</option>
               </select>
               <select className="input" style={{ width: "auto", padding: "6px 10px", fontSize: 13 }} value={chartRange} onChange={(e) => setChartRange(e.target.value)}>
                 {CHART_RANGES.map((r) => (
@@ -242,7 +271,11 @@ export function ResumenTab({
               </select>
             </div>
           </div>
-          {(() => {
+          {chartMetric === "visitas" && visitData == null ? (
+            <p className="muted" style={{ fontSize: 13, margin: "24px 0" }}>
+              {visitErr || "Cargando visitas…"}
+            </p>
+          ) : (() => {
             const W = 620,
               H = 204,
               padL = 44,
@@ -273,7 +306,7 @@ export function ResumenTab({
                 ))}
                 {/* axis titles */}
                 <text transform={`rotate(-90 13 ${padTop + innerH / 2})`} x={13} y={padTop + innerH / 2} textAnchor="middle" fontSize="10" fontWeight="700" fill="#9ca3af">
-                  CLIENTES
+                  {chartMetric === "nuevos" ? "CLIENTES" : "VISITAS"}
                 </text>
                 <text x={padL + innerW / 2} y={H - 3} textAnchor="middle" fontSize="10" fontWeight="700" fill="#9ca3af">
                   {range.unit === "day" ? "FECHA" : "MES"}
