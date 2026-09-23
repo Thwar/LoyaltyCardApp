@@ -2,20 +2,28 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
 import { getLoyaltyCard, getBusinessById } from "@/lib/serverData";
-import { appleConfigured, buildPkpass } from "@/lib/appleWallet";
+import { appleConfigured, buildPkpass, verifyPassDownloadToken } from "@/lib/appleWallet";
 import { effectivePlan } from "@/lib/plans";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Public: returns the signed .pkpass for a customer card. The /join page links
-// here so the customer can add the card to Apple Wallet on their iPhone.
-export async function GET(_req: Request, ctx: { params: Promise<{ customerCardId: string }> }) {
+// here so the customer can add the card to Apple Wallet on their iPhone. Requires the
+// ?t= token from the enrollment response — the card id alone is not a secret (it's
+// in every referral link), so it must not be enough to download someone's card.
+export async function GET(req: Request, ctx: { params: Promise<{ customerCardId: string }> }) {
   try {
     if (!appleConfigured()) {
       return NextResponse.json({ error: "Apple Wallet no está configurado." }, { status: 503 });
     }
     const { customerCardId } = await ctx.params;
+    if (!verifyPassDownloadToken(customerCardId, new URL(req.url).searchParams.get("t"))) {
+      return NextResponse.json(
+        { error: "Este enlace no es válido. Abre tu tarjeta desde el QR del negocio con tu correo." },
+        { status: 403 }
+      );
+    }
 
     const snap = await adminDb().collection(COLLECTIONS.CUSTOMER_CARDS).doc(customerCardId).get();
     if (!snap.exists) return NextResponse.json({ error: "Tarjeta no encontrada." }, { status: 404 });

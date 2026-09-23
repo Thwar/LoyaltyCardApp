@@ -23,6 +23,7 @@ interface EnrollResult {
   saveUrl: string | null;
   walletConfigured: boolean;
   appleConfigured?: boolean;
+  applePassUrl?: string | null; // signed .pkpass download link
   existing?: boolean;
   walletError?: string;
 }
@@ -72,8 +73,8 @@ export default function JoinPage() {
 
   // After a successful enrollment, best-effort auto-open the Apple Wallet pass on iOS.
   useEffect(() => {
-    if (isIOS && result?.appleConfigured && result.customerCardId) {
-      window.location.href = `/api/wallet/apple/pass/${result.customerCardId}`;
+    if (isIOS && result?.applePassUrl) {
+      window.location.href = result.applePassUrl;
     }
   }, [result, isIOS]);
 
@@ -138,7 +139,7 @@ export default function JoinPage() {
         </div>
 
         {(() => {
-          const showApple = !!result.appleConfigured && isIOS;
+          const showApple = !!result.applePassUrl && isIOS;
           const showGoogle = !!result.saveUrl;
           if (!showApple && !showGoogle) {
             return (
@@ -156,7 +157,7 @@ export default function JoinPage() {
                   <p className="muted" style={{ margin: 0 }}>
                     Abriendo tu tarjeta… si no se abre sola, toca aquí:
                   </p>
-                  <a href={`/api/wallet/apple/pass/${result.customerCardId}`}>
+                  <a href={result.applePassUrl!}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={APPLE_WALLET_BADGE} alt="Añadir a Apple Wallet" style={{ height: 52, width: "auto" }} />
                   </a>

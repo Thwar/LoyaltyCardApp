@@ -44,6 +44,30 @@ export function verifyApplePassAuth(authHeader: string | null, serialNumber: str
   return provided.length === expected.length && crypto.timingSafeEqual(provided, expected);
 }
 
+// Signed link for the public .pkpass download. The download used to be keyed by the
+// card id alone — the same id every referral link carries (?ref=), so anyone a casero
+// invited could pull that casero's live pass, redeemable barcode included. Only the
+// enrollment response mints this, so only the person who enrolled gets a working link.
+// Null when APPLE_AUTH_SECRET is unset: fail closed rather than sign with an empty key.
+function passDownloadToken(customerCardId: string): string | null {
+  const secret = process.env.APPLE_AUTH_SECRET;
+  if (!secret) return null;
+  return crypto.createHmac("sha256", secret).update(`download:${customerCardId}`).digest("base64url");
+}
+
+export function passDownloadUrl(customerCardId: string): string | null {
+  const token = passDownloadToken(customerCardId);
+  return token ? `/api/wallet/apple/pass/${customerCardId}?t=${token}` : null;
+}
+
+export function verifyPassDownloadToken(customerCardId: string, token: string | null): boolean {
+  const expected = passDownloadToken(customerCardId);
+  if (!expected || !token) return false;
+  const provided = Buffer.from(token);
+  const want = Buffer.from(expected);
+  return provided.length === want.length && crypto.timingSafeEqual(provided, want);
+}
+
 // Apple wants colors as rgb() strings, not hex.
 function hexToRgb(hex: string): string {
   const h = hex.replace("#", "");

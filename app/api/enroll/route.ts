@@ -6,7 +6,7 @@ import { COLLECTIONS, type Business, type CustomerCard, type LoyaltyCard } from 
 import { getLoyaltyCard, getBusinessById, countClients, getLoyaltyCardsByBusiness } from "@/lib/serverData";
 import { generateUniqueCardCode } from "@/lib/cardCode";
 import { walletConfigured, issuePass } from "@/lib/googleWallet";
-import { appleConfigured } from "@/lib/appleWallet";
+import { appleConfigured, passDownloadUrl } from "@/lib/appleWallet";
 import { effectivePlan } from "@/lib/plans";
 import { allowRequest, clientIp } from "@/lib/rateLimit";
 import { nameMatches } from "@/lib/identity";
@@ -22,6 +22,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // re-reading it here cost another Firestore round trip on every enrollment.
 async function cardResponse(ref: DocumentReference, customer: CustomerCard, card: LoyaltyCard, existing: boolean, business: Business | null) {
   let saveUrl: string | null = null;
+  // Signed: the bare /api/wallet/apple/pass/<id> URL is refused (see that route).
+  const applePassUrl = appleConfigured() ? passDownloadUrl(customer.id) : null;
   if (walletConfigured()) {
     try {
       const cardForPass = { ...card, logoPng: card.logoPng || business?.logoPng };
@@ -36,6 +38,7 @@ async function cardResponse(ref: DocumentReference, customer: CustomerCard, card
         saveUrl: null,
         walletConfigured: true,
         appleConfigured: appleConfigured(),
+        applePassUrl,
         existing,
         walletError: we instanceof Error ? we.message : "Error de Wallet",
       });
@@ -47,6 +50,7 @@ async function cardResponse(ref: DocumentReference, customer: CustomerCard, card
     saveUrl,
     walletConfigured: walletConfigured(),
     appleConfigured: appleConfigured(),
+    applePassUrl,
     existing,
   });
 }
