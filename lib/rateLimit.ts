@@ -1,4 +1,5 @@
 import "server-only";
+import crypto from "node:crypto";
 import { adminDb } from "./firebaseAdmin";
 
 const COLL = "rateLimits";
@@ -29,8 +30,20 @@ export async function allowRequest(key: string, limit: number, windowMs: number)
   }
 }
 
-// Best-effort client IP from the proxy headers Vercel sets.
+// Best-effort client IP. Production sits behind a Cloudflare Worker
+// (workers/soycasero-proxy.js), so the X-Forwarded-For Vercel sets is a Cloudflare
+// address shared by unrelated visitors. The Worker forwards the real one alongside a
+// shared secret; trust it only when the secret matches, because caseroapp.vercel.app
+// is reachable directly and anyone could send the header themselves.
 export function clientIp(req: Request): string {
+  const secret = process.env.PROXY_SHARED_SECRET;
+  const viaWorker = req.headers.get("x-soycasero-client-ip");
+  const given = req.headers.get("x-soycasero-proxy-secret");
+  if (secret && viaWorker && given) {
+    const a = Buffer.from(given);
+    const b = Buffer.from(secret);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) return viaWorker.trim();
+  }
   const fwd = req.headers.get("x-forwarded-for");
   if (fwd) return fwd.split(",")[0].trim();
   return req.headers.get("x-real-ip") || "unknown";

@@ -13,7 +13,7 @@ const ORIGIN = "caseroapp.vercel.app";
 const PUBLIC = "www.soycasero.com";
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
 
     // Keep the apex behaving as it did on Vercel.
@@ -26,6 +26,20 @@ export default {
     const originRequest = new Request(originUrl, request);
     originRequest.headers.set("X-Forwarded-Host", PUBLIC);
     originRequest.headers.set("X-Forwarded-Proto", "https");
+
+    // Vercel overwrites X-Forwarded-For with whoever connected to it — this Worker,
+    // i.e. a Cloudflare address — so every visitor looked like the same few IPs to
+    // the app's per-IP rate limits. Pass the visitor's IP separately, vouched for by
+    // a secret only this Worker and the app hold (the origin is publicly reachable,
+    // so the IP header alone would be spoofable). Always strip client-sent copies.
+    // Secret: `wrangler secret put PROXY_SHARED_SECRET` (same value in Vercel).
+    originRequest.headers.delete("X-SoyCasero-Client-IP");
+    originRequest.headers.delete("X-SoyCasero-Proxy-Secret");
+    const visitorIp = request.headers.get("CF-Connecting-IP");
+    if (env.PROXY_SHARED_SECRET && visitorIp) {
+      originRequest.headers.set("X-SoyCasero-Client-IP", visitorIp);
+      originRequest.headers.set("X-SoyCasero-Proxy-Secret", env.PROXY_SHARED_SECRET);
+    }
 
     // Manual, so a redirect from the app can't strand visitors on the origin.
     const response = await fetch(originRequest, { redirect: "manual" });
