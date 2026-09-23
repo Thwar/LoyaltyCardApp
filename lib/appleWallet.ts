@@ -178,9 +178,10 @@ export async function buildPkpass(customer: CustomerCard, card: LoyaltyCard, des
   pass.backFields.push({ key: "reward", label: "Recompensa", value: card.rewardDescription });
   // Latest stamp/complete/redeem message. Apple fires a lock-screen notification
   // when a field's value changes AND that field carries a changeMessage — so the
-  // changeMessage is attached only for events worth interrupting someone for
-  // (card completed, reward redeemed), matching what Google gets. A routine sello
-  // still updates the pass, silently: the casero is at the counter watching it.
+  // changeMessage is attached unless the event set lastEventNotify: false. Every
+  // loyalty event notifies (sellos included — Apple has no cap, unlike Google).
+  // Apple only fires when the value actually changes: the default sello text
+  // carries the count, so consecutive sellos always differ.
   // Undefined on older docs, which predate the flag — treat those as notifying.
   if (customer.lastEvent) {
     const notify = customer.lastEventNotify !== false;
