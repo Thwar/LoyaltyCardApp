@@ -1,5 +1,15 @@
 import "server-only";
 import sharp from "sharp";
+import crypto from "node:crypto";
+
+// Short content hash for cache-busting a /logo URL. Those routes serve
+// `max-age=31536000, immutable`, and an owner editing their logo overwrites
+// logoPng on the SAME document id — so without a version token in the URL the
+// old image would stick in browser and CDN caches for a year. Pass the exact
+// bytes the logo route will serve (card logo first, business logo as fallback).
+export function logoVersion(b64: string): string {
+  return crypto.createHash("sha1").update(b64).digest("hex").slice(0, 10);
+}
 
 function hexToRgb(hex: string) {
   const h = (hex || "#E53935").replace("#", "");

@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin";
 import { adminDb, adminAuth } from "@/lib/firebaseAdmin";
-import { COLLECTIONS, type Business, type CustomerCard, type LoyaltyCard } from "@/lib/types";
+import { COLLECTIONS, type Business, type CustomerCard, type LoyaltyCard, type Member } from "@/lib/types";
 import { effectivePlan, getPlan, type PlanId } from "@/lib/plans";
 import { notifyAllCustomerPasses } from "@/lib/appleNotify";
 import { syncAllGooglePasses } from "@/lib/googleNotify";
+import { pushMemberPass } from "@/lib/membershipWallet";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -151,12 +152,53 @@ export async function DELETE(req: Request, ctx: Ctx) {
     console.error("[admin delete] google sync:", e);
   }
 
-  // 4. Remove the ledgers + the business record (keep the voided customer/loyalty cards).
+  // 4. Same treatment for memberships — programs soft-deleted first so the rebuilt
+  //    member passes void, then member PII scrubbed and each pass pushed.
+  const programs = await db.collection(COLLECTIONS.MEMBERSHIP_PROGRAMS).where("businessId", "==", id).get();
+  await Promise.all(programs.docs.map((d) => d.ref.update({ isActive: false, deletedAt: Date.now() })));
+
+  const members = await db.collection(COLLECTIONS.MEMBERS).where("businessId", "==", id).get();
+  const now = Date.now();
+  for (let i = 0; i < members.docs.length; i += 400) {
+    const batch = db.batch();
+    members.docs
+      .slice(i, i + 400)
+      .forEach((d) => batch.update(d.ref, { memberName: "", memberEmail: "", memberPhone: "", appleUpdatedTag: now }));
+    await batch.commit();
+  }
+  await Promise.all(
+    members.docs.map((d) =>
+      pushMemberPass({ id: d.id, ...(d.data() as Omit<Member, "id">), memberName: "", memberEmail: "", memberPhone: "", appleUpdatedTag: now }).catch(() => {})
+    )
+  );
+
+  // 5. Remove the ledgers + the business record (keep the voided customer/loyalty
+  //    cards and member docs so their greyed passes keep serving).
   const deleted = {
     stamps: await deleteWhere(COLLECTIONS.STAMPS, "businessId", id),
     rewards: await deleteWhere(COLLECTIONS.REWARDS, "businessId", id),
+    visits: await deleteWhere(COLLECTIONS.VISITS, "businessId", id),
   };
+
+  // 6. Cajero logins must not survive the business.
+  const staff = await db.collection(COLLECTIONS.STAFF).where("businessId", "==", id).get();
+  for (const d of staff.docs) {
+    try {
+      await adminAuth().deleteUser(d.id);
+    } catch (e) {
+      console.error("[admin delete] staff deleteUser:", d.id, e);
+    }
+    await d.ref.delete();
+  }
+
   await db.collection(COLLECTIONS.BUSINESSES).doc(id).delete();
 
-  return NextResponse.json({ ok: true, deactivatedCards: cards.size, voidedCustomers: custs.size, deleted });
+  return NextResponse.json({
+    ok: true,
+    deactivatedCards: cards.size,
+    voidedCustomers: custs.size,
+    voidedMembers: members.size,
+    removedStaff: staff.size,
+    deleted,
+  });
 }

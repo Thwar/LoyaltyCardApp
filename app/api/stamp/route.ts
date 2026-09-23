@@ -3,7 +3,7 @@ import { FieldValue, type DocumentData } from "firebase-admin/firestore";
 import { authenticate } from "@/lib/serverAuth";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS, type CustomerCard } from "@/lib/types";
-import { getBusinessForUser, getLoyaltyCard } from "@/lib/serverData";
+import { getBusinessForUser, getLoyaltyCard, getLoyaltyCardLite } from "@/lib/serverData";
 import { walletConfigured, syncLoyaltyObject } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { sendApplePassPush } from "@/lib/apns";
@@ -28,6 +28,9 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
     const cardCode = String(body.cardCode || "").trim();
     const redeem = body.redeem === true;
+    // Resolve the code and report the card's state WITHOUT touching it, so the
+    // counter can see whose card it is before committing to anything.
+    const lookupOnly = body.lookupOnly === true;
     if (!cardCode) return NextResponse.json({ error: "Ingresa el código del cliente." }, { status: 400 });
 
     const cardsCol = adminDb().collection(COLLECTIONS.CUSTOMER_CARDS);
@@ -35,9 +38,40 @@ export async function POST(req: Request) {
     if (pre.empty) return NextResponse.json({ error: "Código no encontrado." }, { status: 404 });
     const docRef = pre.docs[0].ref;
 
-    const loyalty = await getLoyaltyCard(pre.docs[0].data().loyaltyCardId);
+    // The lookup only renders the card; the write path also feeds the wallet pass
+    // builders, which need the logo. Reading the lite version here halves the query
+    // (the logo is ~85KB of base64 living inside the document).
+    const loyalty = await (lookupOnly ? getLoyaltyCardLite : getLoyaltyCard)(pre.docs[0].data().loyaltyCardId);
     if (!loyalty) return NextResponse.json({ error: "Tarjeta de lealtad no encontrada." }, { status: 404 });
     const totalSlots = loyalty.totalSlots;
+
+    if (lookupOnly) {
+      const d = pre.docs[0].data();
+      const current = Math.min(Number(d.currentStamps || 0), totalSlots);
+      // Contact details are deliberately absent — a cajero must not see them, and
+      // the counter doesn't need them to stamp a card.
+      return NextResponse.json({
+        cardCode,
+        customerName: d.customerName || "",
+        businessName: loyalty.businessName || "",
+        currentStamps: current,
+        totalSlots,
+        remaining: Math.max(0, totalSlots - current),
+        completed: current >= totalSlots,
+        rewardsRedeemed: Number(d.rewardsRedeemed || 0),
+        rewardDescription: loyalty.rewardDescription || "",
+        cardColor: loyalty.cardColor,
+        textColor: loyalty.textColor || "#FFFFFF",
+        stampShape: loyalty.stampShape || "circle",
+        lastStampDate: d.lastStampDate ?? null,
+        createdAt: d.createdAt ?? null,
+      });
+    }
+
+    // How many stamps this scan is worth (a big order, a promo, a missed visit).
+    // Clamped server-side so a bad client can never overfill a card.
+    const rawCount = Math.floor(Number(body.count));
+    const requested = Number.isFinite(rawCount) && rawCount > 0 ? rawCount : 1;
     // Custom notification templates are a paid feature; free plans get the defaults.
     const paid = effectivePlan(business).paid;
     const tmplStamp = (paid && loyalty.stampMessage) || NOTIF_DEFAULTS.stamp;
@@ -49,7 +83,7 @@ export async function POST(req: Request) {
     type StampTx =
       | { kind: "full"; current: number }
       | { kind: "notFull"; current: number }
-      | { kind: "ok"; data: DocumentData; newStamps: number; completed: boolean; redeemed: boolean; awardReferral: boolean; eventMessage: string };
+      | { kind: "ok"; data: DocumentData; newStamps: number; completed: boolean; redeemed: boolean; awardReferral: boolean; eventMessage: string; added: number };
     const result = await adminDb().runTransaction<StampTx>(async (t) => {
       const d = (await t.get(docRef)).data() || {};
       if (redeem) {
@@ -65,6 +99,7 @@ export async function POST(req: Request) {
           lastStampDate: Date.now(),
           appleUpdatedTag: Date.now(),
           lastEvent: eventMessage,
+          lastEventNotify: true, // redeeming is worth a buzz
         });
         t.set(adminDb().collection(COLLECTIONS.REWARDS).doc(), {
           customerCardId: docRef.id,
@@ -73,28 +108,39 @@ export async function POST(req: Request) {
           cardCode,
           claimedAt: Date.now(),
         });
-        return { kind: "ok", data: d, newStamps: 0, completed: false, redeemed: true, awardReferral: false, eventMessage };
+        return { kind: "ok", data: d, newStamps: 0, completed: false, redeemed: true, awardReferral: false, eventMessage, added: 0 };
       }
       const current = Number(d.currentStamps || 0);
       if (current >= totalSlots) return { kind: "full", current };
       const awardReferral = !!d.referredBy && !d.referralRewarded;
-      const newStamps = current + 1;
+      // Re-clamped INSIDE the transaction against the freshly-read count, so two
+      // concurrent multi-stamp scans still can't push the card past totalSlots.
+      const added = Math.min(requested, totalSlots - current);
+      const newStamps = current + added;
       const completed = newStamps >= totalSlots;
       const eventMessage = renderNotif(completed ? tmplComplete : tmplStamp, newStamps, totalSlots);
+      const now = Date.now();
       t.update(docRef, {
-        currentStamps: FieldValue.increment(1),
-        lastStampDate: Date.now(),
-        appleUpdatedTag: Date.now(),
+        currentStamps: FieldValue.increment(added),
+        lastStampDate: now,
+        appleUpdatedTag: now,
         lastEvent: eventMessage,
+        // Only completing the card interrupts them. A routine sello happens while
+        // the casero is standing at the counter watching it — same policy Google
+        // gets, so an iPhone and an Android user see the same thing.
+        lastEventNotify: completed,
         ...(awardReferral ? { referralRewarded: true } : {}),
       });
-      t.set(adminDb().collection(COLLECTIONS.STAMPS).doc(), {
-        customerCardId: docRef.id,
-        businessId: business.id,
-        loyaltyCardId: loyalty.id,
-        timestamp: Date.now(),
-      });
-      return { kind: "ok", data: d, newStamps, completed, redeemed: false, awardReferral, eventMessage };
+      // One ledger row per stamp, so the existing per-stamp analytics stay honest.
+      for (let i = 0; i < added; i++) {
+        t.set(adminDb().collection(COLLECTIONS.STAMPS).doc(), {
+          customerCardId: docRef.id,
+          businessId: business.id,
+          loyaltyCardId: loyalty.id,
+          timestamp: now,
+        });
+      }
+      return { kind: "ok", data: d, newStamps, completed, redeemed: false, awardReferral, eventMessage, added };
     });
 
     if (result.kind === "full") {
@@ -107,7 +153,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data, newStamps, completed, redeemed, eventMessage } = result;
+    const { data, newStamps, completed, redeemed, eventMessage, added } = result;
 
     // First real stamp for a referred customer → pay their referrer (once). The
     // referralRewarded flag was flipped inside the transaction, so only the winning
@@ -132,7 +178,10 @@ export async function POST(req: Request) {
           rewardsRedeemed: redeemed ? Number(data.rewardsRedeemed || 0) + 1 : Number(data.rewardsRedeemed || 0),
         };
         const cardForPass = { ...loyalty, logoPng: loyalty.logoPng || business.logoPng };
-        await syncLoyaltyObject(updated, cardForPass, eventMessage, business.description, effectivePlan(business).removeBranding);
+        // Google caps notifying messages at 3 per pass per day, so only the events
+        // worth interrupting someone for get one — a routine stamp just updates the
+        // pass face (the customer is standing at the counter watching it happen).
+        await syncLoyaltyObject(updated, cardForPass, eventMessage, business.description, effectivePlan(business).removeBranding, completed || redeemed);
       } catch (we) {
         console.error("Wallet update error:", we);
       }
@@ -156,6 +205,7 @@ export async function POST(req: Request) {
       totalSlots,
       completed,
       redeemed,
+      added, // may be fewer than requested if the card filled up
       customerName: data.customerName || "",
     });
   } catch (e: unknown) {

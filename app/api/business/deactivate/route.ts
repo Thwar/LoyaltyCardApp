@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
     await adminDb().collection(COLLECTIONS.LOYALTY_CARDS).doc(card.id).update({ isActive: active });
     await notifyAllCustomerPasses(business.id); // Apple: grey out / restore customers' passes
-    await syncAllGooglePasses(business.id); // Google: set objects INACTIVE / ACTIVE
+    await syncAllGooglePasses(business.id, card.id); // Google: set objects INACTIVE / ACTIVE
 
     return NextResponse.json({ isActive: active });
   } catch (e: unknown) {

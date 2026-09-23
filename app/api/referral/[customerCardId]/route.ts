@@ -19,7 +19,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ customerCardId
     if (!card) return NextResponse.json({ error: "Tarjeta no encontrada." }, { status: 404 });
 
     return NextResponse.json({
-      customerName: c.customerName || "",
+      // First name only: this id rides in every referral link the casero shares, so
+      // anyone they invite can call this — and the share page only greets by it.
+      customerName: (c.customerName || "").trim().split(/\s+/)[0] || "",
       businessName: card.businessName,
       cardId: card.id,
       rewardDescription: card.rewardDescription,

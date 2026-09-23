@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { adminDb } from "@/lib/firebaseAdmin";
 import { COLLECTIONS } from "@/lib/types";
 import { getMember, getMembershipProgram } from "@/lib/serverData";
+import { logoVersion } from "@/lib/logo";
 import { walletConfigured, issueMembershipPass, membershipSaveUrl } from "@/lib/googleWallet";
 import { appleConfigured } from "@/lib/appleWallet";
 import { memberStatus, visitsRemaining, MEMBER_STATUS_LABEL } from "@/lib/membership";
@@ -45,7 +46,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ memberId: stri
       memberCode: member.memberCode,
       cardColor: program.cardColor,
       textColor: program.textColor || "#FFFFFF",
-      logoPng: program.logoPng || "",
+      // URL, not base64 — see the note in /api/card/[id]. This one is fetched
+      // every time a member opens their card link.
+      logoUrl: program.logoPng ? `/api/membership/${program.id}/logo?v=${logoVersion(program.logoPng)}` : null,
       saveUrl,
       appleConfigured: appleConfigured(),
     });

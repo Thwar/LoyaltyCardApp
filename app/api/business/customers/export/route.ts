@@ -9,7 +9,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function csvCell(v: unknown): string {
-  const s = v == null ? "" : String(v);
+  let s = v == null ? "" : String(v);
+  // Excel/Sheets execute a cell that starts with = + - @ (or a leading tab/CR) as a
+  // formula. Customer names are user-supplied and land straight in this file, so
+  // prefix a quote to neutralise them.
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 function fmt(ts?: number): string {
@@ -45,11 +49,14 @@ export async function GET(req: Request) {
   const header = ["Nombre", "Correo", "Teléfono", "Código", "Sellos", "Recompensas canjeadas", "Tarjeta", "Cliente desde", "Última visita", "Consentimiento marketing"];
   const lines = [header.join(",")];
   for (const r of rows) {
+    // Contact details only for customers who opted in — same rule /api/business/me
+    // enforces for the dashboard. Without this, the export was a way around consent.
+    const consented = r.marketingConsent === true;
     lines.push(
       [
         r.customerName,
-        r.customerEmail,
-        r.customerPhone,
+        consented ? r.customerEmail : "",
+        consented ? r.customerPhone : "",
         r.cardCode,
         r.currentStamps ?? 0,
         r.rewardsRedeemed ?? 0,

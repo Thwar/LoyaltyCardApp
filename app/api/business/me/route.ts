@@ -32,10 +32,13 @@ export async function GET(req: Request) {
     const card = cards[0] ?? null; // primary card (current UI); cards[] is the multi-card foundation
     const liveCardIds = new Set(cards.map((c) => c.id)); // excludes soft-deleted cards
 
+    // Unbounded on purpose. There is no orderBy here, so a .limit() returned an
+    // arbitrary slice by document id (auto-ids are random) — the dashboard list, the
+    // client count and every analytics tile were silently computed from a sample.
+    // Every other server read of this collection is already unbounded.
     const snap = await adminDb()
       .collection(COLLECTIONS.CUSTOMER_CARDS)
       .where("businessId", "==", business.id)
-      .limit(100)
       .get();
     // Contact (email/phone) is for the OWNER only, and only on a paid plan with the
     // customer's marketing consent. Cajeros never see contact. Stripped server-side.

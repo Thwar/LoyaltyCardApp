@@ -8,6 +8,7 @@ export function CardPreview({
   businessName,
   totalSlots,
   currentStamps = 0,
+  pendingStamps = 0,
   rewardDescription,
   cardColor,
   textColor = "#FFFFFF",
@@ -21,6 +22,8 @@ export function CardPreview({
   businessName: string;
   totalSlots: number;
   currentStamps?: number;
+  /** Sellos about to be given, previewed on the card but not yet earned. */
+  pendingStamps?: number;
   rewardDescription: string;
   cardColor: string;
   textColor?: string;
@@ -32,6 +35,8 @@ export function CardPreview({
   barcodeType?: BarcodeType;
 }) {
   const label = { fontSize: 10, letterSpacing: 1, opacity: 0.8, textTransform: "uppercase" as const };
+  const earned = Math.min(currentStamps, totalSlots);
+  const pending = Math.max(0, Math.min(pendingStamps, totalSlots - earned));
 
   return (
     <div style={{ background: cardColor, color: textColor, borderRadius: 18, padding: 20, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
@@ -45,32 +50,53 @@ export function CardPreview({
         )}
         <div style={{ textAlign: "right", flex: "0 0 auto" }}>
           <div style={label}>Sellos</div>
+          {/* The balance stays the primary number; the pending delta trails it with
+              a gap so "3 +2" can't be scanned as a single figure. */}
           <div style={{ fontSize: 16, fontWeight: 700 }}>
-            {Math.min(currentStamps, totalSlots)}/{totalSlots}
+            {earned}/{totalSlots}
+            {pending > 0 && <span style={{ opacity: 0.75, marginLeft: 5, fontWeight: 600 }}>+{pending}</span>}
           </div>
         </div>
       </div>
 
-      {/* stamps: the chosen shape, solid when earned and faint outline when not */}
+      {/* stamps: solid when earned, dashed ring + dimmed for sellos the counter is
+          about to give, faint glyph when empty.
+          The dashed ring matters — it is the only channel that separates pending
+          from empty on the 14 icon shapes, which draw empty as the same glyph at
+          0.28 alpha. Opacity alone put pending a hair above that, invisible on the
+          lighter card colours and unreadable for a low-vision user.
+          No transition on purpose: the glyph flips to its filled form in the same
+          frame, so easing the opacity down would render it fully solid — i.e.
+          already earned — for the length of the animation. */}
       <div className="stamp-grid" style={{ margin: "16px 0" }}>
-        {Array.from({ length: totalSlots }).map((_, i) => (
-          <div
-            key={i}
-            className="stamp"
-            style={{ border: "none", borderRadius: 0, background: "transparent" }}
-            dangerouslySetInnerHTML={{
-              __html: `<svg viewBox="0 0 100 100" width="100%" height="100%">${stampShapeMarkup(
-                stampShape,
-                50,
-                50,
-                42,
-                i < currentStamps,
-                textColor,
-                7
-              )}</svg>`,
-            }}
-          />
-        ))}
+        {Array.from({ length: totalSlots }).map((_, i) => {
+          const isPending = i >= earned && i < earned + pending;
+          return (
+            <div
+              key={i}
+              className="stamp"
+              style={{
+                border: "none",
+                background: "transparent",
+                borderRadius: isPending ? "50%" : 0,
+                outline: isPending ? `1.5px dashed ${textColor}` : "none",
+                outlineOffset: -2,
+                opacity: isPending ? 0.7 : 1,
+              }}
+              dangerouslySetInnerHTML={{
+                __html: `<svg viewBox="0 0 100 100" width="100%" height="100%">${stampShapeMarkup(
+                  stampShape,
+                  50,
+                  50,
+                  42,
+                  i < earned + pending,
+                  textColor,
+                  7
+                )}</svg>`,
+              }}
+            />
+          );
+        })}
       </div>
 
       {/* fields: reward + code */}

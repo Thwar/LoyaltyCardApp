@@ -7,6 +7,7 @@ import { getClientAuth } from "@/lib/firebaseClient";
 import { authedFetch } from "@/lib/clientApi";
 import { PageLoader } from "@/components/PageLoader";
 import { SiteFooter } from "@/components/SiteFooter";
+import { ConfirmBar } from "@/components/ConfirmBar";
 import { effectivePlan, getPlan, type PlanId } from "@/lib/plans";
 
 // Read an image file and downscale to a small PNG data URL (keeps uploads tiny).
@@ -177,7 +178,7 @@ export default function AccountPage() {
       ? planExpiresAt
         ? `Tu plan se renueva / vence el ${fmtDate(planExpiresAt)}.`
         : "Plan activo, sin fecha de vencimiento."
-      : "Plan gratuito — hasta 50 caseros activos.";
+      : "Plan gratuito — hasta 50 caseros.";
 
   return (
     <div className="container">
@@ -276,7 +277,8 @@ export default function AccountPage() {
           <div className="card mt" style={{ borderColor: "#f3c0bd" }}>
             <h3 style={{ fontSize: 18, color: "#c62828", marginBottom: 6 }}>Eliminar cuenta</h3>
             <p className="muted" style={{ marginTop: 0 }}>
-              Borra tu negocio, tu tarjeta, tus caseros y tu cuenta. Esta acción no se puede deshacer.
+              Borra tu negocio, tus tarjetas, tus membresías, tus cajeros y tu cuenta. Las tarjetas de tus caseros
+              y socios quedan finalizadas (en gris) y sus datos personales se borran. Esta acción no se puede deshacer.
             </p>
             <div className="field">
               <label>
@@ -423,12 +425,19 @@ function CajeroManager({ max }: { max: number }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [msg, setMsg] = useState("");
+  const [confirmDel, setConfirmDel] = useState<{ uid: string; name: string } | null>(null);
 
   const load = useCallback(async () => {
-    const res = await authedFetch("/api/staff");
-    const json = await res.json();
-    if (res.ok) setList(json.staff || []);
-    setLoading(false);
+    try {
+      const res = await authedFetch("/api/staff");
+      const json = await res.json().catch(() => ({} as { staff?: typeof list; error?: string }));
+      if (res.ok) setList(json.staff || []);
+      else setErr(json.error || `No se pudieron cargar los cajeros (${res.status}).`);
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
   useEffect(() => {
     load();
@@ -450,10 +459,24 @@ function CajeroManager({ max }: { max: number }) {
     load();
   }
 
-  async function remove(uid: string, n: string) {
-    if (!confirm(`¿Quitar al cajero ${n}? Ya no podrá iniciar sesión.`)) return;
-    const res = await authedFetch("/api/staff", { method: "DELETE", body: JSON.stringify({ uid }) });
-    if (res.ok) load();
+  async function remove(uid: string) {
+    setErr("");
+    setMsg("");
+    setBusy(true);
+    setConfirmDel(null);
+    try {
+      const res = await authedFetch("/api/staff", { method: "DELETE", body: JSON.stringify({ uid }) });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({} as { error?: string }));
+        setErr(json.error || `No se pudo quitar al cajero (${res.status}).`);
+        return;
+      }
+      load();
+    } catch {
+      setErr("No se pudo conectar. Revisa tu conexión e inténtalo de nuevo.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   if (max <= 0) {
@@ -489,6 +512,17 @@ function CajeroManager({ max }: { max: number }) {
       </p>
       {err && <div className="error-box">{err}</div>}
       {msg && <div className="success-box">{msg}</div>}
+      {confirmDel && (
+        <div style={{ marginBottom: 12 }}>
+          <ConfirmBar
+            message={`¿Quitar al cajero ${confirmDel.name}? Ya no podrá iniciar sesión.`}
+            confirmLabel="Sí, quitar"
+            onConfirm={() => remove(confirmDel.uid)}
+            onCancel={() => setConfirmDel(null)}
+            busy={busy}
+          />
+        </div>
+      )}
 
       {loading ? (
         <p className="muted">Cargando…</p>
@@ -502,7 +536,7 @@ function CajeroManager({ max }: { max: number }) {
                 <div style={{ fontWeight: 600 }}>{s.name}</div>
                 <div className="muted" style={{ fontSize: 13 }}>{s.email}</div>
               </div>
-              <button className="btn btn-sm" style={{ width: "auto", background: "#fdecea", color: "#c62828" }} onClick={() => remove(s.uid, s.name)}>
+              <button className="btn btn-sm" style={{ width: "auto", background: "#fdecea", color: "#c62828" }} disabled={busy} onClick={() => setConfirmDel({ uid: s.uid, name: s.name })}>
                 Quitar
               </button>
             </li>

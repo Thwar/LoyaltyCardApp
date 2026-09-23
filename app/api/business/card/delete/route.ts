@@ -42,21 +42,23 @@ export async function POST(req: Request) {
 
     const ref = adminDb().collection(COLLECTIONS.LOYALTY_CARDS).doc(card.id);
 
-    // 1. Void + push the grey-out while the card is still resolvable.
-    await ref.update({ isActive: false });
+    // 1. Void + hide in ONE write, so a failure can't leave the card voided but
+    //    undeletable (still burning a plan slot, with a retry that repeats the
+    //    same partial state). The wallet fan-out below resolves the card by id,
+    //    which still works once deletedAt is set.
+    await ref.update({ isActive: false, deletedAt: Date.now() });
+
+    // 2. Push the grey-out to customers' passes.
     try {
       await notifyAllCustomerPasses(business.id); // Apple: grey out customers' passes
     } catch (e) {
       console.error("[card delete] apple push:", e);
     }
     try {
-      await syncAllGooglePasses(business.id); // Google: set objects INACTIVE
+      await syncAllGooglePasses(business.id, card.id); // Google: set objects INACTIVE
     } catch (e) {
       console.error("[card delete] google sync:", e);
     }
-
-    // 2. Hide from the owner + free the plan slot (keep the voided card serving passes).
-    await ref.update({ deletedAt: Date.now() });
 
     // 3. Drop the card's stamp/reward ledgers.
     const removed = {

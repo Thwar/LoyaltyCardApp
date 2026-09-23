@@ -22,7 +22,7 @@ export function MembershipCardVisual({
     <div style={{ background: cardColor, color: textColor, borderRadius: 16, padding: "18px 20px", boxShadow: "0 14px 36px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.1)" }}>
       {logoPng ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={`data:image/png;base64,${logoPng}`} alt={programName} style={{ maxHeight: 34, maxWidth: 160, objectFit: "contain" }} />
+        <img src={logoPng.startsWith("/") ? logoPng : `data:image/png;base64,${logoPng}`} alt={programName} style={{ maxHeight: 34, maxWidth: 160, objectFit: "contain" }} />
       ) : (
         <div style={{ fontSize: 14, opacity: 0.9, fontWeight: 700 }}>{programName}</div>
       )}
